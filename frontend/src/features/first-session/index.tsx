@@ -1720,6 +1720,10 @@ export function FirstSession() {
         me={viewerName()}
         entry={mode.entry}
         underHeader={fromCreate && underHeader}
+        // #6801: from Create, the ✕ stays while the project builds: leaving
+        // cancels nothing (Home read it in onMade), and the first session's
+        // made screen keeps no ✕ (it passes none).
+        onClose={fromCreate ? () => leaveDoor(false) : undefined}
         onContinue={(skipped, firstVersion) => {
           // Run five: Invite people later, or the way on once the link is out (./made-moments.ts).
           noteMoment(made.slug, skipped ? 'invite_later_tapped' : 'continue_tapped');

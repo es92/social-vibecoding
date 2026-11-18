@@ -350,3 +350,63 @@ test('the same check failing again after its sync needs no paid turn: it goes st
   assert.equal(h.calls.exec.length, 0, 'no turn ran');
   assert.ok(h.calls.flaky.some((c) => c.onNotChange));
 });
+
+// ── #6807: the change reads as the bot still working ────────────────────
+
+// A pool holding one wait and its fixes, and writing stages back.
+function waitPool({ wait = null, flakes = [] } = {}) {
+  return {
+    async query(sql, params) {
+      const s = String(sql);
+      if (/^SELECT \* FROM homeroom_bot_flake_waits WHERE session_id = \$1/.test(s)) return { rows: wait ? [wait] : [] };
+      if (/FROM homeroom_bot_flake_fixes f JOIN apps a/.test(s)) return { rows: flakes };
+      if (/INSERT INTO homeroom_bot_flake_waits/.test(s)) return { rows: [{ session_id: Number(params[0]), stage: params[3] }] };
+      if (/UPDATE homeroom_bot_flake_waits/.test(s)) return { rows: [{ session_id: Number(params[0]), stage: params[1] }] };
+      return { rows: [] };
+    },
+  };
+}
+
+test('#6807: an open wait on a fix for a check that is not the change\'s keeps it waiting, and the work state follows', async (t) => {
+  assert.deepEqual(flaky.FIXING_STAGES, ['fixing', 'rechecking']);
+  const sql = flaky.flakeFixingSql('cs.id');
+  assert.match(sql, /EXISTS \(SELECT 1 FROM homeroom_bot_flake_waits fw/);
+  assert.match(sql, /fw\.session_id = cs\.id/);
+  assert.match(sql, /fw\.ended_at IS NULL/);
+  assert.match(sql, /fw\.stage IN \('fixing', 'rechecking'\)/, 'only the stages a fix is under way in');
+  assert.ok(!/synced|green|person/.test(sql));
+
+  const t1 = { name: 'kudos are counted once', file: 'tests/kudos.test.js' };
+  const now = Date.parse('2026-11-01T12:00:00Z');
+  const started = '2026-10-31T12:00:00Z';
+  const wait = (stage = 'fixing') => ({ stage, started_at: started, ended_at: null });
+  // Waiting its turn, being built, or in: the bot is still working.
+  for (const state of ['waiting', 'building', 'merged']) {
+    assert.deepEqual(flaky.nextStep({ wait: wait(), flakes: [{ state }], tests: [t1], now }), { do: 'wait' }, state);
+  }
+  // One that failed, was closed or expired hands over, as today.
+  for (const state of ['failed', 'closed', 'expired']) {
+    assert.deepEqual(flaky.nextStep({ wait: wait(), flakes: [{ state }], tests: [t1], now }), { do: 'person', why: `fix_${state}` });
+  }
+
+  const fixing = waitPool({
+    wait: { session_id: 5001, stage: 'fixing', started_at: started, ended_at: null, flake_ids: [9] },
+    flakes: [{ id: 9, issue_number: 6805 }],
+  });
+  assert.deepEqual(await flaky.fixingWait(fixing, 5001), { since: started, issueNumber: 6805 }, 'the fix\'s own request');
+  assert.equal(await flaky.fixingWait(waitPool({ wait: { session_id: 5001, stage: 'synced', started_at: started, ended_at: null, flake_ids: [] } }), 5001),
+    null, 'synced and no fix yet: checking, as before');
+  assert.equal(await flaky.fixingWait(waitPool({ wait: { session_id: 5001, stage: 'fixing', started_at: started, ended_at: started, flake_ids: [] } }), 5001),
+    null, 'an ended wait is not fixing anything');
+  assert.equal(await flaky.fixingWait(waitPool(), 5001), null);
+
+  // The stored work state is refreshed as the wait moves: opens, rechecks,
+  // goes green, goes to a person.
+  const workState = require('../src/services/work-state');
+  const touched = [];
+  t.mock.method(workState, 'touched', async (_db, items) => { touched.push(items); return []; });
+  const pool = waitPool({ wait: { session_id: 5001, stage: 'fixing', started_at: started, ended_at: null, flake_ids: [9] } });
+  await flaky.saveWait(pool, { sessionId: 5001, appId: 4, stage: 'fixing', flakeIds: [9] });
+  await flaky.setStage(pool, 5001, 'rechecking');
+  assert.deepEqual(touched, [[{ sessionId: 5001 }], [{ sessionId: 5001 }]]);
+});

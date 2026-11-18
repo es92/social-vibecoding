@@ -32,6 +32,8 @@ const { planRecordSql } = require('./request-specs');
 // hold reasons and detail.
 
 const progress = require('./homeroom-bot-progress');
+// #6807: whether a change waits on a fix for a check that is not its own.
+const flaky = require('./homeroom-bot-flaky-checks');
 const { syncWaits, syncStand } = require('./vote-ready');
 const checksEstimate = require('./checks-estimate');
 const { firstVersionSql } = require('./first-version-rule');
@@ -330,6 +332,10 @@ function fromStage(s, row, now = new Date()) {
     }
     case 'fix_stopped':
       return state('stopped', { since, reason: 'fix_stopped' });
+    case 'flake_fixing':
+      // #6807: its failing check is not its own, and Homeroom bot is getting
+      // that check fixed: the bot is still working.
+      return state('checking', { since, line: { code: 'fixing_check' } });
     case 'vote':
       if (row.first_version === true) return state('going_live', { since, line: { code: 'first_version' } });
       // #6402: a passing change that has since stopped merging cleanly waits
@@ -432,6 +438,8 @@ function deriveFacts(row, { now = new Date() } = {}) {
       // #6282: an update on its way holds its vote too. #6600: and a
       // takeover whose last attempt failed says so.
       update_coming: row.lc_update_coming, update_failed: row.lc_update_failed,
+      // #6807: it waits on a fix for a check that is not its own.
+      flake_fixing: row.lc_flake_fixing === true,
     }, { now });
     // Somebody is building it: who, as a claim says it.
     if ((row.lc_status === 'active' || row.lc_status === 'paused') && row.lc_by) {
@@ -568,6 +576,11 @@ function promotedChange(row, now) {
   if (hold) return state(hold.stage, { since: row.promoted_at, line: { code: hold.code } });
   if (row.check_state !== 'passing' && row.check_state !== 'skipped') {
     const failing = row.check_state === 'failing' || row.check_state === 'error';
+    if (failing && row.flake_fixing === true) {
+      // #6807: it fails a check that is not its own, and the fix for that
+      // check is under way: the bot is working, not the change's author.
+      return state('checking', { since, line: { code: 'fixing_check' } });
+    }
     if (failing) {
       const count = Number(row.failed_checks) || 0;
       return state('checking', { since, line: { code: 'checks_failing', ...(count ? { failing: count } : {}) } });
@@ -680,6 +693,8 @@ const PLAIN_LINES = new Set([
   'approved_checking',
   // #6600: Homeroom bot took over its failing tests, and its last attempt could not fix them.
   'bot_fix_failed',
+  // #6807: Homeroom bot is getting the check it fails on fixed.
+  'fixing_check',
 ]);
 
 const camel = (s) => String(s).replace(/_([a-z])/g, (_m, c) => c.toUpperCase());
@@ -703,6 +718,9 @@ function stagePhrase(item, yours) {
   // stage word says that ("Taking screenshots"), not "Checking", which read
   // as tests that might still fail.
   if (item.stage === 'checking' && code === 'shots') return { id: 'core:work.stage.shots' };
+  // #6807: its failing check is not its own and the bot is getting it fixed:
+  // the stage word says the bot is working ("Fixing"), not "Checking".
+  if (item.stage === 'checking' && code === 'fixing_check') return { id: 'core:work.stage.fixing' };
   // #6563: an approved change whose merge GitHub holds is not going live yet;
   // its word says so, and its second line says on what. #6594: waiting on
   // GitHub's checks is still approved; only GitHub itself holding it back
@@ -858,6 +876,8 @@ const REQUEST_FACTS_SQL = `
          lc.promoted_at AS lc_promoted_at, lc.merged_at AS lc_merged_at, lc.live_at AS lc_live_at,
          lc.last_activity_at AS lc_last_activity_at, lc.created_at AS lc_created_at, lc.update_coming AS lc_update_coming,
          lc.update_failed AS lc_update_failed,
+         -- #6807: the lead change's open wait on a fix for a check that is not its own.
+         ${flaky.flakeFixingSql('lc.id')} AS lc_flake_fixing,
          lc.username AS lc_by, q.priority AS queue_priority,
          -- #5323: a ready request's place among the project's builds waiting to start.
          CASE WHEN run.live_build_waiting_at IS NOT NULL AND run.build_session_id IS NULL THEN (
@@ -947,6 +967,8 @@ const CHANGE_FACTS_SQL = `
          CASE WHEN cs.status = 'promoted' THEN ${progress.updateComingSql('cs')} END AS update_coming,
          -- #6600: why a takeover's last attempt failed, when it did.
          CASE WHEN cs.status = 'promoted' THEN ${progress.updateFailedSql('cs')} END AS update_failed,
+         -- #6807: an open wait on a fix for a check that is not this change's.
+         ${flaky.flakeFixingSql('cs.id')} AS flake_fixing,
          (SELECT COUNT(*) FILTER (WHERE pv.vote = 'yes') FROM pr_votes pv
            WHERE pv.session_id = cs.id AND ${currentVotePredicateSql('pv', 'cs')})::int AS votes_yes,
          (SELECT COUNT(*) FILTER (WHERE pv.vote = 'no') FROM pr_votes pv

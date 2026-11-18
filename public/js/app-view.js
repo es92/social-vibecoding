@@ -8843,7 +8843,11 @@ const AppView = {
       // #6288: left out when main is not failing these tests, so the card's
       // shape is exactly what it was before this change.
       const mainFailure = AppView._mainFailureLink(v);
-      if (botFix && botFix.state === 'fixing') {
+      // #6807: its failing check is not the change's own, and Homeroom bot
+      // is getting that check fixed in another request: the card keeps
+      // "Tests failed" (they did fail), the bot's line, and the re-run, which
+      // cannot undo a fix that lives elsewhere.
+      if (botFix && botFix.state === 'fixing' && botFix.reason !== 'flaky_check') {
         if (rerun) {
           actions.push({
             key: 'recheck', cls: 'gc-vote-btn gc-vote-btn-accent', label: PlatformI18n.t('changes:recheck.label'),
@@ -20159,6 +20163,9 @@ const AppView = {
   // time; waiting its turn; or handed to the people who can take it on.
   _botFixNote(botFix) {
     if (!botFix || typeof botFix !== 'object') return null;
+    if (botFix.state === 'fixing' && botFix.reason === 'flaky_check') {
+      return PlatformI18n.t('changes:page.testing.note.botFixingCheck', { number: botFix.request });
+    }
     if (botFix.state === 'fixing') {
       const at = botFix.since ? new Date(botFix.since).getTime() : NaN;
       const minutes = Number.isFinite(at) ? Math.max(0, Math.round((Date.now() - at) / 60000)) : 0;

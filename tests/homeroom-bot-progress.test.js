@@ -756,3 +756,41 @@ test('#6357: a hold says why: the week\'s building time, or a day\'s pause after
     .includes(flat(progress.HOLD_IS_ALLOWANCE_SQL)), 'the week\'s DM counts only the week\'s holds, by the same rule');
   assert.match(progress.HOLD_IS_ALLOWANCE_SQL, /q\.held_reason IS NULL\s+AND q\.held_until = date_trunc\('week', q\.held_until AT TIME ZONE 'UTC'\) AT TIME ZONE 'UTC'/);
 });
+
+// #6807 (evan): "should a change be in 'ask again' state in this case? Or
+// should it be in some, 'fixing' state, re how its fixing it on main
+// already?" A change that fails a check which is not its own, while Homeroom
+// bot is getting that check fixed, is the bot still working.
+test('#6807: a change waiting on a fix for a check that is not its own reads as fixing, not handed off', async () => {
+  const withWait = (wait) => ({
+    async query(sql) {
+      const s = String(sql);
+      if (/SELECT cs\.app_id, cs\.status, cs\.check_state/.test(s)) return { rows: [BOT_CHANGE] };
+      if (/FROM homeroom_bot_flake_waits WHERE session_id/.test(s)) return { rows: wait ? [wait] : [] };
+      if (/FROM homeroom_bot_flake_fixes f JOIN apps a/.test(s)) return { rows: [{ id: 9, issue_number: 6805 }] };
+      // A person's run on the head is what the card said before.
+      if (/FROM homeroom_bot_runs/.test(s)) return { rows: [{ id: 901 }] };
+      return { rows: [] };
+    },
+  });
+  const open = { session_id: 5001, stage: 'fixing', started_at: ago(6), ended_at: null, flake_ids: [9] };
+  assert.deepEqual(await progress.changeBotFix(withWait(open), 5001),
+    { state: 'fixing', since: ago(6), reason: 'flaky_check', request: 6805 }, 'ahead of the person run on the head');
+  assert.deepEqual(await progress.changeBotFix(withWait({ ...open, stage: 'rechecking' }), 5001),
+    { state: 'fixing', since: ago(6), reason: 'flaky_check', request: 6805 }, 'its checks running again with the fix is still the bot');
+  // No wait: handed over, as before.
+  assert.deepEqual(await progress.changeBotFix(withWait(null), 5001), { state: 'handed_off', since: null, reason: null });
+
+  assert.match(progress.REQUEST_RECORD_COLUMNS, /AS flake_fixing/, 'a request\'s record reads the wait');
+  assert.match(progress.REQUEST_RECORD_COLUMNS, /homeroom_bot_flake_waits fw[\s\S]*ended_at IS NULL/);
+
+  const proposal = {
+    proposal_status: 'promoted', proposal_at: ago(20), checks_at: ago(18),
+    check_state: 'failing', checks_sha: 'a'.repeat(40), reviewed_head_sha: 'a'.repeat(40),
+  };
+  assert.deepEqual(stage({ ...proposal, flake_fixing: true }),
+    { stage: 'flake_fixing', since: ago(18), doing: 'getting the check it fails on fixed first' });
+  assert.equal(stage({ ...proposal, flake_fixing: false }).stage, 'checks_failed', 'no wait: as today');
+  assert.equal(stage({ ...proposal, flake_fixing: true, check_state: 'passing' }).stage, 'vote',
+    'a passing verdict is its vote as usual');
+});

@@ -351,9 +351,15 @@ test('under the plan: a first version gets the switch, whatever this device chos
   const plan = loadTsx('frontend/src/features/messages/bot-plan.tsx');
   const notify = loadTsx('frontend/src/features/messages/notify-me.tsx');
   const first = plan.notifyFooter({ kind: 'plan', appSlug: 'club-votes', firstVersion: true, plan: { bullets: ['A'], questions: [] } }, false, 7);
-  assert.equal(first.props.className, 'mt-3');
-  assert.equal(first.props.children.type.name, notify.NotifyLive.name);
-  assert.deepEqual(first.props.children.props, { appSlug: 'club-votes' });
+  assert.equal(first.props.className, 'mt-3 flex flex-col items-start gap-2');
+  const [live, watch] = first.props.children;
+  assert.equal(live.type.name, notify.NotifyLive.name);
+  assert.deepEqual(live.props, { appSlug: 'club-votes' });
+  assert.equal(watch.type.name, 'WatchBuildButton');
+  assert.deepEqual(watch.props, { appSlug: 'club-votes' });
+  const drawn = renderToHtml(createElement(plan.WatchBuildButton, { appSlug: 'club-votes' }));
+  assert.match(drawn, /^<button type="button" data-bot-watch-build="" class="rounded-full bg-zinc-100[^"]*">Watch Homeroom bot build it<\/button>$/,
+    'the Hub\'s quiet grey pill, with the Hub\'s words');
   const complicated = { kind: 'plan', appSlug: 'notes', plan: { bullets: ['A'], questions: [], complicated: true } };
   assert.equal(plan.notifyFooter(complicated, true, 7).props.children.type.name, notify.NotifyMe.name);
   assert.equal(plan.notifyFooter(complicated, false, 7), null, 'chosen on this device: not offered again');
@@ -362,6 +368,9 @@ test('under the plan: a first version gets the switch, whatever this device chos
   // Step 3: until then, the line a refused Build it leaves under the buttons.
   assert.match(card, /footer=\{state === 'built' && card && card\.state !== 'done'\s*\? notifyFooter\(meta, offer, userId, conversationId, Number\(message\.id\)\)\s*: state === 'open' && refused \? <OfferRefused refusal=\{refused\} \/> : null\}/,
     'only once built, and only while it is being built');
+  assert.match(card, /openAppTab\?\.\(appSlug, 'app'\)/, 'Watch opens the project\'s App tab, as the Hub\'s button does');
+  assert.match(card, /messages:bot\.plan\.watch/, 'and says the Hub\'s words');
+  assert.equal(message('messages:bot.plan.watch'), 'Watch Homeroom bot build it', 'the Hub\'s own words');
 });
 
 test('the API: read and set, and not found is "not theirs"', async (t) => {

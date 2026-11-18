@@ -574,7 +574,9 @@ test('the route reads the signed-in person\'s cards and nothing the request name
   assert.ok(start < routes.indexOf("router.get('/api/conversations/:id',"), 'and is declared before the id routes');
   const body = routes.slice(start, routes.indexOf('\n  });', start));
   assert.match(body, /activity\.cardsFor\(pool, \{ user: req\.user, config \}\)/);
-  assert.match(body, /if \(isDemo\(req\)\) return res\.json\(await activity\.demoCards\(pool, req\.user\)\);/);
+  // ?demo=1 adds the demo's own card states; a card a staging seed wrote is
+  // read as it is, never hidden by the demo (request #6803's shots).
+  assert.match(body, /if \(isDemo\(req\)\) \{[\s\S]*?activity\.demoCards\(pool, req\.user\)[\s\S]*?activity\.cardsFor\(pool, \{ user: req\.user, config \}\)[\s\S]*?demo\.cards, \.\.\.real\.cards\.filter/);
   assert.doesNotMatch(body, /req\.(?:params|body)|req\.query\.(?!demo)/, 'no user, conversation or message is read from the request');
   const service = read('src/services/homeroom-bot-activity.js');
   assert.match(service, /WHERE d\.user_id = \$1 AND d\.kind = 'activity'/);

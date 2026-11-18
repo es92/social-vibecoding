@@ -101,6 +101,14 @@
  * UNTIL IT RUNS (#4900) the way on is off and a small card under the project
  * says how far its setup has got (SetupProgress, below).
  *
+ * CLOSED FROM CREATE (#6801). Somebody who already has projects and chose to
+ * make another one need not sit through its build: from Create the screen
+ * keeps the make screen's ✕ in its top corner (and Escape), which leaves it
+ * for the page the door was opened over. Nothing is cancelled: the project
+ * was made already, Home read again as it appeared (./index.tsx onMade), and
+ * it goes on building with its own tile. The first session's made screen has
+ * no ✕: a new account needs a project before it gets anywhere.
+ *
  * ONE THING AT A TIME (newcomer run six, 14 Oct 2026): for a project Homeroom
  * bot builds from its description, the first session's screen says one thing
  * is going on, never three. While it checks for questions, the project and
@@ -1649,7 +1657,7 @@ const SECONDARY = 'flex h-11 w-full items-center justify-center rounded-full bg-
 export const MADE_ROOT = 'fixed inset-0 z-[9000] flex flex-col overflow-y-auto text-zinc-900 dark:text-zinc-100';
 export const MADE_ROOT_UNDER_HEADER = 'platform-under-header fixed inset-x-0 bottom-0 z-[9000] flex flex-col overflow-y-auto text-zinc-900 dark:text-zinc-100';
 
-export function MadeScreen({ made, me, onContinue, onOpenChat, entry = 'first-session', onSetSecrets, underHeader = false }: {
+export function MadeScreen({ made, me, onContinue, onOpenChat, entry = 'first-session', onSetSecrets, onClose, underHeader = false }: {
   made: Made;
   me: string;
   /**
@@ -1664,6 +1672,8 @@ export function MadeScreen({ made, me, onContinue, onOpenChat, entry = 'first-se
   entry?: MakeEntry;
   /** Set secrets, on a setup that waits on them: the project's secrets dialog. */
   onSetSecrets?: () => void;
+  /** From Create: ✕, or Escape (CLOSED FROM CREATE). Nothing is cancelled. */
+  onClose?: () => void;
   /** From Create, with the platform header showing: below it, with no wordmark bar of its own. */
   underHeader?: boolean;
 }) {
@@ -1675,6 +1685,22 @@ export function MadeScreen({ made, me, onContinue, onOpenChat, entry = 'first-se
   const [fv, setFv] = useState<FirstVersion>(null);
   const [appStatus, setAppStatus] = useState<string | null>('creating');
   const [inviting, setInviting] = useState(false);
+  // From Create, Escape leaves the screen as ✕ does (CLOSED FROM CREATE); the
+  // invite sheet's own Escape closes only the sheet, and it is up while this
+  // is true, read in a ref so the listener does not bind again each time.
+  const invitingRef = useRef(inviting);
+  invitingRef.current = inviting;
+  useEffect(() => {
+    if (!onClose) return undefined;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      // The sheet's own Escape (or the OS share sheet's) is not this one's.
+      if (invitingRef.current) return;
+      onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
   // How the link last went out from the invite sheet, or null.
   const [sentHow, setSentHow] = useState<SentHow | null>(null);
   const sent = sentHow !== null;
@@ -1951,6 +1977,19 @@ export function MadeScreen({ made, me, onContinue, onOpenChat, entry = 'first-se
   useEffect(() => {
     if (sentHow) noteMoment(made.slug, 'invite_sent', { how: sentHow });
   }, [made.slug, sentHow]);
+  // From Create: the make screen's ✕, word for word (./make.tsx), in the top
+  // bar's leading corner. It closes at once: there is no leaving fade here.
+  const closeButton = onClose ? (
+    <button
+      type="button"
+      data-make-close=""
+      onClick={onClose}
+      aria-label={t('core:common.close')}
+      className="absolute bottom-1 start-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-zinc-500 shadow-[inset_0_0_0_1px_var(--app-sheet-line)] dark:bg-zinc-900 dark:text-zinc-400"
+    >
+      <XIcon className="h-4 w-4" aria-hidden="true" />
+    </button>
+  ) : null;
   return (
     <div
       ref={rootRef}
@@ -1961,10 +2000,21 @@ export function MadeScreen({ made, me, onContinue, onOpenChat, entry = 'first-se
       className={underHeader ? MADE_ROOT_UNDER_HEADER : MADE_ROOT}
       style={{ background: 'var(--home-wallpaper, #f4f2e4)' }}
     >
-      {underHeader ? null : (
+      {underHeader ? (
+        // Under the platform header: no mark, only the ✕ from Create, in a
+        // short bar of its own as the make screen's. Without it, the bar is
+        // not drawn at all.
+        onClose ? (
+          <div data-first-session-made-top="" className="relative h-12 shrink-0">
+            {closeButton}
+          </div>
+        ) : null
+      ) : (
         // The logo bar: the whole mark below the status bar's inset, at least
-        // 32px under it (the make screen's bar).
-        <div data-first-session-made-top="" className="flex h-[max(52px,calc(env(safe-area-inset-top)+32px))] shrink-0 items-center justify-center pt-[env(safe-area-inset-top)]">
+        // 32px under it (the make screen's bar). From Create, ✕ at its
+        // leading edge closes the screen.
+        <div data-first-session-made-top="" className="relative flex h-[max(52px,calc(env(safe-area-inset-top)+32px))] shrink-0 items-center justify-center pt-[env(safe-area-inset-top)]">
+          {closeButton}
           <Wordmark className="h-6 w-auto text-zinc-950 dark:text-white" />
         </div>
       )}

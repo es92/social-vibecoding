@@ -303,3 +303,20 @@ test('the stylesheet: beside the card on a wide page, a folded pile on a narrow 
   assert.match(cards, /:is\(#gc-thread-head, #gc-thread-messages, \.dev-request-rail\) \{\s*min-width: 0;\s*border-radius: var\(--thread-card-r\);\s*background: var\(--thread-card\);/);
   assert.match(css.slice(brand), /\.dev-request \{\s*--thread-card-look: var\(--bl-card\);\s*--thread-card-solid-look: var\(--bl-card\);\s*--thread-card-edge-look: inset 0 0 0 1px var\(--app-sheet-line\), var\(--bl-lift\);/);
 });
+
+// #6807: a change waiting on the bot's fix for a check that is not its own
+// ends on Fixing, with the card's own line under it.
+test('#6807: a change waiting on a fix for its check ends on Fixing, with its line', () => {
+  const { changeRail } = loadTsx(MODEL);
+  const input = {
+    id: 51, author: 'evan', at: '2026-11-13T15:16:00Z', plan: null,
+    status: { key: 'needs_vote', label: 'Vote · 0/2', yes: 0, majority: 2 },
+    votes: { name: 'Votes', figure: 'Needs 2 more yes', tone: 'ask', done: false, note: [] },
+  };
+  const testing = { name: 'Testing', figure: 'Found a problem', tone: 'bad', done: false, note: [] };
+  const note = 'The check it fails on fails without the change too. Homeroom bot is getting that check fixed (request #6805).';
+  const flaky = changeRail({ ...input, testing: { ...testing, botFix: 'fixing' }, fixNote: note });
+  assert.deepEqual(names(flaky), ['Built', 'Tests failed', 'Fixing']);
+  assert.equal(words(flaky[2].note), note);
+  assert.equal(flaky[2].busy, true);
+});

@@ -623,3 +623,16 @@ test('a run that worked out its screens is drawn with the Needs you slider, not 
   const phone = pictureFrame(screen(), 340);
   assert.ok(phone.height <= 374 && phone.height >= 200, `height ${phone.height}`);
 });
+
+// #6807: a change whose failing check is not its own, while Homeroom bot gets
+// that check fixed, keeps Tests failed for its foot: it is not Stopped.
+test('#6807: a change the bot is getting its failing check fixed for says Tests failed', () => {
+  const { changeFoot } = loadTsx(MODEL);
+  const bad = testing({ name: 'Testing', figure: 'Found a problem', tone: 'bad', done: false, note: [] });
+  const foot = changeFoot({
+    status: { key: 'needs_vote', label: 'Vote · 0/2' }, votes: votes({ tone: 'ask' }),
+    testing: { ...bad, botFix: 'fixing', authorNote: message('changes:page.testing.note.botFixingCheck', { number: 6805 }) },
+  });
+  assert.equal(foot.key, 'failed');
+  assert.equal(words(foot.title), 'Tests failed', 'not "Stopped: its tests still fail"');
+});

@@ -1542,3 +1542,26 @@ test('a failed run offers its author or an admin Take the screenshots again on t
   assert.match(read('frontend/src/features/dev-board/topic/topic-head.tsx'),
     /av\.shotsHtml\(session\.shots, \{ sessionId: Number\(id\), details: true, canRetake: !!av\._canRetakeShots\?\.\(session\) \}\)/);
 });
+
+// #6807 (evan): "should a change be in 'ask again' state in this case?" A
+// change whose failing check is not its own, while Homeroom bot is getting
+// that check fixed in another request, keeps Tests failed on the red card,
+// says what the bot is doing, and keeps its re-run on offer.
+test('#6807: a change waiting on a fix for the check it fails on says so, and keeps its re-run', () => {
+  const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const botChange = (bot_fix) => ({ ...FAILED, user_id: 77, username: 'homeroom_bot', agent_session_id: null, bot_fix });
+  const flaky = { state: 'fixing', since, reason: 'flaky_check', request: 6805 };
+  const note = message('changes:page.testing.note.botFixingCheck', { number: 6805 });
+  assert.match(note, /getting that check fixed \(request #6805\)/);
+  const admin = context({ id: 42, username: 'ada', canAdminWrite: true });
+  const card = plain(admin._changeTestingView(botChange(flaky)));
+  assert.deepEqual([card.tone, card.botFix, card.authorNote], ['bad', 'fixing', note]);
+  const page = unescape(render(admin, botChange(flaky)).page);
+  const testing = page.slice(page.indexOf('data-change-gate="testing"'));
+  // The tests did fail, so the card says so, red, and the bot is on it.
+  assert.match(testing, /^data-change-gate="testing" data-done="false" data-tone="bad" data-change-bot-fix="fixing"/);
+  assert.ok(testing.includes(note));
+  // A re-run cannot undo a fix that lives in another request: it stays on offer.
+  assert.match(testing, /<button class="gc-vote-btn gc-vote-btn-accent" title="[^"]*" data-act="castRecheck">Re-run checks<\/button>/);
+  assert.doesNotMatch(testing, /Its author needs to fix this/);
+});

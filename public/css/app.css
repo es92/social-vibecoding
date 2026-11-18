@@ -21533,54 +21533,59 @@ html[data-side-strip="left"] #notifications-sheet {
      back button (measured on the simulator). The page cannot measure that
      stack (the top inset is 0 in this pose and `statusBarFrame` is a 2pt
      stub), so it is this one number. The back button is a 48px disc there,
-     and the tab pill starts a gap below it on every screen, with a way back
-     or without: the slot is always free, so the back button appears in it
-     and nothing moves (Evan, 24 Oct 2026; the pill used to grow into the
-     slot and slide down when a back button came). */
+     and the slot is kept free on every screen, with a way back or without,
+     so the back button appears in it and nothing moves (Evan, 24 Oct 2026).
+
+     THE AXIS (Evan, 18 Nov 2026). Everything in the column stands on the
+     system's own centre line, not on the middle of our 84px strip: on the
+     cover the clock is centred at x 419, the Wi-Fi ring at 418, and Safari's
+     and a stock SwiftUI app's buttons at 417.8, i.e. 48px in from the
+     screen's edge, where the strip's middle is 42px in. Measured on the
+     simulator (iOS 27.1, cover 466x678), like the top. */
   html[data-side-strip] {
     --platform-strip-top: 174px;
     --platform-strip-back: 48px;
-    --platform-strip-pill-top: calc(var(--platform-strip-top) + var(--platform-strip-back) + 10px);
+    --platform-strip-axis: 48px;
+    --platform-strip-foot: 24px;
   }
 
-  /* THE TABS, A COLUMN OF BUBBLES (Evan, 24 Oct 2026; #6788, 17 Nov 2026).
-     A 64px column centred in the strip, from under the back button's slot to
-     the home-indicator strip. Home, Homeroom bot, Messages and You at its
-     head, you at its foot, the way the desktop rail ends on you, and between
-     them an open stretch where the app you left stands (below). Each place
-     is a rounded bubble around its glyph on the page's own ground — the
-     shape the strip's app tiles have — and the lit one is filled from the
-     bar's own `--lit-*` tokens, so the sliding marker is not drawn here
-     (below). The capsule that used to hold the column is gone: the strip is
-     the Duo's own side bar, not a pane laid over the page. The cells keep
-     the bar's glyph over its label, a point smaller so the longest word
-     fits a 64px cell. */
+  /* THE TABS, ONE CAPSULE AT THE FOOT (Evan, 18 Nov 2026), the way iOS draws
+     a tab bar in the Duo's column: a stock SwiftUI TabView there is a 48px
+     capsule from y 443 to 653 on the cover, icons only, the selected tab a
+     pill inside it, while toolbar buttons and the back button stand as
+     separate 48px discs under the Wi-Fi ring. Ours is the same: Home,
+     Homeroom bot, Messages and You in one capsule on the axis, its foot
+     24px off the screen's edge (inside the home-indicator strip, as the
+     system's is), the labels kept for screen readers but not drawn. The
+     capsule is the page's own plane with its hairline, so light, dark and
+     the brand look all read; the lit place is filled from the bar's
+     `--lit-*` tokens, so the sliding marker is not drawn here (below).
+     It replaces the column of separate bubbles of #6788. */
   html[data-side-strip] #platform-tabs {
     left: auto;
-    right: calc((var(--platform-strip-w, 0px) - 64px) / 2);
-    top: var(--platform-strip-pill-top);
-    bottom: var(--platform-safe-bottom, 0px);
-    width: 64px;
+    right: calc(var(--platform-strip-axis) - 24px);
+    top: auto;
+    bottom: var(--platform-strip-foot);
+    width: 48px;
     flex-direction: column;
     align-items: stretch;
-    gap: 2px;
-    padding: 6px 0;
+    gap: 0;
+    padding: 2px;
     border-top: 0;
-    /* NO CAPSULE (#6788): the bubbles stand on the wallpaper. */
-    border-radius: 0;
-    box-shadow: none;
+    border-radius: 999px;
+    background: var(--dc-sheet-solid);
+    box-shadow: inset 0 0 0 1px var(--app-sheet-line), 0 6px 18px rgba(0, 0, 0, .08);
     clip-path: none;
+    /* The app you are in stands above the capsule, outside its box. */
+    overflow: visible;
   }
-  /* …and no fake glass behind them either: that layer WAS the capsule's
-     blue, and an id outranks the brand look's own background on it. */
+  /* No fake glass behind it: that layer is the phone bar's blue, and an id
+     outranks the brand look's own background on it. */
   html[data-side-strip] #platform-tabs::before {
     content: none;
   }
-  html[data-side-strip] #platform-tab-me {
-    margin-top: auto;
-  }
   html[data-side-strip="left"] #platform-tabs {
-    left: calc((var(--platform-strip-w, 0px) - 64px) / 2);
+    left: calc(var(--platform-strip-axis) - 24px);
     right: auto;
   }
   /* A column of cells, only where the bar would be drawn at all: this
@@ -21609,123 +21614,90 @@ html[data-side-strip="left"] #notifications-sheet {
   html[data-side-strip] .platform-tabs-marker {
     display: none;
   }
-  /* THE BUBBLE (#6788): the shape the Apps section's tiles have, one per
-     place. The faint fill is the page's own ink, so light and dark both
-     read; the count's badge anchors to this box, so it sits on the bubble's
-     corner. */
-  html[data-side-strip] .platform-tab .platform-tab-mark {
-    width: 40px;
-    height: 30px;
-    border-radius: 10px;
-    align-items: center;
-    justify-content: center;
-    background: color-mix(in srgb, var(--text-primary) 8%, transparent);
-    color: var(--text-muted);
-  }
-  /* …and the place you are on is filled from the bar's own lit tokens, with
-     their hairline, exactly as the phone's marker and the rail's lit row
-     are. A community's page lights Communities, which is on the bar again
-     (18 Nov 2026): Home no longer stands for it. */
-  html[data-side-strip] .platform-tab[aria-current="page"] .platform-tab-mark {
-    background: var(--lit-tint);
-    box-shadow: inset 0 0 0 1px var(--lit-line);
-    color: var(--lit-ink);
-  }
+  /* A TAB IS ITS GLYPH. Each place is a 52px cell the capsule's width less
+     its padding, the glyph a size up from the phone bar's (24px, about the
+     system's own), drawn in the page's ink with no tile of its own. The
+     count's badge anchors to the glyph's box, so it sits on its corner. */
   html[data-side-strip] .platform-tab {
     flex: none;
-    height: 54px;
-    color: var(--text-muted);
-    font-size: 10px;
-    letter-spacing: 0;
-  }
-  /* The label sits on the wallpaper now, so it uses the text tokens rather
-     than the lit ink, which was chosen to read on the capsule. */
-  html[data-side-strip] .platform-tab[aria-current="page"] {
+    height: 52px;
+    padding: 0;
+    gap: 0;
+    border-radius: 999px;
     color: var(--text-primary);
-    font-weight: 700;
   }
-  /* 9px and tighter (overnight audit U02, 2 November 2026): at 9.5px
-     "Communities" was wider than its lit pill in the phone's own font and ran
-     past both its sides. */
-  html[data-side-strip] #platform-tab-workshop .platform-tab-label {
-    font-size: 9px;
-    letter-spacing: -.03em;
+  html[data-side-strip] .platform-tab .platform-tab-mark {
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
   }
-  /* The bot's name does not fit a 64px column on one line at any size that
-     still reads, so here it takes two, "Homeroom" over "bot": the cell's
-     54px holds the glyph and both. */
-  html[data-side-strip] #platform-tab-ai .platform-tab-label {
-    font-size: 9.5px;
-    letter-spacing: -.02em;
-    line-height: 1.05;
-    white-space: normal;
-    text-align: center;
+  html[data-side-strip] .platform-tab .platform-tab-glyph {
+    width: 24px;
+    height: 24px;
+  }
+  /* The place you are on is the pill inside the capsule, filled from the
+     bar's own lit tokens with their hairline, exactly as the phone's marker
+     and the rail's lit row are. A community's page lights Communities, which
+     is on the strip again (18 Nov 2026): Home no longer stands for it. */
+  html[data-side-strip] .platform-tab[aria-current="page"] {
+    background: var(--lit-tint);
+    box-shadow: inset 0 0 0 1px var(--lit-line);
+  }
+  html[data-side-strip] .platform-tab[aria-current="page"] .platform-tab-mark {
+    color: var(--lit-ink);
+  }
+  /* The words are not drawn (the system's own side tabs have none), but the
+     tab is still named by them: clipped to nothing rather than removed, so a
+     screen reader reads "Home" and the declared checks still find it. */
+  html[data-side-strip] :is(.platform-tab, .platform-side-app) .platform-tab-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
-  /* THE APPS, UNDER COMMUNITIES (Evan, 24 Oct 2026): the app on screen,
-     lit by the bar's own marker, and the app you left, with its ✕
-     (features/nav/side-apps.tsx), under a small Apps heading and a hairline
-     that divide them from the places above. The section is the bar's first
-     child (the declared checks pin the tabs' sibling chain), so `order`
-     draws it after Communities, and you after it at the foot. Its cells are
-     a tab's: the pill's whole width, so the marker keeps to them the same
-     way (markerBoxFor `inCell`). The phone's Resume strip offers the app
-     you left over the bar; here the section does, so the strip stands
-     aside. */
+  /* THE APPS, ABOVE THE CAPSULE (Evan, 24 Oct 2026; 18 Nov 2026): the app
+     on screen, lit by the ring on its tile, and the app you left, with its
+     ✕ (features/nav/side-apps.tsx), each a 48px disc of the capsule's own
+     plane standing 12px above it, as Safari stands its own buttons apart
+     from its tabs. The section is the bar's first child (the declared
+     checks pin the tabs' sibling chain), so it is lifted out of the flow
+     rather than reordered: the capsule holds the four places alone, you at
+     its foot. The phone's Resume strip offers the app you left over the
+     bar; here the section does, so the strip stands aside. */
   html[data-side-strip] .platform-side-apps:not(.hidden) {
-    order: 1;
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 12px);
     display: flex;
     flex-direction: column;
-    align-items: stretch;
-    gap: 2px;
-    margin-top: 6px;
-  }
-  html[data-side-strip] #platform-tab-me {
-    order: 2;
+    gap: 12px;
+    width: 48px;
   }
   html[data-side-strip] .platform-side-apps-head {
-    display: block;
-    margin: 0 8px;
-    padding: 7px 0 3px;
-    border-top: 1px solid var(--app-sheet-line);
-    color: var(--text-muted);
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: .06em;
-    line-height: 11px;
-    text-align: center;
-    text-transform: uppercase;
+    display: none;
   }
   html[data-side-strip] .platform-side-app {
     position: relative;
     z-index: 1;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    height: 54px;
-    padding: 0 2px;
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    background: var(--dc-sheet-solid);
+    box-shadow: inset 0 0 0 1px var(--app-sheet-line), 0 6px 18px rgba(0, 0, 0, .08);
     color: var(--text-muted);
-    font-size: 10px;
-    font-weight: 600;
-    line-height: 13px;
     text-decoration: none;
     -webkit-tap-highlight-color: transparent;
   }
-  html[data-side-strip] .platform-side-app[aria-current="page"] {
-    color: var(--lit-ink);
-  }
-  /* Without the pill, a thin highlight ring on the app's own tile is what
-     says it is the one on screen. */
+  /* A thin highlight ring on the app's own tile is what says it is the one
+     on screen. */
   html[data-side-strip] .platform-side-app[aria-current="page"] .platform-side-app-tile {
     box-shadow: 0 0 0 2px var(--lit-tint), 0 0 0 3px var(--lit-ink);
-  }
-  html[data-side-strip] .platform-side-app .platform-tab-label {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
   html[data-side-strip] .platform-side-app-tile {
     width: 28px;
@@ -21745,8 +21717,8 @@ html[data-side-strip="left"] #notifications-sheet {
   html[data-side-strip] .platform-side-app-x {
     position: absolute;
     z-index: 2;
-    top: 2px;
-    right: 4px;
+    top: -6px;
+    right: -8px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -21761,9 +21733,9 @@ html[data-side-strip="left"] #notifications-sheet {
   }
   /* A FINGER'S TARGET, NOT A POINTER'S (overnight audit U02). The ✕ that
      forgets an app was its 20px glyph box, perched on the tile's corner: it
-     is pressed as 32px now, out over the tile's corner and the cell's edge,
-     and drawn as before. Above the app's own target (z-index 2), so a press
-     near the corner forgets rather than opens. */
+     is pressed as 32px now, out over the disc's corner, and drawn as
+     before. Above the app's own target (z-index 2), so a press near the
+     corner forgets rather than opens. */
   html[data-side-strip] .platform-side-app-x::after {
     content: "";
     position: absolute;
@@ -21776,9 +21748,9 @@ html[data-side-strip="left"] #notifications-sheet {
   /* THE BACK BUTTON, UNDER THE CLOCK. The header's back controls give way,
      `#back-btn` and the phone drawer's arrow alike, and their copies stand
      at the top of the strip (`--platform-strip-top`, above) as 48px discs,
-     where the system's own back button sits. The header's own back disc's
-     colours, a size up. Not while the header is away (chromeless): the
-     slot is the header's. */
+     where the system's own back button sits, on the system's axis (above).
+     The header's own back disc's colours, a size up. Not while the header
+     is away (chromeless): the slot is the header's. */
   html[data-side-strip] #platform-header :is(#back-btn, .nav-drawer-back) {
     display: none;
   }
@@ -21786,7 +21758,7 @@ html[data-side-strip="left"] #notifications-sheet {
     position: fixed;
     z-index: 30;
     top: var(--platform-strip-top);
-    right: calc((var(--platform-strip-w, 0px) - var(--platform-strip-back)) / 2);
+    right: calc(var(--platform-strip-axis) - var(--platform-strip-back) / 2);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -21801,7 +21773,7 @@ html[data-side-strip="left"] #notifications-sheet {
     pointer-events: auto;
   }
   html[data-side-strip="left"] body:not(:has(#platform-header.hidden)) .platform-side-strip-top {
-    left: calc((var(--platform-strip-w, 0px) - var(--platform-strip-back)) / 2);
+    left: calc(var(--platform-strip-axis) - var(--platform-strip-back) / 2);
     right: auto;
   }
   html[data-side-strip] .platform-side-strip-top :is(.platform-side-strip-back, .nav-drawer-back) {
@@ -29725,10 +29697,10 @@ html[data-skin="brand"]:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([d
   html[data-skin="brand"]:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) .platform-tabs .platform-tab:not([aria-current="page"]) {
     color: rgba(255, 255, 255, 0.92);
   }
-  /* THE DUO'S SIDE STRIP IS NOT THAT BAR (#6788): its capsule is gone, so
-     the white words chosen to read on the blue go with it, and the bubbles
-     and labels read the page's own ink again. The lit bubble keeps the
-     brand's sun, and the app on screen its ring. */
+  /* THE DUO'S SIDE STRIP IS NOT THAT BAR: its capsule is the page's own
+     plane, not the blue, so the white words chosen to read on the blue go
+     with it, and the glyphs read the page's own ink again. The lit pill
+     keeps the brand's sun, and the app on screen its ring. */
   html[data-skin="brand"]:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"]))[data-side-strip] #platform-tabs {
     --text-primary: inherit;
     --text-muted: inherit;

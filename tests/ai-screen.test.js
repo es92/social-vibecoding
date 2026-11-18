@@ -2038,8 +2038,10 @@ test('the tab says Homeroom bot: a wide seat on a phone, two lines in the Duo co
   assert.match(css, /#platform-tabs \{ grid-template-columns: 1fr 1\.2fr 1\.35fr 1\.15fr 1fr; \}/, 'a little less on the smallest phones');
   assert.match(css, /:is\(#platform-tab-workshop, #platform-tab-ai\) \.platform-tab-label \{\s+letter-spacing: -\.02em;\s+overflow: visible;\s+text-overflow: clip;\s+\}/,
     'tightened and let out of the cell rather than cut');
-  assert.match(css, /html\[data-side-strip\] #platform-tab-ai \.platform-tab-label \{\s+font-size: 9\.5px;\s+letter-spacing: -\.02em;\s+line-height: 1\.05;\s+white-space: normal;\s+text-align: center;\s+\}/,
-    'the Duo column: "Homeroom" over "bot"');
+  // The Duo column draws icons only (18 Nov 2026), so the bot's name is not
+  // set on two lines there any more: it is the tab's name, clipped.
+  assert.doesNotMatch(css, /html\[data-side-strip\] #platform-tab-ai \.platform-tab-label \{/,
+    'the Duo column: no words drawn, so no two-line name');
 });
 
 const LIVE = 'frontend/src/features/ai/live.ts';

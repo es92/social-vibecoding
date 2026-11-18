@@ -729,7 +729,9 @@ export interface ChangeGateView {
    * #6234: Testing only, on a change Homeroom bot built whose checks failed:
    * where its own fix of them stands (services/homeroom-bot-progress.js
    * changeBotFix), carried on the card as `data-change-bot-fix`. The words
-   * are in `authorNote`.
+   * are in `authorNote`. #6807: `fixing` may carry the reason `flaky_check`,
+   * a failing check that is not the change's own whose own fix the bot is
+   * getting (the card still says Tests failed, and Re-run stays on offer).
    */
   botFix?: 'fixing' | 'queued' | 'platform' | 'handed_off' | 'stopped' | null;
   /**

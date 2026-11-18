@@ -512,3 +512,37 @@ test('#6600: a takeover running says the bot is fixing it, and a failed one says
   });
   assert.deepEqual([lc.stage, lc.line], ['checking', { code: 'bot_fix_failed' }]);
 });
+
+// #6807: a change whose failing check is not its own, while Homeroom bot is
+// getting that check fixed in another request, is the bot still working:
+// Checking, with Fixing for the stage word.
+test('#6807: a change waiting on a fix for the check it fails on reads Fixing', () => {
+  const mapped = ws.fromStage({ stage: 'flake_fixing', since: ago(5) }, {});
+  assert.deepEqual([mapped.stage, mapped.line], ['checking', { code: 'fixing_check' }]);
+  assert.equal(ws.placeFor(mapped, { own: true }), 'waiting', 'Waiting, not Needs you');
+  assert.deepEqual(ws.phrasesOf(mapped), {
+    stage: { id: 'core:work.stage.fixing' },
+    stageOthers: { id: 'core:work.stage.fixing' },
+    line: { id: 'core:work.line.fixingCheck' },
+  });
+  const core = JSON.parse(fs.readFileSync(path.join(ROOT, 'frontend/locales/en/core.json'), 'utf8'));
+  assert.equal(core['work.stage.fixing'].text, ws.stageSays(mapped));
+  assert.equal(core['work.line.fixingCheck'].text, ws.lineSays(mapped));
+  assert.equal(ws.lineSays(mapped), 'Fixing the check it fails on', 'the bot tab\'s second line');
+  // The change's own facts: a failing verdict with an open wait.
+  const row = {
+    status: 'promoted', check_state: 'failing', promoted_at: ago(20), checks_at: ago(18),
+    reviewed_head_sha: 'a'.repeat(40), checks_commit_sha: 'a'.repeat(40),
+  };
+  const fixing = ws.deriveChange({ ...row, flake_fixing: true }, { now: NOW });
+  assert.deepEqual([fixing.stage, fixing.line], ['checking', { code: 'fixing_check' }]);
+  assert.equal(ws.deriveChange({ ...row, flake_fixing: false }, { now: NOW }).line.code, 'checks_failing', 'no wait: as today');
+  // A takeover whose last attempt failed says nothing over it: the fix for
+  // the check that fails without the change is not the change's own.
+  assert.deepEqual(ws.withUpdate(fixing, { coming: null, failed: 'it did not finish' }).line, { code: 'fixing_check' });
+  // A request draws the same state.
+  const request = ws.derive({ app_id: 1, issue_number: 7, request_closed: false,
+    proposal_status: 'promoted', proposal_at: ago(20), check_state: 'failing', checks_at: ago(18),
+    checks_sha: 'a'.repeat(40), reviewed_head_sha: 'a'.repeat(40), flake_fixing: true }, { now: NOW });
+  assert.deepEqual([request.stage, request.line], ['checking', { code: 'fixing_check' }]);
+});

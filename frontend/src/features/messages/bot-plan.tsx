@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { Button } from '@/components/ui/button';
 import { InfoCircleIcon } from '@/components/ui/icons';
 
 import { useMessages } from '../../lib/i18n/react';
@@ -272,13 +273,41 @@ function quote(message: ConversationMessage, conversationId: number) {
 }
 
 /**
+ * "Watch Homeroom bot build it": the project's App tab, where the live
+ * picture of the build is, the way the Hub's own button goes there
+ * (features/dev-board/workshop/hub-cards.tsx watchBuild). The opener is
+ * called inline, so this module does not import the Hub's.
+ */
+export function WatchBuildButton({ appSlug }: { appSlug: string }) {
+  const t = useMessages('messages');
+  return (
+    <Button
+      type="button"
+      variant="pillNeutral"
+      size="sm"
+      ink="neutral"
+      data-bot-watch-build=""
+      onClick={() => (window as any).App?.openAppTab?.(appSlug, 'app')}
+    >
+      {t('messages:bot.plan.watch')}
+    </Button>
+  );
+}
+
+/**
  * Pure (run six): what sits under a plan while what it planned is built. A
  * first version's switch, on from Make it, whatever this device chose
- * before; a complicated change's plan keeps the one-time offer.
+ * before, with the way to watch the build; a complicated change's plan
+ * keeps the one-time offer.
  */
 export function notifyFooter(meta: HomeroomBotMeta, offer: boolean, userId: number | null, conversationId?: number, messageId?: number) {
   if (!meta.plan?.complicated && meta.appSlug) {
-    return <div className="mt-3"><NotifyLive appSlug={meta.appSlug} /></div>;
+    return (
+      <div className="mt-3 flex flex-col items-start gap-2">
+        <NotifyLive appSlug={meta.appSlug} />
+        <WatchBuildButton appSlug={meta.appSlug} />
+      </div>
+    );
   }
   return offer ? (
     <div className="mt-3">

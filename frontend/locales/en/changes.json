@@ -8867,6 +8867,10 @@
     "text": "Homeroom bot couldn’t fix this on its own. The person who asked for it, or any member of this project, can take it from here.",
     "description": "Line under the Testing card of a change's page whose checks failed, after Homeroom bot (the change's author) gave up fixing what failed: who can take it over. \"It\" in the second sentence is the change."
   },
+  "page.testing.note.botFixingCheck": {
+    "text": "The check it fails on fails without the change too. Homeroom bot is getting that check fixed (request #{{number}}). This change's checks run again once that fix is in.",
+    "description": "Line under the Testing card of a change's page whose checks failed on a test that fails without the change too, while Homeroom bot gets that test itself fixed in another request. {{number}} is that request's number on Homeroom's own board. \"It\" is the change."
+  },
   "page.testing.note.botStopped_one": {
     "text": "Checks failing · Homeroom bot stopped after {{count}} try. You can let it try once more.",
     "description": "Line under the Testing card of a change's page whose checks failed, after Homeroom bot stopped at its own limit of fixes it may make by itself. Shown to the person who asked for it, or an admin, who may let it try again. {{count}} is the number of its tries."

@@ -69,7 +69,8 @@ test('C3: who, then the community, then the app, then one line over two buttons'
   // The Homeroom logo bar first, as on the story, the invite page and the
   // make screen (owner, 7 October 2026), then the people row 16px under it.
   assert.ok(at('data-first-session-made-top=""') < at('data-first-session-people="1"'));
-  assert.match(CODE, /<div data-first-session-made-top="" className="flex h-\[max\(52px,calc\(env\(safe-area-inset-top\)\+32px\)\)\] shrink-0 items-center justify-center pt-\[env\(safe-area-inset-top\)\]">\s+<Wordmark className="h-6 w-auto text-zinc-950 dark:text-white" \/>/);
+  // (#6801: the bar holds still for Create's ✕, which only Create draws.)
+  assert.match(CODE, /<div data-first-session-made-top="" className="relative flex h-\[max\(52px,calc\(env\(safe-area-inset-top\)\+32px\)\)\] shrink-0 items-center justify-center pt-\[env\(safe-area-inset-top\)\]">\s+\{closeButton\}\s+<Wordmark className="h-6 w-auto text-zinc-950 dark:text-white" \/>/);
   assert.match(CODE, /max-w-sm grow flex-col px-6 pb-\[max\(36px,env\(safe-area-inset-bottom\)\)\]">/);
   // The faces and the heading over the thumbnail, one block centred in the
   // room between the bar and the line over the buttons. The name is the

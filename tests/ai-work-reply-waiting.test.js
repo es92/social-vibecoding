@@ -128,3 +128,26 @@ test('a thread whose request has no row is not listed as Not started yet', () =>
   assert.equal(standing(row, 7, NOW, 99, null), null);
   assert.equal(require('../src/services/ai-work').fallbackState, undefined, 'no second decider');
 });
+
+// #6807: a change whose failing check is not its own, while Homeroom bot gets
+// that check fixed, is the bot still working: In progress, Fixing, never
+// Needs you with Ask again.
+test('#6807: a change waiting on a fix for the check it fails on is In progress, not Needs you', () => {
+  const botChange = {
+    ...row, own: true, change_id: 5001, change_status: 'promoted', change_user: 99, needs_fix: true, bot_handed_off: true,
+  };
+  const failing = {
+    proposal_status: 'promoted', proposal_at: '2026-11-03T15:00:00Z', check_state: 'failing',
+    checks_sha: 'a'.repeat(40), reviewed_head_sha: 'a'.repeat(40),
+  };
+  const fixing = stored({ ...failing, flake_fixing: true });
+  assert.deepEqual([fixing.stage, fixing.line], ['checking', { code: 'fixing_check' }]);
+  const placed = standing(botChange, 7, NOW, 99, fixing);
+  assert.equal(placed.group, 'next', 'Waiting & in progress');
+  assert.equal(placed.botFixFailed, undefined, 'nothing asks the requester to act');
+  assert.deepEqual(placed.work.words.line, { id: 'core:work.line.fixingCheck' });
+  assert.deepEqual(placed.work.words.stage, { id: 'core:work.stage.fixing' });
+  // Without the wait it is the requester's again, as today.
+  const stopped = standing(botChange, 7, NOW, 99, stored(failing));
+  assert.deepEqual([stopped.group, stopped.botFixFailed], ['needs', true]);
+});

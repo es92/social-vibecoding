@@ -60,6 +60,9 @@ const MIN_NAME_CHARS = 8;
 const OPEN_FLAKE_STATES = Object.freeze(['waiting', 'building']);
 const ENDED_BAD = Object.freeze(['failed', 'closed', 'expired']);
 const FIX_REASON = 'flaky_check';
+// #6807: the wait's stages in which a fix for the check is under way: the
+// change is not the bot's to hand over, it is the bot's still working.
+const FIXING_STAGES = Object.freeze(['fixing', 'rechecking']);
 
 function botModule(deps) { return deps?.botSvc || require('./homeroom-bot'); }
 function dmModule(deps) { return deps?.dm || require('./homeroom-bot-dm'); }
@@ -371,6 +374,38 @@ async function waitOf(pool, sessionId) {
   return w || null;
 }
 
+/**
+ * Pure: `$`-free SQL that is true when the change `sessionIdExpr` names waits
+ * on a fix for a check that is not its own (an open wait that is fixing it or
+ * running its checks again), false otherwise. The screens read it so that the
+ * change shows as the bot still working rather than stopped.
+ */
+function flakeFixingSql(sessionIdExpr) {
+  return `EXISTS (SELECT 1 FROM homeroom_bot_flake_waits fw
+                   WHERE fw.session_id = ${sessionIdExpr} AND fw.ended_at IS NULL
+                     AND fw.stage IN (${FIXING_STAGES.map((s) => `'${s}'`).join(', ')}))`;
+}
+
+/**
+ * #6807: `{ since, issueNumber }` while the change waits on a fix for a check
+ * that is not its own (the first fix's request), else null. A change whose
+ * check fails without it is not the bot's to give up on while the fix for
+ * that check is waiting, being built, or merging.
+ */
+async function fixingWait(pool, sessionId) {
+  const wait = await waitOf(pool, sessionId);
+  if (!wait || wait.ended_at || !FIXING_STAGES.includes(wait.stage)) return null;
+  const flakes = await flakesOf(pool, wait.flake_ids);
+  return { since: wait.started_at || null, issueNumber: Number(flakes[0]?.issue_number) || null };
+}
+
+/** The stored work state follows the wait as it moves. Never throws. */
+function touchWorkState(pool, sessionId) {
+  return Promise.resolve()
+    .then(() => require('./work-state').touched(pool, [{ sessionId: Number(sessionId) }]))
+    .catch(() => {});
+}
+
 async function flakesOf(pool, ids) {
   const list = (Array.isArray(ids) ? ids : []).map(Number).filter((n) => n > 0);
   if (!list.length) return [];
@@ -457,6 +492,7 @@ async function saveWait(pool, w) {
     [Number(w.sessionId), Number(w.appId), w.issueNumber || null, w.stage, !!w.synced,
       (w.flakeIds || []).map(Number), JSON.stringify(w.tests || []), w.head ? String(w.head).toLowerCase() : null, w.why || null],
   );
+  await touchWorkState(pool, w.sessionId);
   return row;
 }
 
@@ -470,6 +506,7 @@ async function setStage(pool, sessionId, stage, { why = null, end = false, reche
       WHERE session_id = $1 RETURNING *`,
     [Number(sessionId), stage, why, end, rechecked, head ? String(head).toLowerCase() : null],
   );
+  await touchWorkState(pool, sessionId);
   return row || null;
 }
 
@@ -1129,6 +1166,7 @@ module.exports = {
   MAX_TESTS,
   INCIDENT_KIND,
   FIX_REASON,
+  FIXING_STAGES,
   TITLE_PREFIX,
   testKey,
   errorLine,
@@ -1144,6 +1182,8 @@ module.exports = {
   fixingText,
   personText,
   exemptFromAppCap,
+  flakeFixingSql,
+  fixingWait,
   onSynced,
   carriesOn,
   onNotChange,
@@ -1154,4 +1194,6 @@ module.exports = {
   sweep,
   waitOf,
   flakesOf,
+  saveWait,
+  setStage,
 };

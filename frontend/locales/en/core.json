@@ -651,6 +651,10 @@
     "text": "Closed",
     "description": "Where a request or a change stands, the same words on every screen (the Homeroom bot tab, the chat's drawer, a request's page, a project's chat, the bell). The stage word: the request or the change was closed."
   },
+  "work.stage.fixing": {
+    "text": "Fixing",
+    "description": "Where a request or a change stands, the same words on every screen (the Homeroom bot tab, the chat's drawer, a request's page, a project's chat, the bell). The stage word: its change's failing check is not the change's own, and Homeroom bot is getting that check itself fixed first, so nobody is asked for anything."
+  },
   "work.why.question": {
     "text": "Waiting for your answer",
     "description": "Where a request or a change stands, the same words on every screen (the Homeroom bot tab, the chat's drawer, a request's page, a project's chat, the bell). Shown to the requester: Homeroom bot asked them a question and waits for the answer."
@@ -778,6 +782,10 @@
   "work.line.botFixFailed": {
     "text": "Homeroom bot couldn't fix it",
     "description": "Where a request or a change stands, the same words on every screen (the Homeroom bot tab, the chat's drawer, a request's page, a project's chat, the bell). Second line: Homeroom bot took over the change's failing tests and its last attempt could not fix them."
+  },
+  "work.line.fixingCheck": {
+    "text": "Fixing the check it fails on",
+    "description": "Where a request or a change stands, the same words on every screen (the Homeroom bot tab, the chat's drawer, a request's page, a project's chat, the bell). Second line under Fixing: the test that fails on the change fails without it too, and Homeroom bot is getting that test itself fixed before the change is checked again."
   },
   "work.line.checksFailingCount_one": {
     "text": "{{count}} test failing",

@@ -131,7 +131,19 @@ function conversationRoutes(config, { pool = getPool(config) } = {}) {
   router.get('/api/conversations/homeroom-bot/activity', async (req, res) => {
     try {
       const activity = require('../services/homeroom-bot-activity');
-      if (isDemo(req)) return res.json(await activity.demoCards(pool, req.user));
+      if (isDemo(req)) {
+        // The demo gives the state of the cards its own fixtures sent; a card
+        // of the person's that the staging seeds wrote is read as it is, so
+        // `?demo=1` adds fixture states rather than hiding seeded ones.
+        const demo = await activity.demoCards(pool, req.user);
+        const real = await activity.cardsFor(pool, { user: req.user, config })
+          .catch(() => ({ cards: [], ready: [] }));
+        const sent = new Set(demo.cards.map((card) => card.messageId));
+        return res.json({
+          cards: [...demo.cards, ...real.cards.filter((card) => !sent.has(card.messageId))],
+          ready: real.ready,
+        });
+      }
       return res.json(await activity.cardsFor(pool, { user: req.user, config }));
     } catch (err) {
       log.error('conversations', 'homeroom bot activity failed', { err: err.message, userId: req.user?.id });

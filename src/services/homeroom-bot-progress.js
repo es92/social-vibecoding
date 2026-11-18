@@ -47,6 +47,8 @@ const { heldUntil } = require('../workflow/rules/bot-readiness.ts');
 
 // Lazy: the live module is large, and only the queue readers below need it.
 function live() { return require('./homeroom-bot-live'); }
+// #6807: the changes waiting on a fix for a check that is not their own.
+function flaky() { return require('./homeroom-bot-flaky-checks'); }
 
 /**
  * #3734: the projects a queue row is the bot's own work on (live.appsScope),
@@ -761,6 +763,13 @@ function stageOf(input, { now = new Date() } = {}) {
       return { stage: 'vote', since: row.proposal_at, doing: 'it\'s waiting for approval', waitingOn: 'the group' };
     }
     const waiting = first ? 'it goes live without a vote once its tests pass' : 'it\'s waiting for approval';
+    // #6807: its failing check is not its own, and Homeroom bot is getting
+    // that check fixed (homeroom-bot-flaky-checks.js): the bot is still
+    // working, not stopped, and it reads as checking the whole time.
+    if (row.flake_fixing === true
+      && (row.check_state === 'failing' || row.check_state === 'error' || row.check_state === 'unknown')) {
+      return { stage: 'flake_fixing', since: row.checks_at || row.proposal_at, doing: 'getting the check it fails on fixed first' };
+    }
     // #6284: the bot stopped at its own limit on failing checks. Needs you
     // says so, with Let it try again, rather than reading as still checking.
     if (row.fix_stopped === true && (row.check_state === 'failing' || row.check_state === 'error' || row.check_state === 'unknown')) {
@@ -1062,6 +1071,11 @@ async function changeBotFix(pool, sessionId, { viewer = null } = {}) {
       }
       if (row) return { state: 'queued', since: row.enqueued_at, reason: null };
     }
+    // #6807: its failing check is not its own, and Homeroom bot is getting
+    // that check fixed: the bot is still working, so the card says so rather
+    // than falling through to handed_off, stopped or a person.
+    const flake = await flaky().fixingWait(pool, id);
+    if (flake) return { state: 'fixing', since: flake.since, reason: 'flaky_check', request: flake.issueNumber };
     const head = String(cs.reviewed_head_sha || '').toLowerCase();
     if (!head) return null;
     // #6388: the checks that failed on the head up for a vote look like the
@@ -1210,6 +1224,9 @@ const REQUEST_RECORD_COLUMNS = `q.id AS queue_id, q.started_at, q.enqueued_at, q
                    SELECT 1 FROM homeroom_bot_revision_grants g
                     WHERE g.session_id = prop.proposal_session_id AND g.used_at IS NULL)
             ) AS fix_stopped,
+            -- #6807: an open wait on a fix for a check that is not this
+            -- change's: the bot is still working, and it reads as checking.
+            ${flaky().flakeFixingSql('prop.proposal_session_id')} AS flake_fixing,
             reply.reply_id, reply.reply_at, reply.reply_user_id`;
 
 // #6280: a row beyond the newest MAX_REQUESTS whose record looks live, so

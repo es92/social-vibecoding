@@ -556,9 +556,14 @@ test('the content stops at the strip; the tabs and the back stand in it', () => 
   // the signed-out shell (`hidden`), never with the keyboard up.
   assert.doesNotMatch(block, /html\[data-side-strip\] #platform-tabs \{[^}]*display:/);
   assert.match(block, /html\[data-side-strip\]:not\(\.un-kb\):not\(\.platform-kb-open\) #platform-tabs:not\(\.hidden\) \{\s*display: flex;/);
-  assert.match(block, /html\[data-side-strip\] #platform-tabs \{[^}]*bottom: var\(--platform-safe-bottom, 0px\);/);
+  assert.match(block, /html\[data-side-strip\] #platform-tabs \{[^}]*bottom: var\(--platform-strip-foot\);/);
   assert.match(block, /html\[data-side-strip\] #platform-header :is\(#back-btn, \.nav-drawer-back\) \{\s*display: none;/);
   assert.match(block, /--platform-strip-top: 174px;/, 'where Settings hangs its own back, measured');
+  assert.match(block, /--platform-strip-axis: 48px;/, 'the system column\'s centre line, measured');
+  assert.match(block, /\.platform-side-strip-top \{[^}]*right: calc\(var\(--platform-strip-axis\) - var\(--platform-strip-back\) \/ 2\);/,
+    'the back disc stands on the axis, under the clock');
+  assert.match(block, /html\[data-side-strip="left"\] body:not\(:has\(#platform-header\.hidden\)\) \.platform-side-strip-top \{\s*left: calc\(var\(--platform-strip-axis\) - var\(--platform-strip-back\) \/ 2\);\s*right: auto;/,
+    'mirrored for a left strip');
   assert.match(block, /\.platform-side-strip-top \{[^}]*position: fixed;[^}]*top: var\(--platform-strip-top\);[^}]*pointer-events: none;/,
     'the box is no target: only a live control takes the press');
   // The foot band goes: the screens clear the home indicator only.
@@ -662,37 +667,43 @@ test('Messages\' drawer runs under the strip the same way', () => {
   assert.equal(stripWidth(root(false, '84px')), 0, 'no strip, nothing taken off');
 });
 
-test('the strip\'s bubbles: the four places, then the apps, then you', () => {
-  // From a gap under the back button's slot to the home indicator, on every
-  // screen: the slot is always free, so a back button appears without the
-  // pill moving.
-  assert.match(block, /html\[data-side-strip\] #platform-tabs \{[^}]*top: var\(--platform-strip-pill-top\);[^}]*bottom: var\(--platform-safe-bottom, 0px\);/);
-  assert.match(block, /--platform-strip-pill-top: calc\(var\(--platform-strip-top\) \+ var\(--platform-strip-back\) \+ 10px\);/);
-  assert.equal((block.match(/--platform-strip-pill-top:/g) || []).length, 1, 'one top, whatever the screen');
+test('the strip\'s tabs: one capsule at the foot, the apps above it', () => {
+  // THE CAPSULE (Evan, 18 Nov 2026): the system draws a tab bar in the
+  // Duo's column as one 48px capsule at the column's foot, icons only, on
+  // the same centre line as the clock; ours stands the same way.
+  assert.match(block, /html\[data-side-strip\] #platform-tabs \{[^}]*right: calc\(var\(--platform-strip-axis\) - 24px\);[^}]*top: auto;[^}]*bottom: var\(--platform-strip-foot\);[^}]*width: 48px;/);
+  assert.match(block, /html\[data-side-strip="left"\] #platform-tabs \{\s*left: calc\(var\(--platform-strip-axis\) - 24px\);\s*right: auto;/);
+  assert.match(block, /--platform-strip-foot: 24px;/, 'in the home-indicator strip, as the system\'s own capsule');
+  assert.match(block, /html\[data-side-strip\] #platform-tabs \{[^}]*border-radius: 999px;[^}]*background: var\(--dc-sheet-solid\);[^}]*box-shadow: inset 0 0 0 1px var\(--app-sheet-line\)/,
+    'the page\'s own plane with its hairline, in every look');
+  assert.doesNotMatch(block, /--platform-strip-pill-top/, 'the capsule hangs from the foot, not from the back slot');
   assert.doesNotMatch(block, /transition: top/, 'nothing to slide');
-  assert.match(block, /html\[data-side-strip\] #platform-tab-me \{\s*margin-top: auto;/, 'you at the foot');
-  // The apps under Communities, drawn there by `order` (the section is the
-  // bar's first child: the declared checks pin the tabs' sibling chain).
-  assert.match(block, /html\[data-side-strip\] \.platform-side-apps:not\(\.hidden\) \{\s*order: 1;/);
-  assert.match(block, /html\[data-side-strip\] #platform-tab-me \{\s*order: 2;/);
-  assert.match(block, /html\[data-side-strip\] \.platform-side-apps-head \{[^}]*border-top: 1px solid var\(--app-sheet-line\);[^}]*text-transform: uppercase;/);
-  // THE BUBBLES (#6788, 17 Nov 2026): each place is a rounded tile on the
-  // page's own ground, the lit one filled from the bar's own tokens, so the
-  // sliding pill is not drawn here (the desktop rail does the same) and the
-  // capsule the column used to stand in is gone with its fake glass.
+  assert.doesNotMatch(block, /html\[data-side-strip\] #platform-tab-me \{\s*(margin-top|order):/, 'you are last in the capsule already');
+  // The apps stand above the capsule, lifted out of its flow (the section is
+  // the bar's first child: the declared checks pin the tabs' sibling chain).
+  assert.match(block, /html\[data-side-strip\] \.platform-side-apps:not\(\.hidden\) \{\s*position: absolute;\s*left: 0;\s*bottom: calc\(100% \+ 12px\);/);
+  assert.doesNotMatch(block, /\.platform-side-apps:not\(\.hidden\) \{\s*order:/);
+  assert.match(block, /html\[data-side-strip\] \.platform-side-apps-head \{\s*display: none;/);
+  assert.match(block, /html\[data-side-strip\] \.platform-side-app \{[^}]*width: 48px;\s*height: 48px;\s*border-radius: 999px;\s*background: var\(--dc-sheet-solid\);/,
+    'each app a disc of the capsule\'s own plane');
+  // The lit state is drawn once, as a pill inside the capsule from the bar's
+  // own tokens, so the sliding marker is not drawn here (the desktop rail
+  // does the same), and the phone bar's fake glass stays away.
   assert.match(block, /html\[data-side-strip\] \.platform-tabs-marker \{\s*display: none;/,
-    'the lit state is drawn once, by the bubble');
+    'the lit state is drawn once, by the pill');
   assert.match(block, /html\[data-side-strip\] #platform-tabs::before \{\s*content: none;/,
-    'no fake glass behind the bubbles');
-  assert.doesNotMatch(block, /html\[data-side-strip\] #platform-tabs \{[^}]*border-radius: 20px;/);
-  assert.doesNotMatch(block, /html\[data-side-strip\] #platform-tabs \{[^}]*clip-path: inset\(0 round 20px\);/);
-  assert.match(block, /html\[data-side-strip\] \.platform-tab \.platform-tab-mark \{[^}]*width: 40px;\s*height: 30px;[^}]*border-radius: 10px;[^}]*background: color-mix\(in srgb, var\(--text-primary\) 8%, transparent\);[^}]*color: var\(--text-muted\);/);
-  assert.match(block, /html\[data-side-strip\] \.platform-tab\[aria-current="page"\] \.platform-tab-mark \{[^}]*background: var\(--lit-tint\);[^}]*color: var\(--lit-ink\);/,
+    'no fake glass behind the capsule');
+  assert.match(block, /html\[data-side-strip\] \.platform-tab\[aria-current="page"\] \{\s*background: var\(--lit-tint\);\s*box-shadow: inset 0 0 0 1px var\(--lit-line\);/,
     'the place you are on is filled from the bar\'s lit tokens');
+  assert.match(block, /html\[data-side-strip\] \.platform-tab\[aria-current="page"\] \.platform-tab-mark \{\s*color: var\(--lit-ink\);/);
   // A community's page lights Communities, which is drawn on the strip
   // again (18 Nov 2026), so Home no longer stands in for it.
   assert.doesNotMatch(APP_CSS, /:has\(#platform-tab-workshop\[aria-current="page"\]\) #platform-tab-home/);
   assert.doesNotMatch(APP_CSS, /#platform-tab-workshop \{ display: none/, 'nothing hides the tab');
+  // Icons only, as the system's side tabs: the words stay for a screen
+  // reader and the declared checks, clipped rather than removed.
+  assert.match(block, /html\[data-side-strip\] :is\(\.platform-tab, \.platform-side-app\) \.platform-tab-label \{\s*position: absolute;\s*width: 1px;\s*height: 1px;\s*overflow: hidden;\s*clip-path: inset\(50%\);/);
+  assert.doesNotMatch(block, /\.platform-tab-label \{[^}]*display: none/, 'never removed');
   // The strip still measures the marker (tab-bar.tsx), and the phone's bar
   // still draws it with its own 16px radius.
   assert.match(APP_CSS, /\.platform-tabs-marker \{[^}]*border-radius: 16px;/);

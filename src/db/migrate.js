@@ -334,6 +334,10 @@ async function migrate(config) {
   // off Main Chat listed them, for the shots' member fixture: the thread the
   // bot page could list but never open.
   await seedStagingOlderFirstVersionThread(pool);
+  // #6803's shots: a first version being built, its plan answered with Build
+  // it, so its card offers to watch the bot build it. A fresh copy has no bot
+  // mid-build, so one is seeded, for the same member.
+  await seedStagingFirstVersionBuildingThread(pool);
   // #6124's before/after shots follow a change renamed before it had a pull
   // request: the correction is in proposed_pr_title and the session still
   // carries the old name. A fresh clone has no such row for the shots'
@@ -2922,6 +2926,225 @@ async function seedStagingOlderFirstVersionThread(pool) {
     );
   } catch (err) {
     log.warn('db', 'Staging older first version thread seeding failed', { message: err.message });
+  }
+}
+
+// 18 Nov 2026 (request #6803): a project's first version being built, in its
+// maker's thread with Homeroom bot. Its plan was answered with Build it, so
+// the plan card there carries "We'll tell you when it's live" and, under
+// that switch, the way to watch the build (features/messages/bot-plan.tsx
+// notifyFooter). No staging copy reaches that state: the demo chat's plants
+// thread still waits for Build it, its built plan names no project to watch,
+// and a fresh copy never has the bot mid-build. So this seeds one for the
+// shots' member fixture (usernode-capture): an obviously fake project of
+// theirs, its first version's request and the build under way, the thread's
+// three messages, and the records the activity read needs to say the card is
+// still working (homeroom_bot_dm_messages, a ready run whose build has
+// started). Staging has no model, so the bot's lines are stored. Nothing here
+// is a signal the app reads to decide what to show beyond the state itself.
+// Idempotent through the project's fixed id, each message's key and the
+// private thread's unique root; strictly a no-op outside staging.
+const STAGING_BUILDING_FIRST_VERSION = Object.freeze({
+  appId: 900156,
+  slug: 'staging-demo-seed-packets',
+  name: 'Staging demo: seed packets',
+  issueNumber: 1,
+});
+
+async function seedStagingFirstVersionBuildingThread(pool) {
+  if (process.env.USERNODE_ENV !== 'staging') return;
+  try {
+    const fixture = STAGING_BUILDING_FIRST_VERSION;
+    await pool.query(
+      `INSERT INTO users (username, password, is_synthetic, display_name)
+       VALUES ('homeroom_bot', 'staging-demo-not-a-login', TRUE, 'Homeroom bot')
+       ON CONFLICT (username) DO UPDATE SET is_synthetic = TRUE`,
+    );
+    const people = await pool.query(
+      `SELECT id, username FROM users WHERE username IN ('usernode-capture', 'homeroom_bot')`,
+    );
+    const member = people.rows.find((row) => row.username === 'usernode-capture');
+    const bot = people.rows.find((row) => row.username === 'homeroom_bot');
+    if (!member || !bot || member.id === bot.id) return;
+    // The fake project, theirs: a project's INSERT mints its community, and
+    // their own collaborator row is what lets them open it (and puts them in
+    // that community by trigger), as seedStagingStorageNotices writes it.
+    await pool.query(
+      `INSERT INTO apps (id, name, slug, status, collab_visibility, view_visibility, created_by)
+       VALUES ($1::int, $2::text, $3::text, 'running', 'members', 'private', $4::int)
+       ON CONFLICT (id) DO NOTHING`,
+      [fixture.appId, fixture.name, fixture.slug, member.id],
+    );
+    const app = await pool.query('SELECT id, slug, name FROM apps WHERE id = $1', [fixture.appId]);
+    if (!app.rows.length) return;
+    await pool.query(
+      `INSERT INTO app_collaborators (app_id, user_id, status, accepted_at)
+       VALUES ($1::int, $2::int, 'member', NOW())
+       ON CONFLICT (app_id, user_id) DO NOTHING`,
+      [fixture.appId, member.id],
+    );
+    // Its first version is theirs, so the "We'll tell you when it's live"
+    // switch above the button is drawn (services/homeroom-bot-dm.js
+    // firstVersionNotify: the maker's own only).
+    await pool.query(
+      `INSERT INTO homeroom_bot_first_versions (app_id, user_id, brief, status, issue_number, filed_at)
+       VALUES ($1::int, $2::int, 'Staging demo: obviously fake, a box of seed packets sorted by when to sow them.', 'filed', $3::int, NOW() - INTERVAL '40 minutes')
+       ON CONFLICT (app_id) DO NOTHING`,
+      [fixture.appId, member.id, fixture.issueNumber],
+    );
+    const title = 'First version of Staging demo: seed packets';
+    await pool.query(
+      `INSERT INTO requests (app_id, number, title, body, created_by, created_at, updated_at)
+       SELECT $1, $2, $3, 'Staging demo: obviously fake.', $4, NOW() - INTERVAL '40 minutes', NOW() - INTERVAL '40 minutes'
+        WHERE NOT EXISTS (SELECT 1 FROM requests WHERE app_id = $1 AND number = $2)`,
+      [fixture.appId, fixture.issueNumber, title, member.id],
+    );
+    // The build under way, as a started one is: its session taken and its
+    // turn the build's, so where it stands reads "Building it"
+    // (services/homeroom-bot-progress.js stageOf, build_turn_mode) and its
+    // card is working (homeroom-bot-activity.js buildUnderWay). Its moment is
+    // after its card's begin, which is how the read pairs a run with the card
+    // it follows (cardRows: created_at >= the card's).
+    const branch = 'staging-fixture/first-version-building';
+    await pool.query(
+      `INSERT INTO chat_sessions (app_id, user_id, branch_name, session_title, status, linked_issues,
+                                  active_turn, created_at, last_activity_at)
+       SELECT $1::int, $2::int, $3::varchar, 'First version of Staging demo: seed packets', 'active', ARRAY[$4]::int[],
+              jsonb_build_object('mode', 'build',
+                                 'startedAt', to_char(NOW() - INTERVAL '32 minutes', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')),
+              NOW() - INTERVAL '32 minutes', NOW() - INTERVAL '2 minutes'
+        WHERE NOT EXISTS (SELECT 1 FROM chat_sessions WHERE app_id = $1::int AND branch_name = $3::varchar)`,
+      [fixture.appId, member.id, branch, fixture.issueNumber],
+    );
+    const build = await pool.query(
+      'SELECT id FROM chat_sessions WHERE app_id = $1 AND branch_name = $2 ORDER BY id LIMIT 1',
+      [fixture.appId, branch],
+    );
+    await pool.query(
+      `INSERT INTO homeroom_bot_runs (app_id, issue_number, mode, verdict, build_session_id, created_at)
+       SELECT $1, $2, 'live', 'ready', $3, NOW() - INTERVAL '32 minutes'
+        WHERE NOT EXISTS (SELECT 1 FROM homeroom_bot_runs WHERE app_id = $1 AND issue_number = $2 AND mode = 'live')`,
+      [fixture.appId, fixture.issueNumber, build.rows[0]?.id || null],
+    );
+    const run = await pool.query(
+      `SELECT id FROM homeroom_bot_runs WHERE app_id = $1 AND issue_number = $2 AND mode = 'live' ORDER BY id LIMIT 1`,
+      [fixture.appId, fixture.issueNumber],
+    );
+    const runId = run.rows[0]?.id || null;
+    // Their chat with the bot, made here when no seed above made it.
+    const low = Math.min(member.id, bot.id);
+    const high = Math.max(member.id, bot.id);
+    const found = await pool.query(
+      'SELECT conversation_id FROM conversation_direct_pairs WHERE user_low_id = $1 AND user_high_id = $2',
+      [low, high],
+    );
+    let conversationId = found.rows[0]?.conversation_id;
+    if (!conversationId) {
+      const created = await pool.query(
+        'INSERT INTO conversations (kind, created_by) VALUES (\'direct\', $1) RETURNING id',
+        [member.id],
+      );
+      conversationId = created.rows[0].id;
+      await pool.query(
+        `INSERT INTO conversation_direct_pairs (conversation_id, user_low_id, user_high_id)
+         VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+        [conversationId, low, high],
+      );
+    }
+    await pool.query(
+      `INSERT INTO conversation_members (conversation_id, user_id, role, status)
+       VALUES ($1, $2, 'member', 'member'), ($1, $3, 'member', 'member')
+       ON CONFLICT (conversation_id, user_id) DO UPDATE SET status = 'member'`,
+      [conversationId, member.id, bot.id],
+    );
+    const rootKey = 'staging-demo-first-version-building';
+    const had = await pool.query(
+      'SELECT id FROM conversation_messages WHERE conversation_id = $1 AND sender_id = $2 AND idempotency_key = $3',
+      [conversationId, bot.id, rootKey],
+    );
+    let rootId = had.rows[0]?.id;
+    if (!rootId) {
+      const root = await pool.query(
+        `INSERT INTO conversation_messages (conversation_id, sender_id, content, metadata, idempotency_key, created_at)
+         VALUES ($1, $2, $3, $4::jsonb, $5, NOW() - INTERVAL '40 minutes')
+         RETURNING id`,
+        [
+          conversationId, bot.id,
+          `**${fixture.name}**\n\nThanks! I'm setting up ${fixture.name} now. `
+            + 'Once it\'s ready I\'ll send you my plan here first, then build its first version and tell you here when it\'s live.',
+          JSON.stringify({ homeroomBot: {
+            kind: 'first_version_started', appSlug: fixture.slug, appName: fixture.name,
+          } }),
+          rootKey,
+        ],
+      );
+      rootId = root.rows[0].id;
+      // The card the plan hangs off (drawn only as the plan's step, planLayout),
+      // and the plan its maker answered with Build it, both in the thread.
+      const card = await pool.query(
+        `INSERT INTO conversation_messages (conversation_id, sender_id, content, thread_root_id, metadata, idempotency_key, created_at)
+         VALUES ($1, $2, $3, $4, $5::jsonb, $6, NOW() - INTERVAL '35 minutes')
+         RETURNING id`,
+        [
+          conversationId, bot.id,
+          `**${fixture.name}** · request #${fixture.issueNumber}\n\n`
+            + 'I\'m working on the first version now. This card updates as I go.',
+          rootId,
+          JSON.stringify({ homeroomBot: {
+            kind: 'activity', appSlug: fixture.slug, appName: fixture.name,
+            issueNumber: fixture.issueNumber, firstVersion: true,
+          } }),
+          'staging-demo-first-version-building-card',
+        ],
+      );
+      const plan = {
+        bullets: [
+          'Staging demo: a box of seed packets, sorted by when to sow each one',
+          'A Today view of what to sow now, and what is next',
+          'Tap a packet to mark it sown; the list moves on by itself',
+        ],
+        questions: [{ question: 'How should the packets be sorted?', answers: ['By when to sow', 'By plant name'] }],
+      };
+      const planMessage = await pool.query(
+        `INSERT INTO conversation_messages (conversation_id, sender_id, content, thread_root_id, metadata, idempotency_key, created_at)
+         VALUES ($1, $2, $3, $4, $5::jsonb, $6, NOW() - INTERVAL '25 minutes')
+         RETURNING id`,
+        [
+          conversationId, bot.id,
+          `Here's my plan for **${fixture.name}**:\n\n${plan.bullets.map((b) => `- ${b}`).join('\n')}`
+            + '\n\nOne choice for you, or I\'ll go with what I suggest.\n\nTap Build it when it looks right, or Change something.',
+          rootId,
+          JSON.stringify({ homeroomBot: {
+            kind: 'plan', appSlug: fixture.slug, appName: fixture.name,
+            issueNumber: fixture.issueNumber, firstVersion: true, plan,
+            status: 'answered', chosen: 'build', answer: 'Build it',
+            choices: [plan.questions[0].answers[0]],
+          } }),
+          'staging-demo-first-version-building-plan',
+        ],
+      );
+      // What the bot records about its own messages, which the activity read
+      // joins (services/homeroom-bot-activity.js cardRows): the card, and the
+      // plan it answered.
+      await pool.query(
+        `INSERT INTO homeroom_bot_dm_messages (message_id, user_id, conversation_id, app_id, issue_number, kind, run_id)
+         VALUES ($1, $2, $3, $4, $5, 'activity', $6), ($7, $2, $3, $4, $5, 'plan', $6)
+         ON CONFLICT (message_id) DO NOTHING`,
+        [card.rows[0].id, member.id, conversationId, fixture.appId, fixture.issueNumber, runId, planMessage.rows[0].id],
+      );
+    }
+    // Read, as a thread from a while ago is: it opens calm.
+    await pool.query(
+      `INSERT INTO private_threads (user_id, conversation_id, root_message_id, app_id, kind, state,
+                                    last_read_message_id, created_at, updated_at)
+       SELECT $1, $2, $3, $4, 'first_version', 'open',
+              (SELECT MAX(m.id) FROM conversation_messages m WHERE m.id = $3 OR m.thread_root_id = $3),
+              NOW() - INTERVAL '35 minutes', NOW() - INTERVAL '25 minutes'
+       ON CONFLICT (root_message_id) DO NOTHING`,
+      [member.id, conversationId, rootId, fixture.appId],
+    );
+  } catch (err) {
+    log.warn('db', 'Staging building first version thread seeding failed', { message: err.message });
   }
 }
 
@@ -16225,6 +16448,8 @@ module.exports = {
   // The private thread about a change that is live, which History lists.
   seedStagingLiveChangePrivateThread,
   seedStagingOlderFirstVersionThread,
+  // A first version being built, whose plan was answered with Build it.
+  seedStagingFirstVersionBuildingThread,
   seedStagingPlatformMail, auditDuplicatePrSessions,
   migrateWaitlistCountryCodes,
   seedStagingHelperCalls,

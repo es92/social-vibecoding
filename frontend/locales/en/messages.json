@@ -1423,6 +1423,10 @@
     "text": "Building",
     "description": "Tooltip of the small spinning ring beside \"Building it\" on Homeroom bot's plan card."
   },
+  "bot.plan.watch": {
+    "text": "Watch Homeroom bot build it",
+    "description": "Button under Homeroom bot's plan for a project's first version while it is being built: opens the project's App tab, where the app can be watched taking shape. \"It\" is the app; Homeroom bot is a name."
+  },
   "bot.plan.state.built": {
     "text": "Building it",
     "description": "Line on Homeroom bot's plan card after the person pressed \"Build it\": the bot is building what the plan describes."
