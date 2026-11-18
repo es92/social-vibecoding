@@ -30,6 +30,7 @@ const waitlist = require('../services/waitlist');
 const waitlistQuestions = require('../services/waitlist-questions');
 const firstSession = require('../services/first-session');
 const communityInvites = require('../services/community-invites');
+const accessLinks = require('../services/access-links');
 const phoneAuth = require('../services/firebase-phone-auth');
 const challengeScorer = require('../services/topochain/challenge-scorer');
 const events = require('../services/events');
@@ -355,6 +356,10 @@ function authRoutes(config) {
       // and the admin Journey counts this as a sign-in the link brought
       // (dropCarried, never throws).
       await communityInvites.dropCarried(pool, req, res, user.id);
+      // An admin's invite link to Homeroom is followed, though: an account
+      // still waiting that signs in from /welcome/<code> is let in with it
+      // (services/access-links.js). Never throws.
+      await accessLinks.admitCarried(pool, req, res, user.id);
 
       res.json({
         // Echo the account's real username, not the raw identifier — the
@@ -491,7 +496,10 @@ function authRoutes(config) {
         pool,
         req.body?.email,
         req.body?.code,
-        { createSession }
+        // An admin's invite link to Homeroom, if this browser opened one
+        // (/welcome/<code>, services/access-links.js): spent by the account
+        // the code proves, which is let in with it.
+        { createSession, admit: (userId) => accessLinks.admitCarried(pool, req, res, userId) }
       );
       return await answerProvenEmail(req, res, verified, { followInvite: req.body?.followInvite === true });
     } catch (error) {
@@ -663,7 +671,7 @@ function authRoutes(config) {
       // per-IP limiter does not bound because it only bites after several
       // such requests and a distributed caller has many addresses.
       const { rows: preflight } = await pool.query(
-        'SELECT 1 FROM activation_codes WHERE code = $1 AND used_by IS NULL',
+        'SELECT 1 FROM activation_codes WHERE code = $1 AND used_by IS NULL AND used_at IS NULL',
         [code.trim()]
       );
       if (preflight.length === 0) {
@@ -691,7 +699,7 @@ function authRoutes(config) {
           const uid = userRows[0].id;
           const claim = await client.query(
             `UPDATE activation_codes SET used_by = $1, used_at = NOW()
-              WHERE code = $2 AND used_by IS NULL
+              WHERE code = $2 AND used_by IS NULL AND used_at IS NULL
               RETURNING id`,
             [uid, code.trim()]
           );

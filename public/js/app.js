@@ -1267,6 +1267,18 @@ const App = {
     // `=== false` on purpose — an older cached /me without the field
     // must not lock anyone out.
     if (App.user?.hasPlatformAccess === false && window.AuthScreens) {
+      // An admin's invite link to Homeroom (/welcome/<code>,
+      // src/routes/access-links.js), opened by an account still waiting:
+      // who it is for. Used at once, the waiting room showing meanwhile,
+      // and the page boots again with access. A shell painted from the
+      // session snapshot asks too: the server answers only a live session,
+      // and a session that ended is left to _reconcileSession, which boots
+      // signed out onto this address and its sign-up sheet.
+      const accessCode = App._accessCodeFromPath(location.pathname);
+      if (accessCode && !App._accessLinkTried) {
+        App._accessLinkTried = true;
+        void App._useAccessLink(accessCode);
+      }
       // A link to Discover or a project's page (a shared /app/<slug>) opens
       // it, signed in, while the account waits: restoreFromHash's gated
       // branch says the same for a link followed later.
@@ -4616,6 +4628,42 @@ const App = {
     )}`;
   },
 
+  // The code of an admin's invite link to Homeroom (/welcome/<code>,
+  // src/routes/access-links.js), or null. Same shape as the server's.
+  _accessCodeFromPath(pathname) {
+    const m = /^\/welcome\/([A-Za-z0-9_-]{6,32})\/?$/.exec(String(pathname || ''));
+    return m ? m[1] : null;
+  },
+
+  // Use that link as the account signed in, which is still waiting. Let in
+  // (or in already), the page loads again at the root and boots with
+  // access. A link that does not work says so, once, over the waiting room,
+  // and leaves the address at the root so a reload does not try again.
+  async _useAccessLink(code) {
+    let ok = false;
+    try {
+      const res = await fetch('/api/auth/access-link', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      // The session this shell was painted for has ended: the link is not
+      // at fault, and the signed-out boot that follows offers it again.
+      if (res.status === 401) return false;
+      ok = res.ok;
+    } catch (_) { /* told below */ }
+    if (ok) {
+      location.replace('/');
+      return true;
+    }
+    try { history.replaceState(null, '', '/'); } catch (_) {}
+    if (window.PlatformUI && PlatformUI.toast) {
+      PlatformUI.toast(PlatformI18n.t('shell:accessLink.notUsed'), { error: true });
+    }
+    return false;
+  },
+
   // The token of an invite link's path, or null. Same shape the server's
   // isSpaDocumentPath lets through (src/middleware/auth.js).
   _inviteTokenFromPath(pathname) {
@@ -5049,6 +5097,16 @@ const App = {
         ? (qIdx === -1 ? rawHash : rawHash.slice(0, qIdx))
         : pathRoute;
       const fragQuery = qIdx === -1 ? '' : rawHash.slice(qIdx + 1);
+
+      // ── An admin's invite link to Homeroom (/welcome/<code>) ────────
+      // Signed out, it is the landing, whose sign-up sheet opens by itself
+      // (features/auth/landing.tsx). Signed in with access, there is nothing
+      // left for it to do: the address goes, and Home is drawn as for `/`.
+      // The link stays unused for the person it was meant for.
+      if (!rawHash && App.user && App.user.hasPlatformAccess !== false
+          && App._accessCodeFromPath(location.pathname)) {
+        try { history.replaceState(null, '', '/'); } catch (_) {}
+      }
 
       // ── An invite link (/invite/<token>) ───────────────────────────
       // Signed out, it is the landing, whose invite card

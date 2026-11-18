@@ -231,7 +231,7 @@ async function insertEmailUser(client, email, passwordHash) {
   }
 }
 
-async function verifyCode(pool, rawEmail, rawCode, { createSession } = {}) {
+async function verifyCode(pool, rawEmail, rawCode, { createSession, admit = null } = {}) {
   const email = normalizeEmail(rawEmail);
   const code = typeof rawCode === 'string' ? rawCode.trim() : '';
   if (!email || !code) {
@@ -269,7 +269,7 @@ async function verifyCode(pool, rawEmail, rawCode, { createSession } = {}) {
     return continueProvenEmail(client, email, { createSession });
   });
 
-  return finishProvenEmail(pool, email, result);
+  return finishProvenEmail(pool, email, result, { admit });
 }
 
 /**
@@ -412,7 +412,7 @@ async function continueProvenEmail(client, email, { createSession, newAccountOnl
  * ups a new or newly proven account gets. Shared by the email code and the
  * release link, so both leave an account in the same state.
  */
-async function finishProvenEmail(pool, email, result) {
+async function finishProvenEmail(pool, email, result, { admit = null } = {}) {
   if (result.invalid) {
     throw new EmailSignupError('invalid_or_expired_code', 'Invalid or expired code.');
   }
@@ -426,6 +426,11 @@ async function finishProvenEmail(pool, email, result) {
     // still waiting gets.
     await waitlist.admitIfOpen(pool, result.userId);
   }
+  // An admin's invite link to Homeroom this browser carried
+  // (services/access-links.js admitCarried, handed in by the route): the
+  // account the code made, or one still waiting that the code signed in to,
+  // is let in now, before the waitlist spot below. Never throws.
+  if (admit && result.userId) await admit(result.userId);
   // #4083: an account the code proved and nothing let in has a waitlist
   // spot of its own, so an admin can find it there and let it in.
   if (result.next === 'set-password') {

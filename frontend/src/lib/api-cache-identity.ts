@@ -28,6 +28,9 @@ export const AUTH_WRITES_KEEPING_SESSION = Object.freeze([
   '/api/auth/wallet-check',
   '/api/auth/oauth/:provider/native/start',
   '/api/auth/oauth/:provider/native/failed',
+  // A waiting account uses an admin's invite link (src/routes/access-links.js):
+  // its access changes, its session does not, and the page reloads itself.
+  '/api/auth/access-link',
 ]);
 const KEEPS_SESSION = AUTH_WRITES_KEEPING_SESSION
   .map(route => new RegExp(`^${route.replace(/:[a-z]+/g, '[^/]+')}$`));
@@ -53,6 +56,9 @@ export const PUBLIC_READS_FOR_ANYONE = Object.freeze([
   '/api/public/invites/:token',
   '/api/public/invites/:token/picture',
   '/api/public/invites/:token/icon.png',
+  // Whether an admin's invite link to Homeroom still lets somebody in
+  // (src/routes/access-links.js): the same answer for anyone.
+  '/api/public/access-links/:code',
   '/api/public/waitlist/options',
 ]);
 const FOR_ANYONE = PUBLIC_READS_FOR_ANYONE

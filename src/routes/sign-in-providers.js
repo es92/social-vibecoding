@@ -48,6 +48,7 @@ const contactPreferences = require('../services/contact-preferences');
 const { signUpMetadata } = require('../services/sign-up-from');
 const providers = require('../services/sign-in-providers');
 const communityInvites = require('../services/community-invites');
+const accessLinks = require('../services/access-links');
 const phoneAuth = require('../services/firebase-phone-auth');
 const challengeScorer = require('../services/topochain/challenge-scorer');
 const firstSession = require('../services/first-session');
@@ -158,6 +159,11 @@ function signInProviderRoutes(config) {
       // answered, so the shell this sign-in lands in asks it.
       if (state.started_from === 'story') await firstSession.recordStart(pool, result.userId, 'story');
     }
+    // An admin's invite link to Homeroom this browser opened before the
+    // trip (/welcome/<code>, services/access-links.js): the account found
+    // or made is let in with it, before the waitlist spot below, which an
+    // account with access does not get. Never throws.
+    await accessLinks.admitCarried(pool, req, res, result.userId);
     // #4083: an account still waiting has its spot on the waitlist, on
     // every provider sign-in, since one can confirm an existing account's
     // address too. A no-op once it has one; never throws.

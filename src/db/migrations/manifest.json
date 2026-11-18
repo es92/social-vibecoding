@@ -435,6 +435,11 @@
       "id": "bot-reply-html-status",
       "sha256": "c6b8d2aca7b1269e1d7a48dced948dbc069b9442e4c78eb5b0305c7888beb533",
       "schemaSha256": "b85d99e22b8d8c6c9edf572b445988a072e927b224584f293f1788effc5a631f"
+    },
+    {
+      "id": "activation-code-links",
+      "sha256": "0d7cc779eb97c44a8cc0711711578c22a44d5768dce3816f4972f1cf880ea335",
+      "schemaSha256": "fc84a834b1bcff5a08dce6c77bdd426a8c4cb14f14f3955b690a217ca63aa79a"
     }
   ]
 }

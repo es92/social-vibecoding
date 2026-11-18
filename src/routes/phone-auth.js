@@ -55,6 +55,7 @@ const failureLog = require('../services/phone-failure-log');
 const phoneAuth = require('../services/firebase-phone-auth');
 const providers = require('../services/sign-in-providers');
 const communityInvites = require('../services/community-invites');
+const accessLinks = require('../services/access-links');
 const challengeScorer = require('../services/topochain/challenge-scorer');
 const managedOpenRouter = require('../services/openrouter-managed-keys');
 const events = require('../services/events');
@@ -237,6 +238,11 @@ function phoneAuthRoutes(config) {
       // made is let in at once (never an existing one signing in), before
       // any invite it carries is followed. Best effort; never throws.
       if (result.created) await waitlist.admitIfOpen(pool, result.userId);
+      // An admin's invite link to Homeroom this browser opened
+      // (/welcome/<code>, services/access-links.js): the account the phone
+      // made, or one still waiting that it signed in to, is let in with it.
+      // Never throws.
+      await accessLinks.admitCarried(pool, req, res, result.userId);
 
       // An invite link this visitor opened first is followed as the account
       // the phone just CREATED, and an existing account follows it only when

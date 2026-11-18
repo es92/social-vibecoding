@@ -242,7 +242,10 @@ const GATE_OPEN_PATHS = [
 function isSpaDocumentPath(pathname) {
   return pathname === '/' || pathname === '/index.html'
     || /^\/app\/[a-z0-9][a-z0-9-]{0,254}(?:\/.*)?$/.test(pathname)
-    || /^\/invite\/[^/]+$/.test(pathname);
+    || /^\/invite\/[^/]+$/.test(pathname)
+    // An admin's invite link to Homeroom (routes/access-links.js), opened
+    // signed out or by an account still waiting: who it is for.
+    || /^\/welcome\/[^/]+$/.test(pathname);
 }
 
 /**

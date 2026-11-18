@@ -8,6 +8,7 @@ const { dbExportLimiter, mailTestLimiter, smsTestLimiter, smsTestNumberLimiter }
 const { clientIp } = require('../services/client-ip');
 const { drainGuard } = require('../services/lifecycle');
 const log = require('../services/logger');
+const accessLinks = require('../services/access-links');
 const limits = require('../services/limits');
 const anthropicCredits = require('../services/anthropic-credits');
 const dbExport = require('../services/db-export');
@@ -1134,14 +1135,21 @@ function adminRoutes(config) {
   });
 
   // ── Activation Codes ───────────────────────────────────────
+  //
+  // Each code is also an invite link to Homeroom (/welcome/<code>,
+  // services/access-links.js): one per person, and the account signed up
+  // from it skips the waitlist. `note` is who it is for, the admin's own
+  // words, shown only here.
 
   router.get('/api/admin/codes', async (req, res) => {
     try {
       const { rows } = await pool.query(
-        `SELECT ac.id, ac.code, ac.created_at, ac.used_at,
-                u.username as used_by_username
+        `SELECT ac.id, ac.code, ac.created_at, ac.used_at, ac.note,
+                u.username as used_by_username,
+                maker.username as created_by_username
          FROM activation_codes ac
          LEFT JOIN users u ON u.id = ac.used_by
+         LEFT JOIN users maker ON maker.id = ac.created_by
          ORDER BY ac.created_at DESC`
       );
       res.json(rows);
@@ -1154,11 +1162,13 @@ function adminRoutes(config) {
   router.post('/api/admin/codes', requireAdminWrite, async (req, res) => {
     try {
       const code = crypto.randomBytes(6).toString('hex');
+      const note = accessLinks.cleanNote(req.body?.note);
       const { rows } = await pool.query(
-        'INSERT INTO activation_codes (code) VALUES ($1) RETURNING id, code, created_at',
-        [code]
+        `INSERT INTO activation_codes (code, note, created_by) VALUES ($1, $2, $3)
+         RETURNING id, code, created_at, note`,
+        [code, note, req.user.id]
       );
-      log.info('admin', 'Activation code created', { code, by: req.user.username });
+      log.info('admin', 'Activation code created', { id: rows[0].id, by: req.user.username });
       res.json(rows[0]);
     } catch (err) {
       log.error('admin', 'Create code failed', { message: err.message });

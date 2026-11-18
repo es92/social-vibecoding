@@ -339,7 +339,7 @@ const AdminConsole = {
     // list. Full admins only. See features/admin/admin-access-review.tsx.
     { key: 'access-review', label: 'Access review', group: 'People' },
     { key: 'reports', label: 'Moderation', group: 'People' },
-    { key: 'codes', label: 'Activation codes', group: 'People' },
+    { key: 'codes', label: 'Invite links', group: 'People' },
     { key: 'limits', label: 'Limits', group: 'People' },
     // Programme people screens, promoted by the same #1179 reshuffle.
     { key: 'waitlist', label: 'Waitlist', group: 'People' },

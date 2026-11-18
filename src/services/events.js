@@ -247,6 +247,9 @@ const EVENT_TYPES = Object.freeze({
   // up (#6633, services/waitlist.js admitIfOpen). Written once, with the
   // grant; Admin › Journey reads it to say how the account came in.
   OPEN_SIGNUP_LET_IN: 'open_signup_let_in',
+  // An account let in by an admin's invite link to Homeroom (/welcome/<code>,
+  // services/access-links.js), which spent that link. metadata: { codeId }.
+  ACCESS_LINK_LET_IN: 'access_link_let_in',
   // Something on the platform that should not happen, kept for admins
   // (services/platform-incidents.js, #4210). metadata: { kind, ... } where
   // kind names the incident ('build_interrupted': a bot build a restart or

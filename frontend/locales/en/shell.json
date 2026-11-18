@@ -187,6 +187,10 @@
     "text": "You are signed out. Sign in again to join.",
     "description": "Error toast shown to a person who followed an invite link to a community after their sign-in had ended."
   },
+  "accessLink.notUsed": {
+    "text": "That invite link has already been used. Ask whoever sent it for a new one.",
+    "description": "Error toast shown to a person waiting for access who opened an admin's invite link to Homeroom (/welcome/<code>) that had already let somebody else in, or that does not exist. Each link lets in one person."
+  },
   "invite.dead.expired": {
     "text": "That invite link has expired.",
     "description": "Error toast shown to a person who followed an invite link to a community that is past its expiry date."

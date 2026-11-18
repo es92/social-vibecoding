@@ -109,6 +109,7 @@ const { debugRoutes } = require('./src/routes/debug');
 const { galleryRoutes } = require('./src/routes/gallery');
 const { appInstallRoutes } = require('./src/routes/app-install');
 const communityInviteRoutes = require('./src/routes/community-invites');
+const accessLinkRoutes = require('./src/routes/access-links');
 const projectPreviewRoutes = require('./src/routes/project-preview');
 const memberWaitlistRoutes = require('./src/routes/member-waitlist');
 const {
@@ -929,6 +930,11 @@ app.use(appInstallRoutes(config));
 // `app.get('*')` catch-all, which would otherwise answer the page with a
 // plain index.html and no link preview.
 app.use(communityInviteRoutes(config));
+// Admin invite links to Homeroom itself (routes/access-links.js): the
+// `/welcome/<code>` page, its signed-out preview under /api/public/, and the
+// signed-in account's use of one. Placed like the invite links above, for
+// the same reasons.
+app.use(accessLinkRoutes(config));
 // A shared public project's link preview (routes/project-preview.js): the
 // `/app/<slug>` page with the project's name, description and cover in its
 // head, and the cover itself under /api/public/. AFTER authMiddleware, so a

@@ -88,6 +88,7 @@ import { noteSignUpFrom } from './sign-up-from';
 import { WaitlistCard } from '../guest/waitlist-card';
 import { useWaitlistOptions, type WaitlistOptions, waitlistOptions } from './waitlist-shared';
 import { WelcomePage } from './welcome-page';
+import { useAccessLinkPreview } from './access-link';
 
 const LANDING_TITLE = 'Homeroom';
 
@@ -1080,6 +1081,22 @@ export function LandingScreen() {
     setSession(hasSession());
   }, []);
   const storyOn = waitlistPayload?.story_landing !== false && !onInvitePath && !session;
+  // An admin's invite link to Homeroom (/welcome/<code>, ./access-link.ts):
+  // the story's sheet opens by itself, once, titled as an invitation, as
+  // soon as the link is known. The account it makes is let in by the server.
+  const accessLink = useAccessLinkPreview();
+  const accessSheetOpened = useRef(false);
+  useEffect(() => {
+    if (!accessLink || !storyOn || accessSheetOpened.current) return;
+    accessSheetOpened.current = true;
+    noteSignUpFrom('link');
+    setSheet('start');
+  }, [accessLink, storyOn]);
+  // Its title and line, on the first step of the sheet it opened.
+  const accessTitle = !accessLink ? null
+    : accessLink.live ? t('auth:landing.sheet.accessInvite') : t('auth:landing.sheet.accessUsed');
+  const accessLead = !accessLink ? ''
+    : accessLink.live ? t('auth:landing.sheet.accessInviteLead') : t('auth:landing.sheet.accessUsedLead');
   // An account still on the waitlist looks around too: the guest Discover
   // under its waitlist card, and a public project's page, where every public
   // app opens for it, signed in (features/guest/waitlist-card.tsx).
@@ -2442,7 +2459,8 @@ export function LandingScreen() {
       {storyOn ? (
         <SignInSheet
           open={!gate && !intent && (sheet === 'start' || sheet === 'signin')}
-          title={sheet === 'signin' ? t('auth:landing.sheet.signIn') : t('auth:landing.sheet.continue')}
+          title={sheet === 'signin' ? t('auth:landing.sheet.signIn') : accessTitle ?? t('auth:landing.sheet.continue')}
+          intro={sheet === 'start' ? accessLead : ''}
           providers={providers}
           native={nativeSignIn}
           phoneLink={phoneSignIn}
