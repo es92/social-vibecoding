@@ -63,7 +63,8 @@ import { shortDate } from '../../../lib/timestamp';
 import { changeRail, type RailOpen } from './rail-model';
 import { changeFoot, changePhase, fixStanding, type ChangePhase } from './card-model';
 import { closeStep, isGates, openStep, useOpenStep } from './step-store';
-import { NoPicture, PlanWords, StepLayer, ThreadCardContext, ThreadFoot, ThreadKicker, WordsBy } from './thread-card';
+import { NoPicture, PlanWords, StepLayer, ThreadBarTile, ThreadCardContext, ThreadFoot, ThreadKicker, WordsBy, threadProjectName } from './thread-card';
+import { ThreadExits } from './thread-exits';
 import { askFix, useChecksExplanation } from './failed-checks';
 import { RequestWords, SpecCard, sentences } from './request-head';
 import { openRequestSpec } from './request-model';
@@ -113,8 +114,14 @@ export function ChangeBar({ v, menuKey, detailsId = null, name = null }: {
   // s34): what it is in a small line over the change's title, with this menu.
   const frame = isFrameSkin(useLiveSkin());
   if (frame) return <TopicFrameHead title={name || title} over={dotLine([title, v.category])} menu={menuKey ? { key: menuKey, label: t('project:topic.change.bar.more') } : null} />;
+  // 18 Nov 2026: the bar is the thread's header pill (app.css), on its own
+  // page and in either panel alike. Its second line is the project, then the
+  // topic, which the card's kicker said before.
+  const project = threadProjectName();
+  const where = dotLine([project, v.category]);
   return (
     <header className="messages-thread-header">
+      <ThreadBarTile />
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-2">
           <div className="messages-thread-name min-w-0">
@@ -137,7 +144,9 @@ export function ChangeBar({ v, menuKey, detailsId = null, name = null }: {
             </span>
           ) : null}
         </div>
-        {v.category ? <div className="messages-thread-sub" data-change-category="">{v.category}</div> : null}
+        {v.category
+          ? <div className="messages-thread-sub" data-change-category="">{where}</div>
+          : where ? <div className="messages-thread-sub">{where}</div> : null}
       </div>
       {menuKey ? (
         <button
@@ -151,6 +160,7 @@ export function ChangeBar({ v, menuKey, detailsId = null, name = null }: {
           <EllipsisHorizontalIcon aria-hidden="true" />
         </button>
       ) : null}
+      <ThreadExits />
     </header>
   );
 }

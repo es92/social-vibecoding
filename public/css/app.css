@@ -25183,9 +25183,15 @@ button.rf-claim-row:active .rf-claim { color: var(--rf-ink); }
   border-inline-start: 1px solid var(--app-sheet-line);
   z-index: auto;
 }
+/* Only while the plan is open in the panel's half (18 Nov 2026): this block
+   used to apply whenever the window was under 1760px, so the panel covered
+   the list on most laptops with no plan open at all. */
 @media (max-width: 1759px) {
-  #dev-workshop:has(> .dev-ws[data-ws-side-open]) { margin-inline-start: 0; max-width: none; }
-  .dev-ws-side { inset-inline-start: calc(var(--dev-ws-side-start) + var(--platform-gutter, 0px) + 24px); }
+  body:has(.dev-ws-side-body > #gc-spec-side-panel.gc-spec-side-panel-open) #dev-workshop:has(> .dev-ws[data-ws-side-open]) { margin-inline-start: 0; max-width: none; }
+  body:has(.dev-ws-side-body > #gc-spec-side-panel.gc-spec-side-panel-open) .dev-ws-side {
+    inset-inline-start: calc(var(--dev-ws-side-start) + var(--platform-gutter, 0px) + 24px);
+    background: var(--bl-page, var(--home-ground));
+  }
 }
 
 /* ── ONE HOME (#6361): THE SIDEBAR'S RECENTS ────────────────────────────
@@ -29222,6 +29228,249 @@ html[data-skin="sunrise"][data-skin] .fr-ib .fr-dot,html[data-skin="sunrise"][da
 html[data-skin="sunrise"][data-skin] .fr-btn.fr-sm,html[data-skin="sunrise"][data-skin] :is(.ui-btn,:is(button,a,label):is(.bg-violet-600,.bg-zinc-100,.bg-zinc-900,.bg-red-500\/10,.bg-red-50,.border:is(.rounded,.rounded-md,.rounded-lg,.rounded-full)):not(.ui-lrow,.ui-row,[role="radio"],.ui-plain)):is(#settings-root *):is(.text-xs,.text-sm:not(.w-full),.py-1,.py-0\.5,.py-1\.5,.ui-btn-sm),html[data-skin="sunrise"][data-skin] :is(.rf-go,.rf-desc-go,.rf-end-btn,.rf-morph,.rf-chip,[data-needs-vote-chip])[data-needs-vote-chip],html[data-skin="sunrise"][data-skin] :is(a[data-waiting-look-around][href="#apps"],form[data-waiting-invite] button[type="submit"],#waiting-about-save,#waiting-about-discovery > button,#auth-landing-screen [data-landing-invite-dead-continue]):is(#waiting-about-discovery > *){height:36px;padding:0 14px}
 html[data-skin="sunrise"][data-skin] .fr-tb.fr-on{border-radius:14px}
 }
+/* ═══════════════════════════════════════════════════════════════════════
+   ONE THREAD, ONE HEADER (18 Nov 2026). A request's or a change's page is
+   drawn on its own page, in the Workshop's panel beside the list and in the
+   column beside Homeroom bot's list. Each surface used to wrap it in chrome
+   of its own: a "‹ Workshop" chip over the page, a sheet with a bar of ×
+   and "Open as a page" around the Workshop's panel, a second header row and
+   a white column around the bot's. Now every surface draws the same thing:
+
+     - the sheet's bar is a PILL: the project's tile, "Change #N" or
+       "Request #N" with its status pill, the project and the topic under
+       it, ⋯, and in a panel ↗ and × (dev-board/topic/thread-exits.tsx). On
+       the page itself the page's way back sits at the pill's start.
+     - it FLOATS over the top of the thread and stays there: the scroller
+       starts under it, so the cards go up behind it as the reader scrolls.
+     - the cards below it lie on the page's own ground. No panel draws a
+       sheet, a border or a second header around them.
+
+   The card's kicker said the project, the number and the topic; the pill
+   says them now, so the card starts at its title.
+
+   Only the standard and the brand looks (the thread card's own pages); the
+   frame's looks keep their kit's head. `!important` is spent only where a
+   rule above names the page's whole ancestry to place the old bar.
+   ═══════════════════════════════════════════════════════════════════════ */
+html:is(:not([data-skin]), [data-skin="brand"]) .dev-request:has(.dev-thread-card) {
+  --pill-h: 56px;
+  --pill-top: 8px;
+  --pill-under: calc(var(--pill-top) + var(--pill-h) + 14px);
+  position: relative;
+}
+html:is(:not([data-skin]), [data-skin="brand"]) .dev-request:has(.dev-thread-card) > .dev-request-sheet { position: relative; }
+html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:has(.dev-thread-card) .dev-request-bar {
+  display: block !important;
+  position: absolute;
+  top: 0;
+  inset-inline: 0;
+  z-index: 6;
+  height: auto;
+  margin-inline-end: 0 !important;
+  padding-block: var(--pill-top) 0;
+  box-shadow: none;
+  animation: none;
+  pointer-events: none;
+}
+/* The pill itself. */
+html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:has(.dev-thread-card) .dev-request-bar .messages-thread-header {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--pill-h);
+  padding-block: 0;
+  padding-inline: 12px 10px;
+  border-radius: 999px;
+  background: var(--thread-card-solid, var(--dc-sheet-solid));
+  box-shadow: var(--thread-card-edge, inset 0 0 0 1px var(--app-sheet-line)), 0 8px 24px rgba(17, 24, 39, 0.08);
+}
+.dev-thread-bar-tile { flex: none; width: 32px; height: 32px; border-radius: 10px; font-size: 14px; overflow: hidden; }
+/* Line one: what it is, and where it stands. */
+html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:has(.dev-thread-card) #gc-thread-bar :is([data-change-status], [data-request-status]) { display: inline-flex; }
+html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-change:has(.dev-thread-card) #gc-thread-bar .messages-thread-name,
+html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:not(.dev-change):has(.dev-thread-card) #gc-thread-bar .messages-thread-kicker {
+  display: block;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* A request's bar also names it in full; the card says that. */
+html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:not(.dev-change):has(.dev-thread-card) #gc-thread-bar .messages-thread-name { display: none; }
+/* Line two: the project, then the topic. */
+html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:has(.dev-thread-card) .dev-request-bar .messages-thread-sub {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: hidden;
+  clip-path: none;
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* ⋯ and, in a panel, ↗ and ×: one row of discs at the pill's end. */
+html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:has(.dev-thread-card) .dev-request-bar .messages-thread-action {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--bl-raise, var(--state-neutral-bg));
+  box-shadow: var(--bl-raise-edge, none);
+}
+.dev-thread-exits { display: none; align-items: center; gap: 6px; flex: none; }
+.dev-thread-exit svg { width: 16px; height: 16px; }
+:is(.dev-ws-side, html.in-side-panel.side-panel-beside-ai) .dev-thread-exits { display: inline-flex; }
+/* The card starts at its title: the pill said the rest. */
+html:is(:not([data-skin]), [data-skin="brand"]) .dev-request:has(.dev-thread-card) .dev-thread-kicker { display: none; }
+html:is(:not([data-skin]), [data-skin="brand"]) .dev-request:has(.dev-thread-card) .dev-request-root.dev-thread-card { padding-top: 12px; }
+
+/* The scroller starts under the pill, and everything in it that stays put
+   (the timeline beside the card on a wide page) stays put under it too. */
+html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:has(.dev-thread-card) .dev-request-scroll {
+  padding-top: var(--pill-under) !important;
+  scroll-padding-top: var(--pill-under);
+}
+/* The scroller's scroll-padding already holds the timeline under the pill
+   (a sticky box is placed inside it), so its own `top: 0` stays. */
+html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:has(.dev-thread-card) .dev-request-rail { max-height: calc(100% - var(--pill-under)) !important; }
+
+/* THE PAGE'S WAY BACK, AT THE PILL'S START. Its chip ("‹ Workshop", or
+   "‹ Homeroom bot") is the page's, in its own host above the sheet; it is
+   drawn as a disc inside the pill, its words kept for its accessible name.
+   Two chips (a card opened from Messages or the bot, then its Workshop) were
+   two parents: the pill keeps the first, and the project in its second line
+   is the way to the other. */
+html:is(:not([data-skin]), [data-skin="brand"]) .dev-request:has(.dev-thread-card) > .dev-request-back {
+  position: absolute;
+  z-index: 7;
+  top: calc(var(--pill-top) + (var(--pill-h) - 34px) / 2);
+  inset-inline-start: 22px;
+  padding: 0;
+}
+html:is(:not([data-skin]), [data-skin="brand"]) .dev-request:has(.dev-thread-card) > .dev-request-back .dev-topic-back {
+  width: 34px;
+  height: 34px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 0;
+  gap: 0;
+  background: var(--bl-raise, var(--state-neutral-bg));
+  box-shadow: var(--bl-raise-edge, none);
+}
+html:is(:not([data-skin]), [data-skin="brand"]) .dev-request:has(.dev-thread-card) > .dev-request-back .dev-topic-back > span {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+html:is(:not([data-skin]), [data-skin="brand"]) .dev-request:has(.dev-thread-card) > .dev-request-back .dev-topic-back .dev-topic-back-icon { width: 18px; height: 18px; margin: 0; }
+html:is(:not([data-skin]), [data-skin="brand"]) .dev-request:has(.dev-thread-card) > .dev-request-back .dev-topic-backs > .dev-topic-back ~ .dev-topic-back { display: none; }
+html:is(:not([data-skin]), [data-skin="brand"]):not(.side-panel-beside-ai) #dev-topic-thread .dev-request:has(.dev-thread-card):has(> .dev-request-back:not(:empty)) .dev-request-bar .messages-thread-header {
+  padding-inline-start: 52px;
+}
+
+/* THE WORKSHOP'S PANEL DRAWS NO SHEET. The page lies on the Workshop's own
+   ground beside the list, its pill ending in ↗ and ×, so the panel's bar
+   is put away. While a plan is open over the list (the 1760px rule above)
+   the panel keeps the page's ground, since it covers the list then. */
+html:is(:not([data-skin]), [data-skin="brand"]) .dev-ws-side {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+}
+html:is(:not([data-skin]), [data-skin="brand"]) .dev-ws-side:has(.dev-thread-card) > .dev-ws-side-bar { display: none; }
+html:is(:not([data-skin]), [data-skin="brand"]) .dev-ws-side :is(.dev-ws-side-body, .dev-ws-side-page, .dev-request-sheet) { background: transparent !important; }
+
+/* THE BOT'S COLUMN DRAWS NO SHEET OR HEADER for a request or a change: the
+   page in it draws its own pill, with ↗ and × (side-panel.tsx marks the
+   panel `data-thread-pill` for those). Its ground is the bot page's own. */
+body:has(#ai-screen:not(.hidden)) .side-panel[data-thread-pill] {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+body:has(#ai-screen:not(.hidden)) .side-panel[data-thread-pill] > .side-panel-head { display: none; }
+
+/* THE LINE BETWEEN TWO COLUMNS IS A HANDLE YOU CAN SEE UNDER THE POINTER
+   (18 Nov 2026): the Workshop's list and its panel, the bot's list and its
+   column. With no sheet edges left to drag, the handle is a grip on the line
+   between them, shown under the pointer, on focus and while held. */
+.dev-ws-side-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  inset-inline-start: -28px;
+  width: 24px;
+  z-index: 3;
+  cursor: col-resize;
+  touch-action: none;
+}
+:is(.split-handle, .side-panel-divider)::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  inset-inline-start: calc(50% - 3px);
+  width: 6px;
+  height: 48px;
+  margin-top: -24px;
+  border-radius: 999px;
+  background: var(--text-muted, #71717a);
+  opacity: 0;
+  transition: opacity 120ms ease, background-color 120ms ease;
+}
+html:is(:not([data-skin]), [data-skin="brand"]) .side-panel-divider::after { display: none; }
+@media (hover: hover) {
+  :is(.split-handle, .side-panel-divider):hover::before { opacity: .5; }
+}
+:is(.split-handle, .side-panel-divider):focus-visible::before,
+html.side-panel-resizing :is(.split-handle, .side-panel-divider)::before { opacity: .9; background: var(--accent); }
+:is(.split-handle, .side-panel-divider):focus-visible { outline: none; }
+@media (prefers-reduced-motion: reduce) {
+  :is(.split-handle, .side-panel-divider)::before { transition: none; }
+}
+/* Reduce motion setting (#6510): the same, when Settings asks for it. */
+:where(html[data-motion="reduce"]) :is(.split-handle, .side-panel-divider)::before { transition: none; }
+/* The project's banners (merges paused, a stalled release, code paused) are
+   the list's while the panel is beside it: they end where the list does, so
+   none runs on under the panel's pill. */
+body:has(.dev-ws-side) :is(#dev-main-pause-notice, #dev-release-stall-notice, #dev-code-pause-notice) {
+  max-width: calc(var(--dev-ws-side-list-w) + 24px);
+}
+/* What scrolls up past the pill fades out above it instead of showing as a
+   cut line of text in the gap over the pill. */
+html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:has(.dev-thread-card) .dev-request-scroll {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, transparent 4px, #000 calc(var(--pill-top) + 22px));
+  mask-image: linear-gradient(to bottom, transparent 0, transparent 4px, #000 calc(var(--pill-top) + 22px));
+}
+/* The handle between the card and the timeline: only on a wide page, where
+   the timeline stands beside the card (the 1180px block above). */
+.dev-request-rail-divider { display: none; }
+@media (min-width: 1180px) {
+  html:is(:not([data-skin]), [data-skin="brand"]):not(.in-side-panel) .gc-tab-body:not(:has(> .gc-spec-side-panel-open)) #dev-topic-thread:not(.dev-ws-side-page) .dev-request:has(.dev-request-rail:not(:empty)):has(.dev-thread-card) .dev-request-rail-divider {
+    display: block;
+    position: absolute;
+    z-index: 4;
+    top: var(--pill-under);
+    bottom: 24px;
+    inset-inline-end: calc(var(--thread-rail-w) + var(--thread-rail-gap) / 2 - 12px);
+    width: 24px;
+    cursor: col-resize;
+    touch-action: none;
+  }
+}
+
 /* looks:end */
 
 /* ── THE BRAND LOOK: PAPER, SIMPLIFIED, WITH BRAND STYLING (Settings ›

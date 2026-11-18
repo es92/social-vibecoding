@@ -64,14 +64,59 @@
  * draft, the typing ping, the multi-line submit semantics and the Escape rule.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 
 import { ChatComposerBar } from '@/components/ui/chat';
 import { useMessages } from '../../lib/i18n/react';
+import { readSplitWidth, splitKey, startSplitDrag, writeSplitWidth, type SplitDrag } from '../../lib/split-drag';
 import { JumpToLatest } from '../messages/jump-to-latest';
 import { ComposerForm, ComposerSlots, StatusLine } from './composer';
 
 const SAFE_BAR = 'platform-safe-bar';
+
+/**
+ * THE LINE BETWEEN THE CARD AND "HOW IT GOT HERE" IS A HANDLE (18 Nov 2026),
+ * on a wide page where the timeline stands beside the card: a grip under
+ * the pointer, which moves the line. The timeline takes the width it is
+ * dragged to (`--thread-rail-w`, app.css) between 260 and 520px, kept for
+ * the next page; a double-click goes back to its 332px. Elsewhere the
+ * timeline is under the card and app.css draws no handle.
+ */
+const RAIL_W_KEY = 'homeroom:thread-rail-w';
+const RAIL_MIN = 260;
+
+function RailDivider({ sheet }: { sheet: RefObject<HTMLElement | null> }) {
+  const t = useMessages('project');
+  const page = () => sheet.current?.closest<HTMLElement>('.dev-request') || null;
+  const apply = (px: number | null) => {
+    const el = page();
+    if (!el) return;
+    if (px == null) el.style.removeProperty('--thread-rail-w');
+    else el.style.setProperty('--thread-rail-w', `clamp(${RAIL_MIN}px, ${Math.round(px)}px, 520px)`);
+  };
+  const now = () => {
+    const rail = page()?.querySelector<HTMLElement>('#gc-thread-rail');
+    return rail ? rail.getBoundingClientRect().width : 332;
+  };
+  const drag: SplitDrag = { start: now, apply, done: () => writeSplitWidth(RAIL_W_KEY, now()), trailing: true };
+  useEffect(() => {
+    apply(readSplitWidth(RAIL_W_KEY, RAIL_MIN));
+  }, []);
+  return (
+    <div
+      className="dev-request-rail-divider split-handle"
+      role="separator"
+      aria-orientation="vertical"
+      aria-label={t('project:topic.rail.resize')}
+      title={t('agent:sidePanel.resizeTitle')}
+      tabIndex={0}
+      data-rail-divider=""
+      onPointerDown={(e) => startSplitDrag(e, drag)}
+      onKeyDown={(e) => { if (splitKey(e.key, 24, drag)) e.preventDefault(); }}
+      onDoubleClick={() => { writeSplitWidth(RAIL_W_KEY, null); apply(null); }}
+    />
+  );
+}
 
 /**
  * How near the bottom a thread counts as followed: a live reply, the reader's
@@ -173,6 +218,7 @@ function Composer({ fill, readOnly, notice, placeholder, maxLength, request = fa
 function RequestShell(props: ThreadShellProps) {
   const t = useMessages('project');
   const scroll = useRef<HTMLDivElement>(null);
+  const sheet = useRef<HTMLElement>(null);
   const change = !!props.change;
   const decision = !!props.decision;
   // #6440: a decision opens at its TOP — its root post and Votes card are
@@ -210,7 +256,8 @@ function RequestShell(props: ThreadShellProps) {
   return (
     <div className={cls}>
       <div id="gc-thread-back" className="dev-request-back" />
-      <section className="dev-request-sheet dc-lift dc-lift-session" aria-label={change ? t('project:topic.change.sheetLabel') : decision ? t('project:topic.decision.sheetLabel') : t('project:topic.request.sheetLabel')}>
+      <section ref={sheet} className="dev-request-sheet dc-lift dc-lift-session" aria-label={change ? t('project:topic.change.sheetLabel') : decision ? t('project:topic.decision.sheetLabel') : t('project:topic.request.sheetLabel')}>
+        {decision ? null : <RailDivider sheet={sheet} />}
         <div id="gc-thread-bar" className="dev-request-bar" />
         <div ref={scroll} id="gc-thread-scroll" className="messages-thread-scroll dev-request-scroll overscroll-contain chat-transcript">
           <div id="gc-thread-head" />

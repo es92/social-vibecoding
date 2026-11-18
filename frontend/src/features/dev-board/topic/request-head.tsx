@@ -64,7 +64,8 @@ import { requestShots, togglePinShot } from './request-shots';
 import { newestPlan, requestRail, type RailOpen } from './rail-model';
 import { requestFoot } from './card-model';
 import { closeStep, openStep, useLead, useOpenStep } from './step-store';
-import { PlanWords, StepLayer, ThreadCardContext, ThreadFoot, ThreadKicker, WordsBy } from './thread-card';
+import { PlanWords, StepLayer, ThreadBarTile, ThreadCardContext, ThreadFoot, ThreadKicker, WordsBy, threadProjectName } from './thread-card';
+import { ThreadExits } from './thread-exits';
 import { ThreadItems, pageSlug, useThreadPayload } from './thread-items';
 import { ThreadChanges, ChangeSectionSkeleton, letterOf } from './thread-changes';
 import { ballotOf, requestPill, threadLayout, type ThreadHere } from './thread-model';
@@ -168,8 +169,12 @@ export function RequestBar({ r, pill = null, threadMenu = false }: {
   // back (RequestHead below).
   const frame = isFrameSkin(useLiveSkin());
   if (frame) return <TopicFrameHead title={r.title} over={dotLine([kicker, r.category])} menu={menuKey ? { key: menuKey, label: t('project:topic.request.bar.more') } : null} />;
+  // 18 Nov 2026: the bar is the thread's header pill (app.css), as a
+  // change's is (./change-head.tsx ChangeBar): the project, then the topic.
+  const where = dotLine([threadProjectName(), r.category]);
   return (
     <header className="messages-thread-header">
+      <ThreadBarTile />
       <div className="min-w-0 flex-1">
         {pill ? (
           <div className="flex min-w-0 items-center gap-2">
@@ -178,7 +183,9 @@ export function RequestBar({ r, pill = null, threadMenu = false }: {
           </div>
         ) : <div className="messages-thread-kicker" data-request-kicker="">{kicker}</div>}
         <div className="messages-thread-name line-clamp-2 dev-request-bar-title">{r.title}</div>
-        {r.category ? <div className="messages-thread-sub" data-request-category="">{r.category}</div> : null}
+        {r.category
+          ? <div className="messages-thread-sub" data-request-category="">{where}</div>
+          : where ? <div className="messages-thread-sub">{where}</div> : null}
       </div>
       {menuKey ? (
         <button
@@ -192,6 +199,7 @@ export function RequestBar({ r, pill = null, threadMenu = false }: {
           <EllipsisHorizontalIcon aria-hidden="true" />
         </button>
       ) : null}
+      <ThreadExits />
     </header>
   );
 }

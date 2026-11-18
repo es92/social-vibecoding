@@ -36,15 +36,18 @@
  * open for the next screen to restore.
  */
 
-import { useEffect, useLayoutEffect, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 import { ArrowRightIcon, XIcon } from '@/components/ui/icons';
 
 import { useMessages } from '../../../lib/i18n/react';
+import { readSplitWidth, splitKey, startSplitDrag, writeSplitWidth, type SplitDrag } from '../../../lib/split-drag';
 import { callAppView } from '../card/fold';
 import { DetailSlot } from '../../detail/detail-slot';
+import { setWorkshopSideActions } from './side-actions';
 import type { TopicRef } from './work-row';
+
 
 export function TopicSidePanel({ item, onClose }: { item: TopicRef; onClose: () => void }): ReactNode {
   const t = useMessages('project');
@@ -90,11 +93,18 @@ export function TopicSidePanel({ item, onClose }: { item: TopicRef; onClose: () 
     onClose();
     callAppView('openTopic', item.kind, item.id);
   };
+  // 18 Nov 2026: the page's own header pill ends with ↗ and × here
+  // (../topic/thread-exits.tsx), which do what this panel's bar did.
+  useEffect(() => {
+    setWorkshopSideActions({ close: onClose, openFull });
+    return () => setWorkshopSideActions(null);
+  });
   if (typeof document === 'undefined') return null;
   // Into <body>: the Workshop sits inside the page's frosted layers, whose
   // transforms would make `position: fixed` relative to them.
   return createPortal((
     <aside className="dev-ws-side" data-ws-side={`${item.kind}:${item.id}`} aria-label={t('project:sidePanel.label')}>
+      <SideDivider />
       <div className="dev-ws-side-bar">
         <button type="button" className="dev-ws-side-btn dev-ws-side-close" aria-label={t('core:common.close')} data-ws-side-close="" onClick={onClose}>
           <XIcon aria-hidden="true" />
@@ -113,4 +123,70 @@ export function TopicSidePanel({ item, onClose }: { item: TopicRef; onClose: () 
       </div>
     </aside>
   ), document.body);
+}
+
+/**
+ * THE LINE BETWEEN THE LIST AND THE PANEL IS A HANDLE (18 Nov 2026). It
+ * shows a grip under the pointer, and dragging it moves the line: the list
+ * takes the width it is dragged to and the panel the rest, since both read
+ * `--dev-ws-side-list-w` (app.css). The width is kept for the next visit;
+ * a double-click goes back to the default. The arrow keys move it too.
+ * The list keeps 360px and the panel 440px whatever the drag.
+ */
+const LIST_W_KEY = 'homeroom:ws-side-list-w';
+const LIST_MIN = 360;
+const KEY_STEP = 24;
+
+function listWidthValue(px: number): string {
+  // The panel's floor, 440px, and the inset, gap and margin around them.
+  return `clamp(${LIST_MIN}px, ${Math.round(px)}px, calc(var(--platform-usable-w) - 2 * var(--platform-gutter, 0px) - 520px))`;
+}
+
+function applyListWidth(px: number | null): void {
+  if (typeof document === 'undefined') return;
+  if (px == null) document.body.style.removeProperty('--dev-ws-side-list-w');
+  else document.body.style.setProperty('--dev-ws-side-list-w', listWidthValue(px));
+}
+
+/** The list's width on screen now: what a drag starts from. */
+function listWidthNow(): number {
+  const list = document.getElementById('dev-workshop');
+  return list ? list.getBoundingClientRect().width : 600;
+}
+
+const LIST_DRAG: SplitDrag = {
+  start: listWidthNow,
+  apply: applyListWidth,
+  // Keep what the screen shows, not what the pointer reached past a floor.
+  done: () => writeSplitWidth(LIST_W_KEY, listWidthNow()),
+};
+
+function SideDivider(): ReactNode {
+  const t = useMessages('agent');
+  useEffect(() => {
+    applyListWidth(readSplitWidth(LIST_W_KEY, LIST_MIN));
+    return () => applyListWidth(null);
+  }, []);
+  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => startSplitDrag(e, LIST_DRAG);
+  const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (splitKey(e.key, KEY_STEP, LIST_DRAG)) e.preventDefault();
+  };
+  const reset = () => {
+    writeSplitWidth(LIST_W_KEY, null);
+    applyListWidth(null);
+  };
+  return (
+    <div
+      className="dev-ws-side-divider split-handle"
+      role="separator"
+      aria-orientation="vertical"
+      aria-label={t('agent:sidePanel.resize')}
+      title={t('agent:sidePanel.resizeTitle')}
+      tabIndex={0}
+      data-ws-side-divider=""
+      onPointerDown={onPointerDown}
+      onKeyDown={onKeyDown}
+      onDoubleClick={reset}
+    />
+  );
 }

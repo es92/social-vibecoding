@@ -344,33 +344,32 @@ function go(route: string): void {
 /**
  * May a navigation to a panel page go to the panel right now?
  *
- * Only in the TOP document, only while an app is running on its App tab or
- * the AI tab's page is up (features/ai/: the panel takes the place of Main,
- * the chat docked beside the list, so a request opened from the list keeps
- * the list), only at desktop width, and not in chromeless mode or the native
- * app beside an app — the Homeroom app's WebView owns its own back stack and
- * bridge relay, and the panel is a desktop arrangement. Everywhere else every
- * one of these links navigates exactly as it always has.
+ * Only in the TOP document, only while the Homeroom bot tab's page is up
+ * (features/ai/: the panel takes the place of Main, the chat docked beside
+ * the list, so a request opened from the list keeps the list), only from
+ * 768px, and not in chromeless mode. Everywhere else every one of these
+ * links navigates exactly as it always has.
+ *
+ * NEVER BESIDE A RUNNING APP (18 Nov 2026). A request, a change or a
+ * conversation opened while an app ran used to open in this panel beside
+ * the app. It was a fourth way to draw a thread, at a third of the window,
+ * with two headers stacked over it; such a link now leaves the app and
+ * opens the page itself, as a link to a community already did.
  *
  * BESIDE THE HOMEROOM BOT TAB, THE NATIVE APP TOO (1 Nov 2026). Unfolded and
  * held sideways, iPhone Duo draws the tab's page with Main docked, and a
  * request opened from its list took the whole screen instead of the
  * column's place. That page is a root with no back arrow, so the WebView's back swipe
  * is off there already (header/native-back-navigation.ts), and the column's
- * own × is the way back. Beside an app the native app keeps the
- * whole screen.
+ * own × is the way back.
  */
 export function canTake(): boolean {
   if (typeof window === 'undefined' || isEmbeddedPanel()) return false;
   const A = app();
   if (!A || !A.user || A.chromeless) return false;
-  const seen = (id: string) => typeof A._isScreenVisible !== 'function' || A._isScreenVisible(id);
-  const besideApp = !!A.currentApp && A.currentTab === 'app' && seen('app-view');
-  const besideAi = typeof A._isScreenVisible === 'function' && A._isScreenVisible('ai-screen');
-  if (!besideApp && !besideAi) return false;
+  if (typeof A._isScreenVisible !== 'function' || !A._isScreenVisible('ai-screen')) return false;
   try {
-    if (besideApp && document.documentElement.classList.contains('in-native-webview')) return false;
-    return window.matchMedia(besideApp ? DESKTOP_QUERY : BESIDE_AI_QUERY).matches;
+    return window.matchMedia(BESIDE_AI_QUERY).matches;
   } catch {
     return false;
   }

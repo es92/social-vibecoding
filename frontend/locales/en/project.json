@@ -6579,6 +6579,10 @@
     "text": "How it got here",
     "description": "Heading over the timeline of a thread's big events on a request's or a change's page: who asked, the plan, each change built, its tests, and where it stands now. Also the section's accessible name."
   },
+  "topic.rail.resize": {
+    "text": "Resize How it got here",
+    "description": "Accessible name of the draggable line between a request's or a change's card and its \"How it got here\" timeline on a wide page: dragging it makes the timeline wider or narrower. \"How it got here\" is the timeline's heading; translate it the same way."
+  },
   "topic.rail.asked": {
     "text": "Asked",
     "description": "Name of the first step in the \"How it got here\" timeline on a request's or a change's page (the list of the thread's big events, beside its card): the request was filed."

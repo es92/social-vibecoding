@@ -51,6 +51,26 @@ function appData(): { slug: string; name: string; icon_emoji: string | null; ico
   };
 }
 
+/**
+ * THE THREAD'S HEADER PILL (18 Nov 2026): the project's tile at the start of
+ * the sheet's header, which now says what the card's kicker said (the
+ * project, the number and the topic) on every surface that draws the thread.
+ */
+export function ThreadBarTile(): ReactNode {
+  const app = appData();
+  if (!app) return null;
+  return (
+    <span className="app-icon-tile dev-thread-bar-tile" data-icon={appIconKind(app as any)} aria-hidden="true">
+      <AppIconContent app={app as any} />
+    </span>
+  );
+}
+
+/** The project's name for the header pill's second line, or null outside a project. */
+export function threadProjectName(): string | null {
+  return appData()?.name || null;
+}
+
 export function ThreadKicker({ kind, number, category = null }: {
   kind: 'request' | 'change'; number: number | null;
   /** The topic it is filed under, which used to sit on a row of its own above the card. */

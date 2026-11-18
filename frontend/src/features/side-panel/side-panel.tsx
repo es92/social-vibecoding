@@ -138,12 +138,19 @@ export function SidePanel(): ReactNode {
     sidePanelRefs.frame = el;
   }, []);
 
+  // 18 Nov 2026: a request's or a change's page draws its own header pill,
+  // with ↗ and × at its end (../dev-board/topic/thread-exits.tsx), so beside
+  // the bot's list app.css puts this header row away for those two. Undefined
+  // at hydration (no route yet), so the prerender's markup is unchanged.
+  // A decision's page keeps this row: its bar is not a pill yet.
+  const ownPill = s.route && /\/dev\/(issues|changes|proposals|sessions)\/\d+/.test(s.route) ? '' : undefined;
   return (
     <aside
       id="platform-side-panel"
       ref={rootRef}
       className="side-panel hidden"
       aria-labelledby="side-panel-title"
+      data-thread-pill={ownPill}
     >
       <SidePanelDivider
         panelRef={rootRef}
