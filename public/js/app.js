@@ -4654,10 +4654,10 @@ const App = {
       ok = res.ok;
     } catch (_) { /* told below */ }
     if (ok) {
-      location.replace('/');
+      location.replace(App._rootUrl(''));
       return true;
     }
-    try { history.replaceState(null, '', '/'); } catch (_) {}
+    try { history.replaceState(null, '', App._rootUrl('')); } catch (_) {}
     if (window.PlatformUI && PlatformUI.toast) {
       PlatformUI.toast(PlatformI18n.t('shell:accessLink.notUsed'), { error: true });
     }
@@ -5105,7 +5105,7 @@ const App = {
       // The link stays unused for the person it was meant for.
       if (!rawHash && App.user && App.user.hasPlatformAccess !== false
           && App._accessCodeFromPath(location.pathname)) {
-        try { history.replaceState(null, '', '/'); } catch (_) {}
+        try { history.replaceState(null, '', App._rootUrl('')); } catch (_) {}
       }
 
       // ── An invite link (/invite/<token>) ───────────────────────────
