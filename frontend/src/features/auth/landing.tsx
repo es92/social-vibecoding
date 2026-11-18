@@ -1092,11 +1092,10 @@ export function LandingScreen() {
     noteSignUpFrom('link');
     setSheet('start');
   }, [accessLink, storyOn]);
-  // Its title and line, on the first step of the sheet it opened.
+  // Its title says what the link does, with no line under it (#4037): the
+  // sheet it opened skips the waitlist, or the link was used already.
   const accessTitle = !accessLink ? null
     : accessLink.live ? t('auth:landing.sheet.accessInvite') : t('auth:landing.sheet.accessUsed');
-  const accessLead = !accessLink ? ''
-    : accessLink.live ? t('auth:landing.sheet.accessInviteLead') : t('auth:landing.sheet.accessUsedLead');
   // An account still on the waitlist looks around too: the guest Discover
   // under its waitlist card, and a public project's page, where every public
   // app opens for it, signed in (features/guest/waitlist-card.tsx).
@@ -2460,7 +2459,6 @@ export function LandingScreen() {
         <SignInSheet
           open={!gate && !intent && (sheet === 'start' || sheet === 'signin')}
           title={sheet === 'signin' ? t('auth:landing.sheet.signIn') : accessTitle ?? t('auth:landing.sheet.continue')}
-          intro={sheet === 'start' ? accessLead : ''}
           providers={providers}
           native={nativeSignIn}
           phoneLink={phoneSignIn}

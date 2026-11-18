@@ -329,13 +329,7 @@ test('a provisional handle: private groups see it, public places ask for a usern
   assert.doesNotMatch(pub, /Nobody sees your number/);
   const landing = read('frontend/src/features/auth/landing.tsx');
   assert.match(landing, /askName=\{!invite!\.project!\.public\}/);
-  // No line under the title, the phone join included. The one exception is
-  // an admin's invite link to Homeroom (/welcome/<code>, ./access-link.ts):
-  // its title cannot say that the link skips the waitlist, which is the
-  // whole point of it, so its story sheet says so in a line, and only there.
-  const intros = landing.match(/\bintro=\{[^}]*\}/g) || [];
-  assert.deepEqual(intros, ["intro={sheet === 'start' ? accessLead : ''}"],
-    'no line under the title, the phone join included');
+  assert.doesNotMatch(landing, /\bintro=/, 'no line under the title, the phone join included');
   assert.doesNotMatch(landing, /No app, no password/);
   assert.match(read('src/routes/phone-auth.js'), /const name = result\.next === 'username' && !invite\?\.public\s+\? phoneAuth\.cleanName\(req\.body\?\.name\) : null;/);
   assert.match(read('src/services/firebase-phone-auth.js'), /username_provisional_since = NOW\(\),/);
