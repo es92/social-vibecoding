@@ -950,10 +950,16 @@ export function phaseOf(v: ChangeThreadView): ChangePhase {
   return changePhase({ status: v.status ? { key: v.status.key, label: v.status.label } : null, votes: v.votes, testing: v.testing, merge: v.merge || null });
 }
 
-export function ChangeFoot({ id, card, v, page, ballot = false, tail = null }: {
+export function ChangeFoot({ id, card, v, page, ballot = false, tail = null, float = false }: {
   id: number | null; card: DevCardModel; v: ChangeThreadView; page: string; ballot?: boolean;
   /** A quiet row at the foot's end, inside its band (the private suggestion). */
   tail?: ReactNode;
+  /**
+   * 18 Nov 2026: while the foot offers a vote, it folds into the header
+   * pill once it has scrolled up behind it (./thread-card.tsx `FootFloat`).
+   * Only the change's own page asks: a request's page can hold several.
+   */
+  float?: boolean;
 }): ReactNode {
   const t = useMessages('project');
   const foot = changeFoot({ status: v.status ? { key: v.status.key, label: v.status.label, yes: v.status.yes, majority: v.status.majority } : null, votes: v.votes, testing: v.testing, merge: v.merge || null });
@@ -975,6 +981,17 @@ export function ChangeFoot({ id, card, v, page, ballot = false, tail = null }: {
   const decided = foot.key === 'approved' || foot.key === 'merging' || foot.key === 'live' || foot.key === 'closed';
   // Short facts lead, a dot between them; the sentences follow.
   const line = (lead: string[], rest: string[]) => dotLine([...lead.map((f) => f.replace(/[.\s]+$/, '')), sentences(rest)]);
+  // The Vote the foot offers, by the same rules as its buttons below: with
+  // failed tests only while the viewer has one to cast, otherwise until the
+  // group has settled it. A ballot votes for its changes elsewhere.
+  const footVote = ballot ? null : (failed ? (v.votes.tone === 'ask' ? voteAction : null) : (decided ? null : voteAction));
+  // Folded into the header the foot keeps its headline, its short facts on
+  // one line, Preview and the Vote; the sentences and the rest stay in the
+  // card.
+  const floating = float && footVote ? {
+    sub: dotLine(facts.map((f) => f.replace(/[.\s]+$/, ''))) || null,
+    actions: <>{failed ? null : testAction}{footVote}</>,
+  } : null;
   return (
     <ThreadFoot
       what={foot.key}
@@ -984,6 +1001,7 @@ export function ChangeFoot({ id, card, v, page, ballot = false, tail = null }: {
       progress={foot.progress}
       busy={foot.key === 'testing'}
       extra={tail}
+      float={floating}
     >
       {tests ? (
         <button type="button" className="gc-vote-btn" data-thread-foot-see="checks" onClick={() => see('checks')}>
@@ -1185,7 +1203,7 @@ export function ChangeThreadHead({ id, card, body, v, linkedIssues, onIssuesSave
               content of the layer their steps open, kept in the page. */}
           {cardLook && !v.shots ? <NoPicture none={!!v.shotsNone} phase={phaseOf(v)} stopped={fixStanding(v.testing) === 'stopped'} touches={v.touches} diagramLed={!!readDiagram(body.diagram)} /> : null}
           {/* The private suggestion rides at the foot's end, inside its band. */}
-          {cardLook ? <ChangeFoot id={id} card={card} v={v} page={page} tail={workWithBot} /> : null}
+          {cardLook ? <ChangeFoot id={id} card={card} v={v} page={page} tail={workWithBot} float /> : null}
           {cardLook && body.plan && openNow?.kind === 'plan' ? (
             <StepLayer open name="plan" title={body.plan.title || t('project:topic.rail.planned')} sub={body.plan.by && !body.plan.byUnknown && !body.plan.bySystem ? t('project:topic.card.layer.planBy', { name: body.plan.by }) : null} when={body.plan.time || null} onClose={closeStep}>
               <PlanWords plan={body.plan} />
