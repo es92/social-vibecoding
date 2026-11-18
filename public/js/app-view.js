@@ -26260,7 +26260,13 @@ const AppView = {
       cancelled: [t('changes:shots.state.cancelled.label'), e.failureReason || t('changes:shots.state.cancelled.detail')],
       // The author's reasoning is for the reviewers of the declaration, not
       // for someone reading the proposal: it says only that nothing shows.
-      not_required: [t('changes:shots.state.notRequired.label'), t('changes:shots.state.notRequired.detail')],
+      // #6822: a claim about a screen both copies already have that no
+      // ready-made state could show says so, with the shots agent's reason,
+      // instead of failing.
+      not_required: e.unstageable && e.unstageable.reason
+        ? [t('changes:shots.state.unstageable.label'),
+          t('changes:shots.state.unstageable.detail', { reason: String(e.unstageable.reason).replace(/\.\s*$/, '') })]
+        : [t('changes:shots.state.notRequired.label'), t('changes:shots.state.notRequired.detail')],
       overridden: [t('changes:shots.state.waived.label'), e.overrideReason || t('changes:shots.state.waived.detail')],
     };
   },

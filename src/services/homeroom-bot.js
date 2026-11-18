@@ -7015,6 +7015,47 @@ async function runChecksFix(pool, config, {
   }
 
   const parsed = turn.stopped || code ? null : followup.parseFollowUp(result.lastResultText);
+  // #6822: a claim about a screen both copies already have is answered by
+  // re-declaring it against a ready-made state, or by saying none fits.
+  // Neither changes any code: the round looks at the head all the same.
+  if (parsed && (parsed.action === 'redeclare' || parsed.action === 'unstageable')) {
+    const redeclared = parsed.action === 'redeclare'
+      && await declarationChanged(pool, session.id, skipped).catch(() => false);
+    if (redeclared) {
+      runId = await insertRun(pool, {
+        ...billingOf(item, runMode),
+        readReason: readReasonOf(item), lookKind: 'fix',
+        appId: app.id, issueNumber, mode: runMode, verdict: 'revise',
+        reason: parsed.reply, buildNote: 'Declared the change again against a ready-made demo state; its shots are taken again.',
+        threadSeenAt, model, durationMs: Date.now() - startedMs,
+        proposalSessionId: session.id, checksHeadSha: head, ...spent,
+      });
+      await recordSnapshot(runId);
+      await dropRow();
+      roundEnded();
+      log.info('homeroom-bot', 'Declared its change again against a ready-made state for its shots', {
+        app: app.slug, issueNumber, sessionId: session.id, head, runId,
+      });
+      return { ran: true, verdict: 'revise', runId, acted: 'checks_shots_redeclared' };
+    }
+    const reason = String(parsed.missingState || parsed.reply || 'no ready-made state on the copies holds it')
+      .replace(/\s+/g, ' ').trim();
+    runId = await insertRun(pool, {
+      ...billingOf(item, runMode),
+      readReason: readReasonOf(item), lookKind: 'hand_off',
+      appId: app.id, issueNumber, mode: runMode, verdict: 'person',
+      reason: parsed.reply || reason, threadSeenAt, model, durationMs: Date.now() - startedMs,
+      proposalSessionId: session.id, checksHeadSha: head, ...spent,
+    });
+    await recordSnapshot(runId);
+    await dropRow();
+    roundEnded();
+    await recordUnstageable(pool, config, { app, bot, session, head, reason });
+    log.info('homeroom-bot', 'Its change cannot be shown on a copy: no ready-made state holds it', {
+      app: app.slug, issueNumber, sessionId: session.id, head, runId, reason,
+    });
+    return { ran: true, verdict: 'person', runId, acted: 'checks_shots_unstageable' };
+  }
   // Decided once across the look's attempts, before the reconcile moves the
   // reviewed head (as runFollowUp's).
   const moved = await look.once('moved', () => !turn.stopped && !code && followup.headMoved({
@@ -7107,6 +7148,75 @@ async function runChecksFix(pool, config, {
     notChange: parsed?.action === 'person' && parsed.cause === 'not_change' && failing.length > 0 && !broken.length,
     cause: parsed?.action === 'person' ? parsed.cause : null,
   });
+}
+
+/**
+ * #6822: whether a `redeclare` really declared the change again: the
+ * change's stored declaration now differs from the one its shots skipped,
+ * in a claim or its steps. A redeclare that declared nothing
+ * new is treated as unstageable, so the round still ends with an answer.
+ */
+async function declarationChanged(pool, sessionId, skipped) {
+  const { rows } = await pool.query('SELECT shots_detail FROM chat_sessions WHERE id = $1', [Number(sessionId)]);
+  const stories = rows[0]?.shots_detail?.intent?.stories;
+  if (!Array.isArray(stories) || !stories.length) return false;
+  // A skip's claim carries its claim and steps (bot-readiness.ts Claim), so
+  // those are what a re-declaration is compared by.
+  const shape = (story) => JSON.stringify([String(story.claim || ''), Array.isArray(story.steps) ? story.steps : []]);
+  const before = new Map((Array.isArray(skipped) ? skipped : []).map((s) => [s.id, shape(s)]));
+  return stories.some((story) => !before.has(story.id) || shape(story) !== before.get(story.id));
+}
+
+// The source the bot's report of a missing demo state is filed under, so one
+// state files once.
+const UNSTAGEABLE_SOURCE = 'shots_unstageable';
+
+/**
+ * #6822: record that a declared change about a screen both copies already
+ * have cannot be shown on them (no visible change, with the shots agent's
+ * reason), and tell the platform which state is missing, once per state.
+ * Each step is best-effort: the round's run is recorded either way.
+ */
+async function recordUnstageable(pool, config, { app, bot, session, head, reason }) {
+  const shotsView = require('./shots-view');
+  const rationale = `${shotsView.UNSTAGEABLE_PREFIX} ${reason}`.slice(0, 1000);
+  try {
+    await require('./shots-state').recordIntent(pool, session.id, {
+      version: 1, impact: 'none', rationale, stories: [],
+    }, { headSha: head });
+  } catch (err) {
+    log.warn('homeroom-bot', 'Could not record that its change cannot be shown on a copy', {
+      app: app.slug, sessionId: session.id, err: err.message,
+    });
+  }
+  const feedback = require('./feedback-reports');
+  const title = `Before & after shots: no demo state for "${clip(reason, 90)}"`;
+  try {
+    const seen = await pool.query(
+      `SELECT 1 FROM feedback_reports
+        WHERE user_id = $1 AND source = $2
+          AND lower(regexp_replace(title, '\\s+', ' ', 'g')) = lower(regexp_replace($3, '\\s+', ' ', 'g'))
+          AND created_at > NOW() - INTERVAL '7 days'
+        LIMIT 1`,
+      [bot.id, UNSTAGEABLE_SOURCE, title],
+    );
+    if (seen.rows.length) return;
+  } catch {
+    return;
+  }
+  await feedback.filePlatformReport(pool, config, {
+    user: { id: bot.id, username: BOT_USERNAME, isAdmin: true },
+    title,
+    body: [
+      'A change declared a screen that already exists, and the before & after shots could not show it on either copy, because no ready-made demo state holds it (src/services/shots-demo-states.js).',
+      '',
+      `State the copies lack: ${reason}`,
+      `Change: app ${app.slug}, session ${Number(session.id)}${head ? `, head ${String(head).slice(0, 7)}` : ''}.`,
+    ].join('\n'),
+    description: `Homeroom bot: the shots could not show a change on a copy, and no ready-made state holds it. ${reason}`,
+    source: UNSTAGEABLE_SOURCE,
+    via: 'while taking a change\'s before & after screenshots',
+  }).catch(() => {});
 }
 
 // #4572: the error a timed-out fix records when it is tried once more, one
@@ -12188,6 +12298,10 @@ module.exports = {
   NOT_FOLLOW_UP,
   checksToFix,
   runChecksFix,
+  // #6822: tests/shots-demo-states-postgres.test.js reads what a claim no
+  // copy can show records.
+  recordUnstageable,
+  declarationChanged,
   // #6778: what main and the project's other open changes did to a fix
   // turn's files, exported for its tests.
   fixOverlapContext,

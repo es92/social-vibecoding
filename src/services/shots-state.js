@@ -238,14 +238,15 @@ const { READY_HOLD_MS, brokenOnHead, seedableSkip, skippedOnHead } = readiness;
 //
 // So the rule is narrow on purpose. A skip qualifies only when its reason
 // names missing data (MISSING_DATA_RE) and none of those causes
-// (NOT_SEEDABLE_RE), and the change is new on the after side (baseState
-// not_present). A seed the proposal adds runs on the after copy alone, which
-// for a new change is the side that has it; for a change to something both
-// sides already show, the same seed would make them differ by more than the
-// change, so that one is left to a person. 11 of the 35 reasons name missing
-// data and no such cause; the baseState rule then leaves out the ones
-// declared as a change to a screen that was already there (a new bell row
-// declared "present" because the bell was, proposal 7886).
+// (NOT_SEEDABLE_RE). The claim says whether its screen is new on the after
+// side (baseState not_present): a seed the proposal adds runs on the after
+// copy alone, which for a new change is the side that has it, and for a
+// change to a screen both sides already show the same seed would make them
+// differ by more than the change. 18 Nov 2026 (#6822): such a claim goes
+// back too, but to a ready-made demo state that both copies already hold,
+// never to a seed (the Homeroom bot's fix turn asks for one; anyone else's
+// is not told to seed it). 11 of the 35 reasons name missing data and no
+// such cause.
 /** Pure: whether shots of head `headSha` are still to come (bot-readiness.ts heldUntil). */
 function holdsReady(row, headSha, { now = Date.now() } = {}) {
   return readiness.holdsReady(row, headSha, now);

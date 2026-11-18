@@ -95,6 +95,12 @@ const READY_STATES = Object.freeze([
     ['member']],
   ['shots-demo-member-approved-checks-running-v1', 'a change of yours whose votes are in while its checks still run',
     ['member']],
+  // 18 Nov 2026 (#6822): the work-status family. Each is a change of the
+  // member's on a project they are in, whose rule is one yes.
+  ['shots-demo-member-vote-update-running-v1', 'a change you can vote on while Homeroom bot is updating it',
+    ['member']],
+  ['shots-demo-member-approved-syncing-v1', 'an approved change catching up with main', ['member']],
+  ['shots-demo-member-vote-after-update-v1', 'a change back up for a vote once its update has landed', ['member']],
 ].map(([id, name, personas]) => Object.freeze({ id, name, personas: Object.freeze(personas) })));
 
 // The states a declared change can need that a copy holds only when
@@ -172,6 +178,19 @@ const NEEDS = Object.freeze([
     test: /\b(?:votes? (?:are |is )?(?:all )?in|approved)\b[^.]{0,60}\b(?:checks?|tests?) (?:are |is )?(?:still )?run(?:s|ning)?\b|\bapproved,? (?:and )?(?:still )?checking\b/i,
     states: ['shots-demo-member-approved-checks-running-v1'],
   },
+  {
+    // 18 Nov 2026 (#6822): PR #6819's change, whose shots found no change
+    // being updated on either copy.
+    needs: 'a Homeroom bot update running on a change (Updating)',
+    test: /\bupdat(?:e|es|ing)\b[^.]{0,60}\b(?:is |on its way|running|coming|in progress)\b|\bbeing updated\b|\bupdating\b/i,
+    states: ['shots-demo-member-vote-update-running-v1'],
+  },
+  {
+    // 18 Nov 2026 (#6822): an approved change catching up with main.
+    needs: 'a change syncing with main',
+    test: /\bsync(?:s|ed|ing)? (?:with|to) main\b|\bcatch(?:es|ing)? up with main\b|\bsyncing with main\b/i,
+    states: ['shots-demo-member-approved-syncing-v1'],
+  },
   { needs: 'a friend request', test: /\bfriend requests?\b/i, states: ['shots-demo-member-friend-request-v1'] },
   { needs: 'a remix', test: /\b(?:remix(?:ed|es)?|suggest (?:this|it) back)\b/i, states: ['shots-demo-member-remix-v1'] },
   {
@@ -236,7 +255,13 @@ const SEED_RULE = 'A seed is idempotent and obviously fake: rows for the shots\'
 // Which side a seed reaches, and so which proposal it belongs in.
 const SEED_SIDES = 'A seed this proposal adds reaches only the after copy, which is the side a state new in this '
   + 'proposal needs: seed such a state in this proposal. A change to a state that already existed needs it on both '
-  + 'copies, so its seed merges first, in its own proposal.';
+  + 'copies, so its seed merges first, in its own proposal. '
+  // 18 Nov 2026 (#6822): said outright, because the bot declared PR #6819's
+  // change for a state the copies had no data for though this answer had
+  // said where data comes from.
+  + 'A claim about a screen that already exists (a story whose baseState is "present") therefore needs a '
+  + 'ready-made state these copies already hold, from availableStates: declare it against one, and a seed in this '
+  + 'proposal cannot stand in for it.';
 
 /** Pure: a declared change's own words, as one line. */
 function wordsOf(story) {

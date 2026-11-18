@@ -955,7 +955,7 @@ export function ChangeFoot({ id, card, v, page, ballot = false, tail = null, flo
   /** A quiet row at the foot's end, inside its band (the private suggestion). */
   tail?: ReactNode;
   /**
-   * 18 Nov 2026: while the foot offers a vote, it rides under the header
+   * 18 Nov 2026: while the foot offers a vote, it folds into the header
    * pill once it has scrolled up behind it (./thread-card.tsx `FootFloat`).
    * Only the change's own page asks: a request's page can hold several.
    */
@@ -985,8 +985,9 @@ export function ChangeFoot({ id, card, v, page, ballot = false, tail = null, flo
   // failed tests only while the viewer has one to cast, otherwise until the
   // group has settled it. A ballot votes for its changes elsewhere.
   const footVote = ballot ? null : (failed ? (v.votes.tone === 'ask' ? voteAction : null) : (decided ? null : voteAction));
-  // Under the header the foot keeps its headline, its short facts on one
-  // line, Preview and the Vote; the sentences and the rest stay in the card.
+  // Folded into the header the foot keeps its headline, its short facts on
+  // one line, Preview and the Vote; the sentences and the rest stay in the
+  // card.
   const floating = float && footVote ? {
     sub: dotLine(facts.map((f) => f.replace(/[.\s]+$/, ''))) || null,
     actions: <>{failed ? null : testAction}{footVote}</>,

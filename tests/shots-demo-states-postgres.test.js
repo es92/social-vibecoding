@@ -834,6 +834,114 @@ test('each demo state reads back the way its screen needs it', { timeout: 180000
     else process.env.IDENTITY_CREDIT_POLICY = policy;
   }
   assert.equal((await limits.getBudgetSnapshot(pool, member)).spentCents, 0, 'the member\'s allowance is untouched');
+
+  // 18 Nov 2026 (#6822): the work-status family, read through the platform's
+  // own code. A change the member owes a vote on while Homeroom bot updates
+  // it: the turn marker makes updateComingSql read 'running', so Needs you's
+  // VOTE_OPEN_SQL leaves it out, and the derived row says it is being
+  // updated. An approved change catching up with main reads as syncing. And
+  // the one whose update landed is open for votes again, so it is Needs
+  // you's Vote.
+  const progress = require('../src/services/homeroom-bot-progress');
+  const workState = require('../src/services/work-state');
+  const voteReady = require('../src/services/vote-ready');
+  const factsOf = async (id) => (await pool.query(
+    `SELECT cs.status, cs.check_state, cs.check_phase, cs.integration_merges_clean,
+            cs.integration_block_reasons, ${progress.updateComingSql('cs')} AS update_coming
+       FROM chat_sessions cs WHERE cs.id = $1`, [id])).rows[0];
+  const updating = await factsOf(demoStates.IDS.updateRunningProposal);
+  assert.equal(updating.update_coming, 'running', 'a turn is in flight on it');
+  assert.equal(voteReady.syncStand(updating), null);
+  const syncing = await factsOf(demoStates.IDS.approvedSyncingProposal);
+  assert.equal(syncing.update_coming, null);
+  assert.equal(voteReady.syncStand(syncing), 'syncing', 'its yes is in and it catches up with main');
+  assert.equal(voteReady.syncStand(await factsOf(demoStates.IDS.voteAfterUpdateProposal)), null);
+  await workState.refresh(pool, [
+    { sessionId: demoStates.IDS.updateRunningProposal }, { sessionId: demoStates.IDS.approvedSyncingProposal },
+    { sessionId: demoStates.IDS.voteAfterUpdateProposal },
+  ]);
+  const stateOf = async (id) => {
+    const row = (await pool.query(
+      `SELECT stage, line, vote_open FROM work_states WHERE item_kind = 'change' AND item_ref = $1`, [id])).rows[0];
+    return [row.stage, row.line ? row.line.code || null : null, row.vote_open];
+  };
+  assert.deepEqual(await stateOf(demoStates.IDS.updateRunningProposal), ['building', 'revising', false],
+    'the bot\'s tab says Updating, and no vote is asked for while it runs');
+  assert.deepEqual(await stateOf(demoStates.IDS.approvedSyncingProposal), ['checking', 'syncing', false]);
+  assert.deepEqual(await stateOf(demoStates.IDS.voteAfterUpdateProposal), ['up_for_vote', null, true],
+    'its update landed: the vote is open again');
+});
+
+// 18 Nov 2026 (#6822): a declared change about a screen both copies already
+// have, which no ready-made state holds, is recorded as no visible change
+// (so the card says "Can't be shown on a copy", with the reason) and told
+// to the platform once, not once per round. The shots machine is the
+// platform's (stubbed here, as tests/shots-state.test.js stubs it), so what
+// is read is the declaration it is handed and the report that is filed.
+test('an existing-screen claim no copy can show is recorded as no visible change, and Homeroom is told once', { timeout: 180000 }, async (t) => {
+  const copies = await pairOfCopies(t);
+  if (!copies) return;
+  const pool = copies.base.pool;
+  const homeroomBot = require('../src/services/homeroom-bot');
+  const shotsState = require('../src/services/shots-state');
+  const shotsView = require('../src/services/shots-view');
+  const github = require('../src/services/github');
+  const appended = [];
+  shotsState._setWorkflowForTests({ shotsDeclared: async (d) => { appended.push(d); return null; } });
+  const filed = [];
+  const originalIssue = github.createIssue;
+  github.createIssue = async (owner, repo, issue) => {
+    filed.push({ owner, repo, ...issue });
+    return { number: 9000 + filed.length, html_url: null };
+  };
+  t.after(() => {
+    shotsState._setWorkflowForTests(null);
+    github.createIssue = originalIssue;
+  });
+  const bot = (await pool.query(`INSERT INTO users (username, password, is_synthetic, display_name)
+       VALUES ('homeroom_bot', 'x', TRUE, 'Homeroom bot') RETURNING id`)).rows[0];
+  const installed = await demoStates.installDemoStates({ base: copies.base.input, head: copies.head.input },
+    ['shots-demo-member-vote-update-running-v1']);
+  assert.deepEqual(installed.skipped, []);
+  assert.equal(installed.installed.length, 1);
+  const app = { id: demoStates.IDS.workStatusApp, slug: 'shots-demo-vote-updates' };
+  const session = { id: demoStates.IDS.updateRunningProposal };
+  const head = 'a'.repeat(40);
+  const reason = 'A staged copy has no change with an update running on it, and no state holds one';
+  const config = { platformRepoUrl: 'https://github.com/Usernode-Labs/social-vibecoding' };
+  await homeroomBot.recordUnstageable(pool, config, { app, bot, session, head, reason });
+
+  assert.equal(appended.length, 1, 'the declaration reaches the shots machine');
+  assert.equal(appended[0].sessionId, session.id);
+  assert.equal(appended[0].head, head);
+  assert.deepEqual(appended[0].intent, {
+    version: 1, impact: 'none', rationale: `${shotsView.UNSTAGEABLE_PREFIX} ${reason}`, stories: [],
+  });
+  // A stored declaration like it reads as \`unstageable\` in the view the
+  // card draws from, with the reason; an ordinary no-visible-change does not.
+  const shown = shotsView.fromSnapshot({
+    shots_state: 'not_required',
+    shots_detail: { impact: 'none', required: false, rationale: `${shotsView.UNSTAGEABLE_PREFIX} ${reason}` },
+  }, head);
+  assert.deepEqual(shown.unstageable, { reason });
+  assert.equal(shotsView.fromSnapshot({
+    shots_state: 'not_required', shots_detail: { impact: 'none', required: false, rationale: 'Nothing visible.' },
+  }, head).unstageable, undefined);
+  assert.equal(filed.length, 1, 'one report names the state the copies lack');
+  assert.match(filed[0].title, /Before & after shots: no demo state for/);
+  assert.match(filed[0].body, new RegExp(reason));
+
+  // The same missing state again: nothing new is filed.
+  await homeroomBot.recordUnstageable(pool, config, { app, bot, session, head, reason });
+  assert.equal(filed.length, 1);
+  // And nothing when the platform repository is not configured: the
+  // rationale is still recorded.
+  await homeroomBot.recordUnstageable(pool, { ...config, platformRepoUrl: null },
+    { app, bot, session, head, reason: 'A change whose update failed' });
+  assert.equal(filed.length, 1, 'no signal without a board to file it on');
+  assert.equal(appended.length, 3);
+  assert.equal(appended[2].intent.rationale,
+    `${shotsView.UNSTAGEABLE_PREFIX} A change whose update failed`);
 });
 
 // A real copy's staging seeds open the member's chat with Homeroom bot at

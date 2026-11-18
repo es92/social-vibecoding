@@ -68,6 +68,13 @@ const IDS = Object.freeze({
   // and the member's change on it whose vote is in while its checks run.
   approvedApp: 990881,
   approvedProposal: 990882,
+  // 18 Nov 2026: the work-status family (a change being updated, one
+  // syncing with main, and one back up for a vote once its update landed),
+  // on a project of somebody else's the member is in, whose rule is one yes.
+  workStatusApp: 990883,
+  updateRunningProposal: 990884,
+  approvedSyncingProposal: 990885,
+  voteAfterUpdateProposal: 990886,
 });
 const RESERVED_RANGE = Object.freeze([990840, 990895]);
 
@@ -140,6 +147,21 @@ const ROOM_TO_MAKE = 5;
 const APPROVED_APP_SLUG = 'shots-demo-choir';
 const APPROVED_APP_NAME = '[shots fixture] Choir';
 const APPROVED_APP_MAKER = 'staging-demo-general-lin';
+// 18 Nov 2026: the work-status family's project, a second one of the maker's
+// the member is in, so a change of the maker's there is one the member owes a
+// vote on. Its three changes are three states' own: one being updated while
+// the member can vote, one approved and syncing with main, and one back up
+// for a vote once its update landed. Fake commits: these copies have no
+// repository, and nothing compares them to one.
+const WORK_STATUS_APP_SLUG = 'shots-demo-vote-updates';
+const WORK_STATUS_APP_NAME = '[shots fixture] Songbook';
+const WORK_STATUS_HEADS = Object.freeze({
+  running: 'a'.repeat(40),
+  syncingOld: 'b'.repeat(40),
+  syncing: 'c'.repeat(40),
+  updated: 'd'.repeat(40),
+  landed: 'e'.repeat(40),
+});
 // The staging mock request nothing else marks with a change, a claim or a
 // run (src/routes/issues.js stagingMockIssues; the staging seeds' change
 // that closes ten requests names 900001-900010), so it opens on the copies
@@ -380,6 +402,38 @@ async function insertBotDm(client, ctx, chat, {
     [messageId, ctx.member.id, chat.conversationId, appId, issueNumber, kind, runId, minutesAgo]
   );
   return messageId;
+}
+
+// The work-status family's project: a private community of the maker's the
+// member is in, whose rule is one yes from anyone in it, opened by the first
+// of its states that installs and kept for the others. Resolves the maker.
+async function workStatusApp(client, ctx) {
+  const maker = (await client.query('SELECT id, username FROM users WHERE username = $1',
+    [APPROVED_APP_MAKER])).rows[0];
+  if (!maker) throw new Error('The work-status fixture lost its maker.');
+  await client.query(
+    `INSERT INTO apps (id, name, slug, status, created_by, collab_visibility, view_visibility, icon_emoji,
+                       approver_policy, approvals_required, governance_rules, created_at)
+     VALUES ($1, $2, $3, 'running', $4, 'private', 'private', $5, 'anyone', 1, NULL, NOW() - INTERVAL '9 days')
+     ON CONFLICT (id) DO NOTHING`,
+    [IDS.workStatusApp, WORK_STATUS_APP_NAME, WORK_STATUS_APP_SLUG, maker.id, '🎵']
+  );
+  await client.query(
+    `INSERT INTO app_collaborators (app_id, user_id, status, accepted_at)
+     VALUES ($1, $2, 'member', NOW() - INTERVAL '9 days'), ($1, $3, 'member', NOW() - INTERVAL '8 days')
+     ON CONFLICT DO NOTHING`,
+    [IDS.workStatusApp, maker.id, ctx.member.id]
+  );
+  return maker;
+}
+
+// Whether the work-status family's project is one a state may write into:
+// free, or the one another of its states wrote.
+async function workStatusFree(client, sessionId) {
+  const app = await client.query('SELECT slug FROM apps WHERE id = $1', [IDS.workStatusApp]);
+  const ours = app.rowCount === 0 || app.rows[0].slug === WORK_STATUS_APP_SLUG;
+  const taken = await client.query('SELECT 1 FROM chat_sessions WHERE id = $1', [sessionId]);
+  return ours && taken.rowCount === 0 && await idsFree(client, 'chat_sessions', [sessionId]);
 }
 
 // ── States ──────────────────────────────────────────────────────────────
@@ -1890,6 +1944,183 @@ const STATES = [
           { state: `A change of yours on ${APPROVED_APP_NAME}, a project ${maker.username} runs that you are in, whose rule is one yes: ${maker.username}'s yes is in, so its votes are all in while its checks still run (${ran} of ${expected} declared checks done). Its Votes card is complete and its Testing card shows the bar; it waits only on its checks.`,
             path: `/#app/${APPROVED_APP_SLUG}/dev/proposals/${IDS.approvedProposal}` },
           { state: 'The same change on Homeroom bot\'s tab, under "Waiting & in progress": approved, and waiting on its checks.',
+            path: '/#homeroom-bot' },
+        ],
+      };
+    },
+  },
+  {
+    // 18 Nov 2026 (#6822): a change the member owes a vote on while Homeroom
+    // bot updates it (PR #6819: an update on its way takes a change out of
+    // Needs you, and its row on the bot's tab says Updating). Nothing on a
+    // copy runs a turn, so the "update running" window is written the way
+    // homeroom-bot-progress.js updateComingSql reads it: the durable turn
+    // marker (chat_sessions.active_turn, mode build, started at the pair's
+    // moment) and a taken ask on the change's own head. The stored work
+    // state is the one the sweeper derives for a change open for votes
+    // (up_for_vote, vote_open), so it is Needs you's VOTE_OPEN_SQL that
+    // leaves it out, never a stale row.
+    id: 'shots-demo-member-vote-update-running-v1',
+    persona: 'member',
+    needs: {
+      users: ['id', 'username'],
+      apps: ['id', 'name', 'slug', 'status', 'created_by', 'collab_visibility', 'view_visibility', 'icon_emoji',
+        'approver_policy', 'approvals_required', 'governance_rules', 'created_at'],
+      app_collaborators: ['app_id', 'user_id', 'status', 'accepted_at'],
+      chat_sessions: ['id', 'app_id', 'user_id', 'branch_name', 'pr_number', 'pr_title', 'pr_summary_md',
+        'status', 'promoted_at', 'staging_url', 'check_state', 'check_phase', 'reviewed_head_sha',
+        'checks_commit_sha', 'active_turn', 'integration_merges_clean', 'is_headless', 'created_at',
+        'last_activity_at'],
+      homeroom_bot_change_asks: ['app_id', 'session_id', 'issue_number', 'asker_id', 'instruction', 'source',
+        'status', 'created_at', 'taken_at', 'asked_head_sha'],
+      work_states: ['app_id', 'item_kind', 'item_ref', 'issue_number', 'session_id', 'stage', 'vote_open', 'since'],
+    },
+    free: async (client) => workStatusFree(client, IDS.updateRunningProposal),
+    async install(client, ctx) {
+      const maker = await workStatusApp(client, ctx);
+      const head = WORK_STATUS_HEADS.running;
+      await client.query(
+        `INSERT INTO chat_sessions
+           (id, app_id, user_id, branch_name, pr_number, pr_title, pr_summary_md, status, promoted_at,
+            staging_url, check_state, check_phase, reviewed_head_sha, checks_commit_sha, active_turn,
+            integration_merges_clean, is_headless, created_at, last_activity_at)
+         VALUES ($1, $2, $3, 'shots-fixture/update-running', $1,
+                 '[shots fixture] A louder chorus', 'A demo change of yours being updated.',
+                 'promoted', NOW() - INTERVAL '20 minutes', $4, 'passing', 'done', $5, $5, $6::jsonb,
+                 TRUE, FALSE, NOW() - INTERVAL '2 hours', NOW() - INTERVAL '1 minute')`,
+        [IDS.updateRunningProposal, IDS.workStatusApp, maker.id, PREVIEW_URL, head,
+          JSON.stringify({ mode: 'build', startedAt: ctx.at })]
+      );
+      await client.query(
+        `INSERT INTO homeroom_bot_change_asks
+           (app_id, session_id, issue_number, asker_id, instruction, source, status, created_at, taken_at,
+            asked_head_sha)
+         VALUES ($1, $2, $2, $3, '[shots fixture] Make the last verse louder', 'thread', 'taken',
+                 NOW() - INTERVAL '6 minutes', $4, $5)`,
+        [IDS.workStatusApp, IDS.updateRunningProposal, ctx.member.id, ctx.at, head]
+      );
+      await client.query(
+        `INSERT INTO work_states (app_id, item_kind, item_ref, issue_number, session_id, stage, vote_open, since)
+         VALUES ($1, 'change', $2, $2, $2, 'up_for_vote', TRUE, NOW() - INTERVAL '20 minutes')
+         ON CONFLICT DO NOTHING`,
+        [IDS.workStatusApp, IDS.updateRunningProposal]
+      );
+      return {
+        shows: [
+          { state: 'Homeroom bot\'s tab, under Next: your change "[shots fixture] A louder chorus" says Updating, because an update you asked for is running on it.',
+            path: '/#homeroom-bot' },
+          { state: 'Needs you does not list it while the update runs, though the vote is still open.',
+            path: '/#needs' },
+          { state: 'The change\'s Votes card says an update is on its way, so no vote is asked for now.',
+            path: `/#app/${WORK_STATUS_APP_SLUG}/dev/proposals/${IDS.updateRunningProposal}` },
+        ],
+      };
+    },
+  },
+  {
+    // 18 Nov 2026 (#6822): an approved change catching up with main, as the
+    // sync lane (workflow/proposal/machine.ts) records it: its yes is in,
+    // integration_merges_clean is false and the block reason is
+    // 'integrating', with no reason only its author could move. Its work
+    // line is "Syncing with main" (services/work-state.js promoteChange's
+    // syncStand), and its Votes card says the same.
+    id: 'shots-demo-member-approved-syncing-v1',
+    persona: 'member',
+    needs: {
+      users: ['id', 'username'],
+      apps: ['id', 'name', 'slug', 'status', 'created_by', 'collab_visibility', 'view_visibility', 'icon_emoji',
+        'approver_policy', 'approvals_required', 'governance_rules', 'created_at'],
+      app_collaborators: ['app_id', 'user_id', 'status', 'accepted_at'],
+      chat_sessions: ['id', 'app_id', 'user_id', 'branch_name', 'pr_number', 'pr_title', 'pr_summary_md',
+        'status', 'promoted_at', 'staging_url', 'check_state', 'check_phase', 'reviewed_head_sha',
+        'checks_commit_sha', 'integration_merges_clean', 'integration_block_reasons', 'is_headless',
+        'created_at', 'last_activity_at'],
+      pr_votes: ['session_id', 'user_id', 'vote', 'created_at'],
+      work_states: ['app_id', 'item_kind', 'item_ref', 'issue_number', 'session_id', 'stage', 'line',
+        'vote_open', 'since'],
+    },
+    free: async (client) => workStatusFree(client, IDS.approvedSyncingProposal),
+    async install(client, ctx) {
+      const maker = await workStatusApp(client, ctx);
+      await client.query(
+        `INSERT INTO chat_sessions
+           (id, app_id, user_id, branch_name, pr_number, pr_title, pr_summary_md, status, promoted_at,
+            staging_url, check_state, check_phase, reviewed_head_sha, checks_commit_sha,
+            integration_merges_clean, integration_block_reasons, is_headless, created_at, last_activity_at)
+         VALUES ($1, $2, $3, 'shots-fixture/approved-syncing', $1,
+                 '[shots fixture] Keep time on the second verse',
+                 'A demo change of yours: approved, and catching up with main.',
+                 'promoted', NOW() - INTERVAL '40 minutes', $4, 'passing', 'done', $5, $6, FALSE,
+                 '["integrating"]'::jsonb, FALSE, NOW() - INTERVAL '3 hours', NOW() - INTERVAL '2 minutes')`,
+        [IDS.approvedSyncingProposal, IDS.workStatusApp, maker.id, PREVIEW_URL,
+          WORK_STATUS_HEADS.syncing, WORK_STATUS_HEADS.syncingOld]
+      );
+      await client.query(
+        `INSERT INTO pr_votes (session_id, user_id, vote, created_at)
+         VALUES ($1, $2, 'yes', NOW() - INTERVAL '12 minutes')`,
+        [IDS.approvedSyncingProposal, maker.id]
+      );
+      await client.query(
+        `INSERT INTO work_states (app_id, item_kind, item_ref, issue_number, session_id, stage, line, vote_open, since)
+         VALUES ($1, 'change', $2, $2, $2, 'checking', '{"code":"syncing"}'::jsonb, FALSE,
+                 NOW() - INTERVAL '40 minutes')
+         ON CONFLICT DO NOTHING`,
+        [IDS.workStatusApp, IDS.approvedSyncingProposal]
+      );
+      return {
+        shows: [
+          { state: 'Your change "[shots fixture] Keep time on the second verse", approved: its Votes card says it is syncing with main, and that Homeroom asks for votes again once it is caught up and its checks pass.',
+            path: `/#app/${WORK_STATUS_APP_SLUG}/dev/proposals/${IDS.approvedSyncingProposal}` },
+          { state: 'The same change on Homeroom bot\'s tab, under Waiting & in progress: its line says it is syncing with main.',
+            path: '/#homeroom-bot' },
+        ],
+      };
+    },
+  },
+  {
+    // 18 Nov 2026 (#6822): the change the first of this family had updated,
+    // once the update has landed: a new head its checks passed on, merges
+    // clean, the yes an update clears gone, and its vote open again, so it
+    // is in Needs you as Vote and under the bot tab's vote group. Nothing on
+    // a copy merges it.
+    id: 'shots-demo-member-vote-after-update-v1',
+    persona: 'member',
+    needs: {
+      users: ['id', 'username'],
+      apps: ['id', 'name', 'slug', 'status', 'created_by', 'collab_visibility', 'view_visibility', 'icon_emoji',
+        'approver_policy', 'approvals_required', 'governance_rules', 'created_at'],
+      app_collaborators: ['app_id', 'user_id', 'status', 'accepted_at'],
+      chat_sessions: ['id', 'app_id', 'user_id', 'branch_name', 'pr_number', 'pr_title', 'pr_summary_md',
+        'status', 'promoted_at', 'staging_url', 'check_state', 'check_phase', 'reviewed_head_sha',
+        'checks_commit_sha', 'integration_merges_clean', 'is_headless', 'created_at', 'last_activity_at'],
+      work_states: ['app_id', 'item_kind', 'item_ref', 'issue_number', 'session_id', 'stage', 'vote_open', 'since'],
+    },
+    free: async (client) => workStatusFree(client, IDS.voteAfterUpdateProposal),
+    async install(client, ctx) {
+      const maker = await workStatusApp(client, ctx);
+      await client.query(
+        `INSERT INTO chat_sessions
+           (id, app_id, user_id, branch_name, pr_number, pr_title, pr_summary_md, status, promoted_at,
+            staging_url, check_state, check_phase, reviewed_head_sha, checks_commit_sha,
+            integration_merges_clean, is_headless, created_at, last_activity_at)
+         VALUES ($1, $2, $3, 'shots-fixture/vote-after-update', $1,
+                 '[shots fixture] A louder chorus, updated',
+                 'A demo change of yours whose update has landed: its vote is open again.',
+                 'promoted', NOW() - INTERVAL '12 minutes', $4, 'passing', 'done', $5, $5, TRUE, FALSE,
+                 NOW() - INTERVAL '3 hours', NOW() - INTERVAL '40 seconds')`,
+        [IDS.voteAfterUpdateProposal, IDS.workStatusApp, maker.id, PREVIEW_URL, WORK_STATUS_HEADS.landed]
+      );
+      await client.query(
+        `INSERT INTO work_states (app_id, item_kind, item_ref, issue_number, session_id, stage, vote_open, since)
+         VALUES ($1, 'change', $2, $2, $2, 'up_for_vote', TRUE, NOW() - INTERVAL '12 minutes')
+         ON CONFLICT DO NOTHING`,
+        [IDS.workStatusApp, IDS.voteAfterUpdateProposal]
+      );
+      return {
+        shows: [
+          { state: 'Needs you for your project "[shots fixture] Songbook": the change "[shots fixture] A louder chorus, updated", whose update has landed and whose checks passed, asks for your Vote.',
+            path: '/#needs' },
+          { state: 'Homeroom bot\'s tab: the same change under its vote group, saying Vote.',
             path: '/#homeroom-bot' },
         ],
       };

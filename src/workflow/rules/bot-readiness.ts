@@ -57,11 +57,19 @@ const MAX_STORIES = 3;
 // deadlines) and tells the bot, so this matters only when no settle comes.
 export const READY_HOLD_MS = 45 * 60_000;
 
-export interface Claim { id: string; claim: string; steps: string[]; reason: string | null }
+export interface Claim {
+  id: string; claim: string; steps: string[]; reason: string | null;
+  // Whether the screen the claim is about existed before this change
+  // (`present`, the declaration's default) or is new on the after side.
+  baseState?: 'present' | 'not_present';
+}
 
 // The declared changes whose result in the settled shots on `headSha`
 // passes `keep`. Empty for shots on another head and unsettled shots.
-function resultsOnHead(row: Row | null | undefined, headSha: unknown, keep: (result: Row, declared: Row) => boolean): Claim[] {
+function resultsOnHead(
+  row: Row | null | undefined, headSha: unknown, keep: (result: Row, declared: Row) => boolean,
+  { withBaseState = false }: { withBaseState?: boolean } = {},
+): Claim[] {
   const detail = row?.shots_detail;
   const head = lowerSha(headSha);
   if (!detail || typeof detail !== 'object' || !head) return [];
@@ -78,6 +86,7 @@ function resultsOnHead(row: Row | null | undefined, headSha: unknown, keep: (res
       claim: clip(declared.claim, 300) || result.id,
       steps: Array.isArray(declared.steps) ? declared.steps.slice(0, 12).map((s: unknown) => String(s).slice(0, 200)) : [],
       reason: clip(result.reason, 1000),
+      ...(withBaseState ? { baseState: declared.baseState === 'not_present' ? 'not_present' as const : 'present' as const } : {}),
     }));
 }
 
@@ -98,10 +107,13 @@ export function seedableSkip(reason: unknown): boolean {
 }
 
 // The declared changes the shots on `headSha` skipped for want of data the
-// proposal itself could seed, on a change declared new on the after side.
+// proposal itself could seed: a change new on the after side, and (18 Nov
+// 2026, #6822) a claim about a screen that already exists, whose state only
+// a ready-made demo state can give both copies. Each claim says which
+// (`baseState`), so the fix turn asks for a seed only of the new ones.
 export function skippedOnHead(row: Row | null | undefined, headSha: unknown): Claim[] {
-  return resultsOnHead(row, headSha, (result, declared) => result.status === 'skipped'
-    && declared.baseState === 'not_present' && seedableSkip(result.reason));
+  return resultsOnHead(row, headSha, (result) => result.status === 'skipped' && seedableSkip(result.reason),
+    { withBaseState: true });
 }
 
 // Until when shots of `headSha` are still to come, so the change is not yet

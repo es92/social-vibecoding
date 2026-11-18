@@ -99,10 +99,15 @@ test('skippedOnHead reads the seedable skips of a change new on the after side, 
     claim: 'The vote picker says a non-approver\'s vote is advisory.',
     steps: ['Open the change', 'Press Vote'],
     reason: SEEDABLE[0],
+    baseState: 'not_present',
   }], 'the model-key skip beside it is left out');
   assert.equal(shotsState.skippedOnHead(shotsRow({ state: 'verified' }), HEAD).length, 1, 'inside a run that published, too');
-  assert.deepEqual(shotsState.skippedOnHead(shotsRow({ base: 'present' }), HEAD), [],
-    'a change to something both sides show: a seed on the after copy alone would make them differ by more than the change');
+  // 18 Nov 2026 (#6822): a claim about a screen both sides show is due a
+  // round too, so it can be re-declared against a ready-made state; it says
+  // so (`baseState`), and no seed stands in for one.
+  const existing = shotsState.skippedOnHead(shotsRow({ base: 'present' }), HEAD);
+  assert.deepEqual(existing.map((claim) => [claim.id, claim.baseState]), [['advisory-vote-picker', 'present']]);
+  assert.equal(shotsState.skippedOnHead(shotsRow(), HEAD)[0].baseState, 'not_present', 'a change new on the after side');
   assert.deepEqual(shotsState.skippedOnHead(shotsRow(), OTHER_HEAD), [], 'shots of another commit say nothing about this one');
   assert.deepEqual(shotsState.skippedOnHead(shotsRow({ state: 'exploring' }), HEAD), [], 'not settled');
   assert.deepEqual(shotsState.skippedOnHead(shotsRow({ results: [{ id: 'advisory-vote-picker', status: 'failed', reason: SEEDABLE[0] }] }), HEAD), [],
@@ -145,7 +150,8 @@ test('a seedable skip on the current head is due the bot\'s fix round once its c
   assert.equal(followup.checksDue(botRow({ check_state: 'pending' })), null, 'it waits for the checks, so one turn sees everything');
   assert.equal(followup.checksDue(botRow({ reviewed_head_sha: OTHER_HEAD })), null);
   assert.equal(followup.checksDue(botRow(shotsRow({ reason: NOT_SEEDABLE[0] }))), null, 'a model key is not the bot\'s to seed');
-  assert.equal(followup.checksDue(botRow(shotsRow({ base: 'present' }))), null);
+  assert.equal(followup.checksDue(botRow(shotsRow({ base: 'present' }))).skipped.length, 1,
+    '18 Nov 2026: a claim about a screen that already exists is due the round too');
   const both = followup.checksDue(botRow({ check_state: 'failing', test_results: [{ name: 'votes', status: 'fail', failureReason: 'no text' }] }));
   assert.equal(both.failing.length, 1);
   assert.equal(both.skipped.length, 1, 'failing checks and a skip: one turn, both lists');
@@ -229,6 +235,51 @@ test('ready to try waits on the bot\'s round for a seedable skip; with no round 
   assert.equal(rules.checksDue({ ...row, looked: false, fix_revised: true }), null, 'a skip is never a second round');
   assert.equal(rules.checksDue({ ...sessionRow(shotsRow({ reason: NOT_SEEDABLE[1] })), looked: false }), null,
     'a skip no seed can fix never asks for a round');
+});
+
+// 18 Nov 2026 (#6822): a claim about a screen both copies already have.
+test('the fix turn is told the ready-made states for an existing-screen claim, and never to seed it', () => {
+  const due = followup.checksDue(botRow(shotsRow({ base: 'present' })));
+  assert.deepEqual(due.skipped.map((s) => s.baseState), ['present']);
+  const prompt = followup.checksFixPrompt({ seed: 'SEED', proposalBlock: 'BLOCK', ...due });
+  assert.match(prompt, /One of them is about a screen that already exists on both copies, and a seed in this change reaches only the after copy/);
+  // Each ready-made state, with the persona it is shot as.
+  assert.match(prompt, /- "a change you can vote on while Homeroom bot is updating it" \(member\)/);
+  assert.match(prompt, /- "an approved change catching up with main" \(member\)/);
+  assert.match(prompt, /- "a change back up for a vote once its update has landed" \(member\)/);
+  assert.match(prompt, /- "redeclare": call declare_visible_changes again with the same changes, each declared against one of the ready-made states above/);
+  assert.match(prompt, /- "unstageable": no ready-made state above fits/);
+  assert.doesNotMatch(prompt, /- "revise": add the data the shots need/, 'no seed is asked for an existing screen');
+  assert.doesNotMatch(prompt, /It is new in this change|One of them is new on the after side/);
+  assert.match(prompt, /\{"action": "redeclare", "reply": "what to tell the group, in plain language"\}/);
+  assert.match(prompt, /\{"action": "unstageable", "reply": "what to tell the group, in plain language", "missing_state":/);
+  // A new state's round still offers the seed and says nothing of them.
+  const seeding = followup.checksFixPrompt({ seed: 'SEED', ...followup.checksDue(botRow()) });
+  assert.match(seeding, /- "revise": add the data the shots need/);
+  assert.doesNotMatch(seeding, /redeclare/);
+});
+
+test('the fix turn reads a redeclare and an unstageable answer, and a redeclare alone commits nothing', () => {
+  const redeclared = followup.parseFollowUp('Done.\n```json\n{"action": "redeclare", "reply": "I declared it against the update-running state."}\n```');
+  assert.equal(redeclared.action, 'redeclare');
+  // No push, so the head did not move: the round is recorded, no commit is.
+  assert.equal(followup.headMoved({ mode: 'build', result: { pushOk: false }, reviewedHeadSha: HEAD, action: 'redeclare' }), false);
+  assert.equal(followup.headMoved({ mode: 'build', result: { pushOk: false }, reviewedHeadSha: HEAD, action: 'unstageable' }), false);
+  const unstageable = followup.parseFollowUp('```json\n{"action": "unstageable", "reply": "No state holds it.", "missing_state": "a change whose update failed"}\n```');
+  assert.equal(unstageable.action, 'unstageable');
+  assert.equal(unstageable.missingState, 'a change whose update failed');
+  assert.equal(followup.parseFollowUp('```json\n{"action": "unstageable", "reply": "No state holds it."}\n```').missingState, null);
+});
+
+test('a change it could not show on a copy reads as that, with the reason, not as a failure', () => {
+  const detail = {
+    impact: 'none', required: false,
+    rationale: `${shotsView.UNSTAGEABLE_PREFIX} A staged copy has no change with an update running.`,
+  };
+  const shown = shotsView.fromSnapshot({ shots_state: 'not_required', shots_detail: detail }, HEAD);
+  assert.deepEqual(shown.unstageable, { reason: 'A staged copy has no change with an update running.' });
+  const plain = shotsView.fromSnapshot({ shots_state: 'not_required', shots_detail: { impact: 'none', required: false, rationale: 'Nothing visible.' } }, HEAD);
+  assert.equal(plain.unstageable, undefined, 'an ordinary no-visible-change keeps its own card');
 });
 
 // ── Anyone else's proposal: get_proposal's nextStep ──────────────────────

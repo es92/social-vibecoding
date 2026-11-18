@@ -218,6 +218,20 @@ function notStartedReason(session, superseded) {
   return typeof value === 'string' && value.trim() ? value.slice(0, 300) : null;
 }
 
+// 18 Nov 2026 (#6822): a claim about a screen both copies already have,
+// which no ready-made state could show, is recorded as no visible change
+// with this rationale prefix (homeroom-bot.js runChecksFix). The card says
+// it cannot be shown on a copy, with the shots agent's reason, instead of
+// failing the run.
+const UNSTAGEABLE_PREFIX = 'Can\'t be shown on a copy:';
+
+function unstageableOf(state, rationale) {
+  if (state !== 'not_required' || typeof rationale !== 'string') return null;
+  const text = rationale.trim();
+  if (!text.startsWith(UNSTAGEABLE_PREFIX)) return null;
+  return { reason: text.slice(UNSTAGEABLE_PREFIX.length).trim() || null };
+}
+
 function fromSnapshot(session, currentHead) {
   const detail = session?.shots_detail;
   if (!detail || typeof detail !== 'object') return null;
@@ -229,6 +243,8 @@ function fromSnapshot(session, currentHead) {
     required: detail.required !== false,
     impact: ['ui', 'motion', 'none'].includes(detail.impact) ? detail.impact : null,
     rationale: typeof detail.rationale === 'string' ? detail.rationale.slice(0, 1000) : null,
+    ...(unstageableOf(mismatched ? null : session.shots_state, detail.rationale) != null
+      ? { unstageable: unstageableOf(mismatched ? null : session.shots_state, detail.rationale) } : {}),
     claims: cleanClaims(detail.claims),
     baseSha: typeof detail.baseSha === 'string' ? detail.baseSha : null,
     headSha: recordedHead,
@@ -330,6 +346,8 @@ function serialize(run, session, slug, currentHead, { dense = false } = {}) {
     required: run.required !== false,
     impact: session?.shots_detail?.impact || null,
     rationale: session?.shots_detail?.rationale || null,
+    ...(unstageableOf(matchesCurrent ? run.state : 'stale', session?.shots_detail?.rationale) != null
+      ? { unstageable: unstageableOf(matchesCurrent ? run.state : 'stale', session?.shots_detail?.rationale) } : {}),
     claims: cleanClaims(run.claims),
     baseSha: run.baseSha || null,
     headSha: run.headSha || null,
@@ -449,6 +467,7 @@ async function getForSessions(pool, sessions, slug, { viewer = null } = {}) {
 
 module.exports = {
   PUBLIC_STATES,
+  UNSTAGEABLE_PREFIX,
   cleanClaims,
   cleanShotResults,
   cleanShotNotices,

@@ -5875,6 +5875,14 @@
     "text": "This proposal has no visual changes.",
     "description": "Sentence under \"No before & after needed\" on a proposal's screenshots card, and the whole line about screenshots on the change's page in that case."
   },
+  "shots.state.unstageable.label": {
+    "text": "Can't be shown on a copy",
+    "description": "Heading of the screenshots card on a proposal when the change it declares is about a screen the before and after copies already have, and no ready-made state on them could show it. Nobody needs to act."
+  },
+  "shots.state.unstageable.detail": {
+    "text": "{{reason}}. Homeroom has been told.",
+    "description": "Sentence under \"Can't be shown on a copy\" on a proposal's screenshots card. {{reason}} is the screenshots agent's own sentence on why the copies could not show the change."
+  },
   "shots.state.waived.label": {
     "text": "Screenshots waived",
     "description": "Heading of the screenshots card on a proposal when an administrator allowed review to go on without before/after screenshots."

@@ -78,7 +78,10 @@ test('the states that cost changes their shots are ready-made on Homeroom\'s cop
   assert.equal(child.length, 3);
   assert.match(child[0], /^approval-chip seems to need a change waiting for approval, and this app's copies have no ready-made states\./);
   assert.match(child[0], /or seed it in the app's own staging seed \(its IS_STAGING seed\)\. A seed this proposal adds reaches only the after copy/);
-  assert.match(child[0], /seed such a state in this proposal\. A change to a state that already existed needs it on both copies, so its seed merges first, in its own proposal\.$/);
+  assert.match(child[0], /seed such a state in this proposal\. A change to a state that already existed needs it on both copies, so its seed merges first, in its own proposal\./);
+  // 18 Nov 2026 (#6822): said outright, since PR #6819's author declared a
+  // state the copies lacked though this answer said where data comes from.
+  assert.match(child[0], /A claim about a screen that already exists \(a story whose baseState is "present"\) therefore needs a ready-made state these copies already hold, from availableStates: declare it against one, and a seed in this proposal cannot stand in for it\.$/);
   assert.match(readyStates.declarationAdvice(held, { selfApp: false }).dataNote, /A seed is idempotent and obviously fake/);
   assert.match(child[1], /^activity-times seems to need standings rows with recorded activities/);
   assert.match(child[2], /^bot-thanks seems to need an answered first-version plan/);
@@ -158,7 +161,8 @@ test('a change needing a state no ready-made state holds is warned about, once p
   assert.match(warnings[0], /a member in their first session \(its tour\), and no ready-made state on these copies holds it \(see availableStates\)/);
   assert.match(warnings[0], /seed it in the staging seeds in src\/db\/migrate\.js/);
   assert.match(warnings[0], /A seed this proposal adds reaches only the after copy, which is the side a state new in this proposal needs/);
-  assert.match(warnings[0], /its seed merges first, in its own proposal\.$/);
+  assert.match(warnings[0], /its seed merges first, in its own proposal\./);
+  assert.match(warnings[0], /A claim about a screen that already exists \(a story whose baseState is "present"\) therefore needs a ready-made state/);
   assert.doesNotMatch(warnings.join(' '), /merged before this one/, 'a new state is seeded in the proposal that makes it');
   assert.match(warnings[1], /an account somebody invited/);
   assert.match(warnings[2], /an empty state, or an account with nothing of its own yet/);
@@ -241,6 +245,27 @@ test('the bot tab\'s waiting rows and an approved change still checking are read
   // Retired: the chat with the bot draws neither any more.
   for (const id of ['shots-demo-member-bot-run-card-v1', 'shots-demo-member-bot-deciders-v1']) {
     assert.ok(!demoStates.STATE_IDS.includes(id), id);
+  }
+});
+
+// 18 Nov 2026 (#6822): PR #6819's change (an update on its way takes a
+// change out of Needs you) could not be shot: no copy held a change being
+// updated. Its family is ready-made for the member now.
+test('a change being updated, one syncing with main and one back up for a vote are ready-made for the member', () => {
+  const held = declare(
+    story('updating-row', 'While an update is on its way to a change, its row says Updating.'),
+    story('sync-line', 'A change catching up with main says it is syncing with main.'),
+  );
+  assert.deepEqual(warned(held, true), [], 'each has a ready-made state for the member');
+  const needs = warned(held, false).map((w) => w.split(' to need ')[1].split(', and ')[0]);
+  assert.deepEqual(needs, ['a Homeroom bot update running on a change (Updating)', 'a change syncing with main']);
+  const names = readyStates.declarationAdvice(held, { selfApp: true }).availableStates.map((state) => state.name);
+  for (const id of ['shots-demo-member-vote-update-running-v1', 'shots-demo-member-approved-syncing-v1',
+    'shots-demo-member-vote-after-update-v1']) {
+    const state = readyStates.READY_STATES.find((each) => each.id === id);
+    assert.ok(state, id);
+    assert.ok(names.includes(state.name), id);
+    assert.deepEqual([...state.personas], ['member'], id);
   }
 });
 

@@ -1673,10 +1673,14 @@ function shotsSkipStep(session, branch) {
   if (!['promoted', 'active', 'paused'].includes(session.status)) return '';
   const shots = session.shots && typeof session.shots === 'object' ? session.shots : null;
   if (!shots || !shots.headSha) return '';
+  // 18 Nov 2026 (#6822): only the changes new on the after side here. A claim
+  // about a screen that already exists needs a ready-made state on both
+  // copies, which is Homeroom's own to add (runChecksFix files it), never
+  // this author's seed.
   const skipped = require('./shots-state').skippedOnHead({
     shots_state: shots.state,
     shots_detail: { headSha: shots.headSha, claims: shots.claims, shotResults: shots.shotResults },
-  }, shots.headSha);
+  }, shots.headSha).filter((claim) => claim.baseState !== 'present');
   if (!skipped.length) return '';
   const named = skipped.slice(0, MAX_SKIPS_NAMED)
     .map((s) => `${untrusted(s.claim, 200)}, skipped because ${untrusted(s.reason, 400)}`).join('; ');

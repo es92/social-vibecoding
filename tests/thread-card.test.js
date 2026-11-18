@@ -357,8 +357,9 @@ test('both heads draw the card only outside the frame\'s looks, and keep Votes, 
   assert.match(change, /const voteAction = shut \? null : acts\.voteAction;/);
   assert.match(change, /if \(useContext\(GatesShut\)\) return null;/, 'Fix it is the foot\'s while the layer is shut');
   // The private suggestion rides at the foot's end, inside its band, so the
-  // foot is the last thing in the card.
-  assert.match(change, /\{cardLook \? <ChangeFoot id=\{id\} card=\{card\} v=\{v\} page=\{page\} tail=\{workWithBot\} \/> : null\}/);
+  // foot is the last thing in the card. The change's own page is the one
+  // that folds its vote into the header (the test below).
+  assert.match(change, /\{cardLook \? <ChangeFoot id=\{id\} card=\{card\} v=\{v\} page=\{page\} tail=\{workWithBot\} float \/> : null\}/);
   assert.match(change, /\{cardLook \? null : workWithBot\}/);
   assert.match(change, /\{cardLook && body\.summaryBy \? <WordsBy who=\{body\.summaryBy\}/);
   assert.match(change, /<ThreadCardContext\.Provider value=\{cardContext\}>/);
@@ -603,6 +604,38 @@ test('the foot is a band that runs to the card\'s end when it ends the card, wit
   assert.match(brand, /--thread-foot: color-mix\(in srgb, var\(--bl-sun\) 9%, var\(--bl-card\)\);/);
   assert.match(brand, /\.dev-thread-foot-acts :is\(\.dev-vote-btn:not\(\.dev-vote-btn-yes\), \.dev-request-primary\),[^{]*\{\s*background: var\(--bl-sun\);\s*color: var\(--bl-on-sun\);\s*box-shadow: var\(--bl-pill-edge\);/);
   assert.match(brand, /\.dev-rail \{ --rail-now-box: var\(--bl-page\); --rail-now-box-line: var\(--app-sheet-line\); --rail-note-plain: transparent; \}/);
+});
+
+test('a foot with a vote to cast folds into the header once it has gone up behind it, and moves nothing', () => {
+  const card = read(CARD);
+  const change = read(CHANGE);
+  // The foot hands its row to FootFloat, which watches the foot itself in
+  // the thread's own scroller, with the header pill's lower edge as the top.
+  assert.match(card, /\{float \? <FootFloat foot=\{box\} what=\{what\} tone=\{tone\} headline=\{headline\} sub=\{float\.sub\} actions=\{float\.actions\} \/> : null\}/);
+  const body = card.slice(card.indexOf('function FootFloat('));
+  assert.match(body, /const scroller = el\?\.closest<HTMLElement>\('\.dev-request-scroll'\) \|\| null;/, 'found from the foot, never by a document-wide id');
+  assert.match(body, /scroller\?\.parentElement\?\.querySelector<HTMLElement>\(':scope > \.dev-request-bar'\)/);
+  assert.match(body, /const under = Math\.max\(0, Math\.round\(pill\.getBoundingClientRect\(\)\.bottom - scroller\.getBoundingClientRect\(\)\.top\)\);/);
+  assert.match(body, /setShown\(!entry\.isIntersecting && entry\.boundingClientRect\.bottom <= top \+ 1\);/, 'only once the foot is behind the pill, never while it is still below');
+  assert.match(body, /\{ root: scroller, rootMargin: `-\$\{under\}px 0px 0px 0px` \}/);
+  // Rendered only while it shows, into the bar outside the scroller, and in
+  // none of the foot's own classes, so whatever looks for the foot finds it.
+  assert.match(body, /if \(!bar \|\| !shown\) return null;\s*return createPortal\(\(\s*<div className="dev-thread-float" data-thread-float=\{what\}/);
+  assert.doesNotMatch(body, /dev-thread-foot|data-thread-foot/);
+  // What a change's foot folds in: its Vote by the foot's own rules, with
+  // Preview; nothing once the group has settled it or under a ballot.
+  assert.match(change, /const footVote = ballot \? null : \(failed \? \(v\.votes\.tone === 'ask' \? voteAction : null\) : \(decided \? null : voteAction\)\);/);
+  assert.match(change, /const floating = float && footVote \? \{\s*sub: dotLine\(facts\.map\(\(f\) => f\.replace\(\/\[\.\\s\]\+\$\/, ''\)\)\) \|\| null,\s*actions: <>\{failed \? null : testAction\}\{footVote\}<\/>,/);
+  // One card: the header's lower corners go square and its drop shadow
+  // gives way while the row is there; the row ends the card. On a wide page
+  // the timeline beside the card steps down for it.
+  const css = read('public/css/app.css');
+  const block = css.slice(css.indexOf('THE VOTE FOLDS INTO THE HEADER'), css.indexOf("/* THE PAGE'S WAY BACK, AT THE PILL'S START."));
+  assert.ok(block.length > 0, 'the fold sits in the header pill\'s own block');
+  assert.match(block, /\.dev-request-bar:has\(> \.dev-thread-float\) \.messages-thread-header \{\s*border-end-start-radius: 0;\s*border-end-end-radius: 0;\s*box-shadow: inset 0 0 0 1px var\(--app-sheet-line\);/);
+  assert.match(block, /\.dev-thread-float \{[^}]*border-radius: 0 0 calc\(var\(--pill-h, 56px\) \/ 2\) calc\(var\(--pill-h, 56px\) \/ 2\);/);
+  assert.match(block, /\.dev-request-bar > \.messages-thread-header \{ transition: border-radius 180ms ease; \}/);
+  assert.match(block, /:has\(\.dev-thread-float\) \.dev-request-rail \{\s*top: 64px;/);
 });
 
 test('the picture\'s chip says what the side is for this change', () => {

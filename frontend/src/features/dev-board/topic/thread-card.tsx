@@ -138,7 +138,7 @@ export function ThreadFoot({ what, headline, sub, tone = null, progress = null, 
   /** A full-width row under the status and its actions. */
   extra?: ReactNode;
   /**
-   * What rides under the header pill once the foot has gone up behind it
+   * What folds into the header pill once the foot has gone up behind it
    * (`FootFloat`): its short line and the actions it keeps. Null draws none.
    */
   float?: { sub: string | null; actions: ReactNode } | null;
@@ -180,18 +180,21 @@ export function ThreadFoot({ what, headline, sub, tone = null, progress = null, 
 }
 
 /**
- * THE VOTE FOLLOWS THE HEADER (18 Nov 2026). While a thread waits on the
- * reader's vote, its foot's headline, its short facts and its buttons ride
- * under the header pill once the foot itself has gone up behind it, so the
- * reader can still vote from "How it got here" and the replies.
+ * THE VOTE FOLDS INTO THE HEADER (18 Nov 2026). While a thread waits on the
+ * reader's vote, its foot's headline, its short facts and its buttons fold
+ * into the header pill as a second row once the foot itself has gone up
+ * behind it, so the header and the vote read as one card and the reader can
+ * still vote from "How it got here" and the replies. It goes again when the
+ * foot is back in view.
  *
- * Drawn into the sheet's bar (`#gc-thread-bar`, outside the scroller), found
- * from the foot itself and never by a document-wide id: another pane can
- * hold the same page (#4640). The bar lies over the scroller, so the strip
- * coming or going moves nothing in the page (#6615's rule). It is rendered
- * only while it shows, and wears none of the foot's own classes or data
- * attributes, so whatever looks for the foot finds the foot. A browser
- * without an observer draws no strip.
+ * Drawn into the sheet's bar (`#gc-thread-bar`, outside the scroller) right
+ * after the header, found from the foot itself and never by a document-wide
+ * id: another pane can hold the same page (#4640). The bar lies over the
+ * scroller, so the row coming or going moves nothing in the page (#6615's
+ * rule); app.css squares the header's lower corners while it is there. It is
+ * rendered only while it shows, and wears none of the foot's own classes or
+ * data attributes, so whatever looks for the foot finds the foot. A browser
+ * without an observer draws no row.
  */
 function FootFloat({ foot, what, tone, headline, sub, actions }: {
   foot: { current: HTMLDivElement | null };
