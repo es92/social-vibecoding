@@ -906,3 +906,28 @@ test('#6674: a failed status read lets the held card expire as it did before', a
   late.fn();
   assert.deepEqual(h.store.typingUsers(42), [], 'and gone by its ordinary expiry');
 });
+
+test('#6591: somebody else reading a conversation does not re-read the viewer\'s list; the viewer\'s own read does', async () => {
+  const h = harness([serverMessage(1, BOT, 'Hello.')]);
+  await openDm(h);
+  h.server.reads.splice(0);
+  const read = async (extra) => {
+    h.store.messagesController.handleEvent({ type: 'conversation_read', conversationId: 42, messageId: 1, ...extra });
+    await h.flush();
+    return h.server.reads.splice(0).filter(([what]) => what === 'list');
+  };
+
+  // The event goes to every member (routes/conversations.js), and the list
+  // carries only the viewer's own cursor and count.
+  assert.deepEqual(await read({ userId: BOT.id }), [], 'another member\'s read asks for nothing');
+  assert.deepEqual(await read({ user_id: BOT.id, threadRootId: 1 }), [], 'nor does their read of a thread');
+
+  // The viewer's own, from another tab or device: read, marked unread, or a thread.
+  for (const extra of [{ userId: ME.id }, { userId: ME.id, unread: true }, { user_id: ME.id, threadRootId: 1 }]) {
+    const lists = await read(extra);
+    assert.equal(lists.length, 1, `the viewer's own read re-reads the list (${JSON.stringify(extra)})`);
+    assert.equal(lists[0][1]?.fresh, true, 'from the server');
+  }
+  // An event that names no reader is taken as it always was.
+  assert.equal((await read({})).length, 1, 'no reader named: the list is read');
+});

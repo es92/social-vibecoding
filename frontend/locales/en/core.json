@@ -882,5 +882,77 @@
   "frame.navigation": {
     "text": "Homeroom",
     "description": "Accessible name of the sidebar and of the phone's tab bar as navigation landmarks, when the interface is drawn in one of the frame's looks (an admin's preview). The product's name."
+  },
+  "change.closedWhy.autoRejected": {
+    "text": "It was set aside for now: more No than Yes, and not enough support to carry it.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. \"Set aside\" means closed by the vote: more people voted No than Yes."
+  },
+  "change.closedWhy.adminNo": {
+    "text": "It was set aside: an admin voted No and nobody voted Yes within a week.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. An admin is a platform administrator."
+  },
+  "change.closedWhy.adminDeclined": {
+    "text": "It was held for an admin's approval, and an admin voted No.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. The change was waiting for a platform administrator's approval before it could go live."
+  },
+  "change.closedWhy.approverNo": {
+    "text": "It was set aside: an approver voted No and nobody voted Yes in time.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. An approver is a person the project names to approve changes."
+  },
+  "change.closedWhy.replaced": {
+    "text": "It was replaced by a new one.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. \"A new one\" is a newer change by the same author."
+  },
+  "change.closedWhy.superseded": {
+    "text": "It was withdrawn: another change for the same request covers it.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. A request is something a member asked for."
+  },
+  "change.closedWhy.alreadyOnMain": {
+    "text": "Everything in it is already on main, so there was nothing left to merge.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. \"Main\" is the project's main line of code."
+  },
+  "change.closedWhy.requestClosed": {
+    "text": "It was withdrawn: the request it was built for is closed.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. A request is something a member asked for."
+  },
+  "change.closedWhy.redChecks": {
+    "text": "It was withdrawn: its checks failed and nobody changed it for a few days.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. Checks are the automated tests run on a change."
+  },
+  "change.closedWhy.stale": {
+    "text": "It went quiet and was set aside.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. Nobody voted on it or changed it for a long time."
+  },
+  "change.closedWhy.campaignRefused": {
+    "text": "It could not be put up for a vote. The maintenance campaign can make it again.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. A maintenance campaign is an automatic series of upkeep changes."
+  },
+  "change.closedWhy.prClosed": {
+    "text": "It was closed on GitHub, so it is closed here too.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. GitHub is the code hosting site."
+  },
+  "change.closedWhy.prMerged": {
+    "text": "It was merged on GitHub before it went up for a vote.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. GitHub is the code hosting site."
+  },
+  "change.closedWhy.updateSkipped": {
+    "text": "It was skipped. Its original won't offer these changes again.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. The change was an update offered from the project this one was copied from (its original); the group skipped it."
+  },
+  "change.closedWhy.updateReplaced": {
+    "text": "The original changed again, and the newer update needs fitting to this version.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. The change was an update offered from the project this one was copied from (its original)."
+  },
+  "change.closedWhy.updateRefused": {
+    "text": "It could not be put up for a vote. It will be offered again when the original changes.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. The change was an update offered from the project this one was copied from (its original)."
+  },
+  "change.closedWhy.mergedElsewhere": {
+    "text": "It was merged on GitHub into another branch, not into main.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. GitHub is the code hosting site; \"main\" is the project's main line of code."
+  },
+  "change.closedWhy.withdrawn": {
+    "text": "It was withdrawn.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. Somebody took it back without a vote deciding it."
   }
 }

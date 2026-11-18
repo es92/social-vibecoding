@@ -102,10 +102,10 @@ export const APP_CATEGORY_DEFINITIONS: readonly Category[] = Object.freeze([
   Object.freeze({
     key: 'proposal_status',
     label: 'Your proposals',
-    description: 'Checks fail, a proposal of yours stalls, or one of them merges.',
+    description: 'Checks fail, a proposal of yours stalls, merges or is closed.',
     // ON: it is your own work, and two of the three are asking you to act.
     defaultEnabled: true,
-    kinds: Object.freeze(['check_failed', 'stale_pr', 'pr_merged']),
+    kinds: Object.freeze(['check_failed', 'stale_pr', 'pr_merged', 'change_closed']),
   }),
   // A person's message in the discussion of a private project of 8 people or
   // fewer (services/group-channel-notify.js). ON: in a group that small the

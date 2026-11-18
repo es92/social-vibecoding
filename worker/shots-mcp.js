@@ -93,12 +93,7 @@ function refused(code, message) {
 // directly inside one browser's directory is readable: the agent names it and
 // cannot point this bridge at browser storage state or any other file. When
 // two browsers saved the same name, the one saved last is the one meant.
-function savedScreenshot(file) {
-  if (!shotsDir) throw refused('shots_not_configured', 'Saving shots is not set up for this turn.');
-  const name = path.basename(String(file || ''));
-  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,150}\.png$/.test(name)) {
-    throw refused('invalid_shot_file', 'Name the .png file browser_take_screenshot saved, e.g. "invite-desktop-after.png".');
-  }
+function findScreenshot(name) {
   let found = null;
   for (const dir of BROWSER_DIRS) {
     const candidate = path.join(shotsDir, dir, name);
@@ -109,6 +104,16 @@ function savedScreenshot(file) {
       }
     } catch { /* not in this browser's directory */ }
   }
+  return found;
+}
+
+function savedScreenshot(file) {
+  if (!shotsDir) throw refused('shots_not_configured', 'Saving shots is not set up for this turn.');
+  const name = path.basename(String(file || ''));
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,150}\.png$/.test(name)) {
+    throw refused('invalid_shot_file', 'Name the .png file browser_take_screenshot saved, e.g. "invite-desktop-after.png".');
+  }
+  const found = findScreenshot(name);
   if (!found) {
     throw refused('shot_file_not_found', `No saved screenshot named ${name}. Pass the same filename to browser_take_screenshot first.`);
   }
@@ -163,12 +168,16 @@ function latestClip(browser) {
 
 // The run's own before and after addresses, from the platform's brief, read
 // once: a shot is published only from the address of its side.
+// Whether it shoots dark mode too (its darkMode) is read with them.
 let runOrigins = null;
+let runDarkMode = false;
 async function pairOrigins() {
   if (!runOrigins) {
-    const origins = (await request('/context', { timeoutMs: 30_000 })).context?.origins;
+    const context = (await request('/context', { timeoutMs: 30_000 })).context;
+    const origins = context?.origins;
     if (!origins?.base || !origins?.head) throw new Error('The brief has no before and after addresses.');
     runOrigins = { base: origins.base, head: origins.head };
+    runDarkMode = !!context?.darkMode;
   }
   return runOrigins;
 }
@@ -265,6 +274,79 @@ async function takeCloseups(changes, pair) {
   return out;
 }
 
+// Dark shots (the brief's darkMode), taken by this bridge as each light
+// screen shot is saved: the browser that took it switches its page to dark
+// where it stands, shoots it and switches it back (shots-browser-observer.js
+// `dark`), so the dark shot has the light one's framing and the agent spends
+// no navigation or step on it (#6787). Only the screen a browser still
+// shows can be taken: of the light screen shots one call saves, the one each
+// browser took last. The rest, and every one in a browser with no observer
+// socket, are left to the agent (darkLeft), as are all of them once a page
+// came out the same in dark (it follows a URL parameter, not the system's
+// mode, or no mode at all): `inPlace` is false for the rest of the turn.
+const darkInPlace = { tried: false, works: true };
+const OBSERVED_BROWSER = /^(member|admin|full_admin|guest)(_phone)?$/;
+async function takeDarkShots(results, pair) {
+  const light = results.filter((entry) => entry.saved && entry.kind === 'screen' && entry.theme !== 'dark'
+    && entry.result?.sameAsLight !== true);
+  if (!light.length) return { dark: [], left: [] };
+  await pairOrigins();
+  if (!runDarkMode) return { dark: [], left: [] };
+  const left = (entries) => entries.map(({ change, screen, side }) => ({ change, screen, side }));
+  if (!darkInPlace.works) return { dark: [], left: left(light) };
+  // By file, and of each browser's files the newest: the screen it still shows.
+  const byFile = new Map();
+  for (const entry of light) byFile.set(entry.file, [...(byFile.get(entry.file) || []), entry]);
+  const showing = new Map();
+  for (const file of byFile.keys()) {
+    const found = findScreenshot(path.basename(file));
+    if (!found) continue;
+    const current = showing.get(found.dir);
+    if (!current || found.mtimeMs > current.mtimeMs) showing.set(found.dir, { file, mtimeMs: found.mtimeMs });
+  }
+  const dark = [];
+  const covered = new Set();
+  let restoreHint = null;
+  for (const [dir, { file }] of showing) {
+    if (!OBSERVED_BROWSER.test(dir) || !darkInPlace.works) continue;
+    let answer = null;
+    try { answer = await browserControl(`browser_${dir}`, { action: 'dark' }); } catch { answer = null; }
+    if (answer && answer.lightRestored === false) {
+      restoreHint = `browser_${dir} may still show pages in dark mode: call browser_close in it before its next light shot.`;
+    }
+    if (!answer?.ok || !/^dark-[0-9a-f]{16}\.png$/.test(String(answer.file || ''))) continue;
+    darkInPlace.tried = true;
+    let shot;
+    try { shot = savedScreenshot(answer.file); } catch { continue; }
+    for (const entry of byFile.get(file)) {
+      const { change, screen, side } = entry;
+      try {
+        requireOnApp(side, [shot.origin], pair);
+        const query = new URLSearchParams({
+          change, screen, side, kind: 'screen', theme: 'dark', ...(shot.density > 1 ? { density: String(shot.density) } : {}),
+          ...(typeof entry.showsPrivate === 'boolean' ? { showsPrivate: entry.showsPrivate ? '1' : '0' } : {}),
+        });
+        const result = (await request(`/shot?${query}`, { method: 'POST', binary: shot.image })).result;
+        if (result?.sameAsLight) {
+          darkInPlace.works = false;
+          dark.push({ change, screen, side, saved: false, sameAsLight: true });
+          continue;
+        }
+        if (result?.saved === false) continue;
+        covered.add(`${change}\u0000${screen}\u0000${side}`);
+        dark.push({ change, screen, side, saved: true });
+      } catch (error) {
+        dark.push({ change, screen, side, saved: false, code: String(error?.code || 'dark_failed') });
+      }
+    }
+  }
+  return {
+    dark,
+    left: left(light.filter((entry) => !covered.has(`${entry.change}\u0000${entry.screen}\u0000${entry.side}`))),
+    ...(restoreHint ? { restoreHint } : {}),
+  };
+}
+
 const annotations = { readOnlyHint: false, destructiveHint: false, openWorldHint: false };
 const server = new McpServer(
   { name: 'usernode-before-after-shots', version: '2.0.0' },
@@ -287,7 +369,7 @@ server.registerTool('get_brief', {
 });
 
 server.registerTool('save_shot', {
-  description: 'Save screenshots for declared changes, several in one call. First call browser_take_screenshot with a filename for each (the visible screen, or one element with kind "element"), then list them here: for each, the change id, the screen name, side "before" or "after", the kind, and the filename. One screenshot can serve several changes: list it once for each. Every screen of a change needs a before and an after screen shot, or only an after one when the brief has afterOnly. A before shot must be taken on the before address and an after shot on the after address; a screenshot of any other site is refused. Saving the same change, screen, side and kind again replaces it. For a whole-screen shot taken with the page in dark mode (the brief\'s darkMode), also pass theme "dark"; element shots and clips are always light. The answer says which saved and why any did not.',
+  description: 'Save screenshots for declared changes, several in one call. First call browser_take_screenshot with a filename for each (the visible screen, or one element with kind "element"), then list them here: for each, the change id, the screen name, side "before" or "after", the kind, and the filename. One screenshot can serve several changes: list it once for each. Every screen of a change needs a before and an after screen shot, or only an after one when the brief has afterOnly. A before shot must be taken on the before address and an after shot on the after address; a screenshot of any other site is refused. Saving the same change, screen, side and kind again replaces it. When the brief has darkMode, saving a light screen shot also takes its dark one, where the page stands (the answer\'s dark); for one it lists in darkLeft, take the dark shot yourself as the brief says and pass theme "dark". Element shots and clips are always light. The answer says which saved and why any did not.',
   inputSchema: {
     shots: z.array(z.object({
       change: z.string().min(1).max(96),
@@ -309,7 +391,14 @@ server.registerTool('save_shot', {
   // not these requests. A refused file does not stop the others.
   const results = [];
   let pair = null;
-  for (const { change, screen, side, kind = 'screen', theme, file, showsPrivate } of shots) {
+  // Screen shots go up before element shots, so Homeroom checks each
+  // element shot against the screen of the same state (shots-control
+  // saveChecksFor); the answer keeps the order they were listed in.
+  const order = shots.map((_, index) => index)
+    .sort((a, b) => ((shots[a].kind === 'element') - (shots[b].kind === 'element')) || a - b);
+  for (const index of order) {
+    const { change, screen, side, kind = 'screen', theme, file, showsPrivate } = shots[index];
+    const put = (entry) => { results[index] = entry; };
     try {
       const { image, origin, density } = savedScreenshot(file);
       pair = pair || await pairOrigins();
@@ -319,9 +408,10 @@ server.registerTool('save_shot', {
         ...(typeof showsPrivate === 'boolean' ? { showsPrivate: showsPrivate ? '1' : '0' } : {}),
       });
       const result = (await request(`/shot?${query}`, { method: 'POST', binary: image })).result;
-      results.push({ change, screen, side, kind, file, saved: true, result });
+      put({ change, screen, side, kind, ...(theme === 'dark' ? { theme } : {}), file, saved: true, result,
+        ...(typeof showsPrivate === 'boolean' ? { showsPrivate } : {}) });
     } catch (error) {
-      results.push({
+      put({
         change, screen, side, kind, file, saved: false,
         error: { code: error.code || 'save_failed', message: String(error.message || error).slice(0, 500) },
       });
@@ -337,9 +427,26 @@ server.registerTool('save_shot', {
     catch { closeups = []; }
   }
   const missed = closeups.filter((entry) => !entry.saved);
+  // The dark shots of the light screens just saved, taken where they stand.
+  let darkShots = { dark: [], left: [] };
+  if (saved) {
+    try { darkShots = await takeDarkShots(results, pair); } catch { darkShots = { dark: [], left: [] }; }
+  }
   const content = resultContent({
-    saved, refused: results.length - saved, results,
+    saved, refused: results.length - saved,
+    results: results.map(({ showsPrivate: _private, ...entry }) => entry),
     ...(closeups.length ? { closeups } : {}),
+    ...(darkShots.dark.length ? { dark: darkShots.dark } : {}),
+    ...(darkShots.left.length ? {
+      darkLeft: darkShots.left,
+      darkHint: darkInPlace.works
+        ? 'These dark shots could not be taken where the page stands. Once every light shot is saved, take '
+          + 'them as the brief\'s darkMode says.'
+        : 'This app did not change when its page was switched to dark where it stands. Once every light shot '
+          + 'is saved, take one dark shot as the brief\'s darkMode says: if save_shot answers sameAsLight, leave '
+          + 'out the rest; if not, take the others the same way.',
+    } : {}),
+    ...(darkShots.restoreHint ? { darkRestoreHint: darkShots.restoreHint } : {}),
     ...(missed.length ? { closeupHint: 'Some close-ups could not be taken because the browser no longer shows that '
       + 'change\'s after screen. Open its after state again, take the after screen shot again and save it: the '
       + 'close-ups are taken again with it. Leave them if that is not possible.' } : {}),

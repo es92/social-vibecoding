@@ -766,6 +766,24 @@ test('a close-up is taken on the observer\'s own socket, saved under its own nam
     { token, action: 'closeup', rect: { x: '40', y: 30, w: 66, h: 40 }, scale: 4 },
   ]) assert.deepEqual(await ask(message), { ok: false, code: 'invalid_closeup' }, JSON.stringify(message));
   assert.equal((await ask({ token: 'f'.repeat(64), action: 'closeup', rect: { x: 1, y: 1, w: 1, h: 1 }, scale: 4 })).code, 'forbidden');
+  // A dark shot (#6787): the page switched to dark where it stands, shot,
+  // and switched back, all in this browser and none of it in the agent's
+  // stream; stamped with the page it shows.
+  const before = fs.readFileSync(received, 'utf8').trim().split('\n').length;
+  const dark = await ask({ token, action: 'dark' });
+  assert.equal(dark.ok, true);
+  assert.equal(dark.lightRestored, true);
+  assert.match(dark.file, /^dark-[0-9a-f]{16}\.png$/);
+  const darkCalls = fs.readFileSync(received, 'utf8').trim().split('\n').slice(before).map((line) => JSON.parse(line).params);
+  assert.deepEqual(darkCalls, [
+    { name: 'browser_emulate_media', arguments: { colorScheme: 'dark' } },
+    { name: 'browser_wait_for', arguments: { time: 0.6 } },
+    { name: 'browser_take_screenshot', arguments: { filename: dark.file } },
+    { name: 'browser_emulate_media', arguments: { colorScheme: 'light' } },
+  ]);
+  assert.equal(require('../worker/shots-boundary').screenshotOrigin(outDir, dark.file, fs.readFileSync(path.join(outDir, dark.file))),
+    'http://head.internal', 'stamped with the page it shows');
+  assert.equal((await ask({ token: 'f'.repeat(64), action: 'dark' })).code, 'forbidden');
   // The agent's stream carried only its own answer.
   assert.equal(Buffer.concat(stdout).toString().trim().split('\n').length, 1);
   const events = fs.readFileSync(diagnosticFile, 'utf8').trim().split('\n').filter(Boolean)

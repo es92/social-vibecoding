@@ -616,7 +616,7 @@ function loadBridge(env, platformFetch) {
   return { tools, serverInfo };
 }
 
-function bridgeFixture(t, { declaredChanges } = {}) {
+function bridgeFixture(t, { declaredChanges, darkMode = null } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'shots-bridge-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   const shotsDir = path.join(dir, 'shots');
@@ -639,6 +639,7 @@ function bridgeFixture(t, { declaredChanges } = {}) {
         intent: { animation: 'none', controlledFailurePath: '/api/lists/demo' },
       },
     ],
+    ...(darkMode ? { darkMode } : {}),
   };
   const calls = [];
   const platformFetch = async (url, init = {}) => {
@@ -844,7 +845,7 @@ test('save_shot forwards theme "dark" for a whole-screen shot taken in dark mode
   const tool = /registerTool\('save_shot', \{[\s\S]*?\n\}, async/.exec(read('shots-mcp.js'))[0];
   assert.match(tool, /theme: z\.enum\(\['light', 'dark'\]\)\.optional\(\)/);
   assert.match(tool, /Set "dark" only for a whole-screen shot taken with the page in dark mode/);
-  assert.match(tool, /also pass theme "dark"; element shots and clips are always light/);
+  assert.match(tool, /for one it lists in darkLeft, take the dark shot yourself as the brief says and pass theme "dark"\. Element shots and clips are always light/);
 });
 
 test('save_shot publishes a shot only from its own side\'s address', async (t) => {
@@ -1329,4 +1330,102 @@ test('in a dense run, save_shot has the screen\'s browser take the close-ups wan
   assert.deepEqual(moved.closeups, [{ change: 'invite-suggestions', screen: 'desktop', part: 1, scale: 6, saved: false, code: 'shot_not_on_app' }]);
   assert.match(moved.closeupHint, /Open its after state again, take the after screen shot again and save it/);
   assert.equal(bridge.calls.filter((sent) => sent.path.endsWith('/closeup')).length, 1, 'still only the first');
+});
+
+// #6787: a dark shot the agent took again by its own navigation was scrolled
+// to another part of the page than its light one, so the card cropped the
+// dark screen to the light one's outline and showed the wrong place. Now
+// save_shot has the browser that took a light screen switch its page to dark
+// where it stands, shoot it and switch it back (shots-browser-observer.js
+// `dark`), and saves that as the screen's dark shot.
+test('save_shot takes each light screen\'s dark shot where the page stands, and leaves the rest to the agent', async (t) => {
+  const bridge = bridgeFixture(t, { darkMode: { param: 'theme', value: 'dark' } });
+  const ctl = fs.mkdtempSync(path.join(os.tmpdir(), 'shots-ctl-'));
+  const member = path.join(bridge.shotsDir, 'member');
+  const asked = [];
+  let answer = (n) => {
+    const file = `dark-${String(n).padStart(16, '0')}.png`;
+    fs.writeFileSync(path.join(member, file), `dark still ${n}`);
+    stamp(bridge, 'member', file, `${HEAD}/`);
+    return { ok: true, file, lightRestored: true };
+  };
+  const observer = require('node:net').createServer((socket) => {
+    let data = '';
+    socket.on('data', (chunk) => {
+      data += chunk;
+      if (!data.includes('\n')) return;
+      asked.push(JSON.parse(data));
+      socket.end(`${JSON.stringify(answer(asked.length))}\n`);
+    });
+  });
+  await new Promise((resolve) => observer.listen(path.join(ctl, 'member.sock'), resolve));
+  t.after(() => { observer.close(); fs.rmSync(ctl, { recursive: true, force: true }); });
+  let platformAnswer = (query) => ({ saved: true, change: query.change });
+  const platformFetch = async (url, init) => {
+    const parsed = new URL(url);
+    if (!parsed.pathname.endsWith('/shot')) return bridge.platformFetch(url, init);
+    bridge.calls.push({ path: parsed.pathname, query: Object.fromEntries(parsed.searchParams), body: init.body });
+    return new Response(JSON.stringify({ ok: true, result: platformAnswer(Object.fromEntries(parsed.searchParams)) }),
+      { status: 200 });
+  };
+  const { tools } = loadBridge({ ...bridge.env, SHOTS_BROWSER_CONTROL_DIR: ctl, SHOTS_BROWSER_CONTROL_TOKEN: 'd'.repeat(64) },
+    platformFetch);
+  const take = (name, when) => {
+    fs.writeFileSync(path.join(member, name), name);
+    stamp(bridge, 'member', name, `${HEAD}/`);
+    fs.utimesSync(path.join(member, name), when, when);
+  };
+  const save = async (shots) => JSON.parse((await tools.get('save_shot')({ shots })).content[0].text);
+  take('first-after.png', new Date(Date.now() - 60_000));
+  take('second-after.png', new Date());
+  const result = await save([
+    { change: 'invite-suggestions', screen: 'desktop', side: 'after', file: 'first-after.png', showsPrivate: false },
+    { change: 'saved-toast', screen: 'desktop', side: 'after', kind: 'element', file: 'second-after.png' },
+    { change: 'saved-toast', screen: 'desktop', side: 'after', file: 'second-after.png', showsPrivate: true },
+    { change: 'admin-banner', screen: 'desktop', side: 'after', file: 'second-after.png' },
+  ]);
+  // One dark shot, of what the browser still shows: the screen it took last,
+  // saved for each change that screen is saved for, with its privacy answer.
+  assert.deepEqual(asked.map((message) => message.action), ['dark']);
+  const darkUploads = uploads(bridge).filter((sent) => sent.query.theme === 'dark');
+  assert.deepEqual(darkUploads.map((sent) => [sent.query.change, sent.query.kind, sent.query.showsPrivate]),
+    [['saved-toast', 'screen', '1'], ['admin-banner', 'screen', undefined]]);
+  assert.equal(Buffer.from(darkUploads[0].body).toString(), 'dark still 1');
+  assert.deepEqual(result.dark, [
+    { change: 'saved-toast', screen: 'desktop', side: 'after', saved: true },
+    { change: 'admin-banner', screen: 'desktop', side: 'after', saved: true },
+  ]);
+  // The earlier screen is no longer on show: the agent takes its dark shot.
+  assert.deepEqual(result.darkLeft, [{ change: 'invite-suggestions', screen: 'desktop', side: 'after' }]);
+  assert.match(result.darkHint, /could not be taken where the page stands/);
+  assert.ok(result.results.every((entry) => !Object.hasOwn(entry, 'showsPrivate')), 'the answer repeats no input');
+  // The element shot listed before its screen shot went up after every
+  // screen shot, so Homeroom checks it against the screen of its state; the
+  // answer keeps the listed order.
+  const lightUploads = uploads(bridge).filter((sent) => sent.query.theme !== 'dark');
+  assert.deepEqual(lightUploads.map((sent) => sent.query.kind), ['screen', 'screen', 'screen', 'element']);
+  assert.deepEqual(result.results.map((entry) => entry.kind), ['screen', 'element', 'screen', 'screen']);
+
+  // A page that came out the same in dark does not follow the system's mode:
+  // the rest of the turn's dark shots are the agent's, by the parameter.
+  platformAnswer = (query) => (query.theme === 'dark' ? { saved: false, sameAsLight: true } : { saved: true });
+  take('third-after.png', new Date());
+  const same = await save([{ change: 'invite-suggestions', screen: 'desktop', side: 'after', file: 'third-after.png' }]);
+  assert.deepEqual(same.dark, [{ change: 'invite-suggestions', screen: 'desktop', side: 'after', saved: false, sameAsLight: true }]);
+  assert.match(same.darkHint, /did not change when its page was switched to dark where it stands/);
+  take('fourth-after.png', new Date());
+  const after = await save([{ change: 'saved-toast', screen: 'desktop', side: 'after', file: 'fourth-after.png' }]);
+  assert.equal(asked.length, 2, 'no more dark shots are asked of the browser');
+  assert.deepEqual(after.darkLeft, [{ change: 'saved-toast', screen: 'desktop', side: 'after' }]);
+
+});
+
+test('the browser observer takes a dark shot where the page stands and always switches it back', async () => {
+  const observer = read('shots-browser-observer.js');
+  const branch = /if \(message\.action === 'dark'\) \{[\s\S]*?\n    \}\n    if \(message\.action !== 'upload'\)/.exec(observer)[0];
+  assert.match(branch, /parker\.inject\('browser_emulate_media', \{ colorScheme: 'dark' \}\)/);
+  assert.match(branch, /parker\.inject\('browser_take_screenshot', \{ filename: file \}\)/);
+  assert.match(branch, /\} finally \{\s+restored = await parker\.inject\('browser_emulate_media', \{ colorScheme: 'light' \}\);/);
+  assert.match(branch, /onCloseup\?\.\(file\)/, 'stamped with the page it shows, as a close-up is');
+  assert.match(branch, /const file = `dark-\$\{crypto\.randomBytes\(8\)\.toString\('hex'\)\}\.png`/);
 });

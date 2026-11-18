@@ -338,6 +338,7 @@ test('the Dev board can opt imported active rows into the owner list', async () 
     assert.match(detail.sql, /cs\.pr_body/);
     assert.match(detail.sql, /cs\.testing_md/);
     assert.match(detail.sql, /cs\.test_results/);
+    assert.doesNotMatch(detail.sql, /test_results_listed/, 'without ?results=failing the stored column is read');
     assert.match(detail.sql, /cs\.checks_checked_at/);
   } finally {
     server.close();
@@ -461,7 +462,11 @@ test('awaiting_input: the query reads the last conversational row and the spec b
   try {
     await fetchActiveSessions(server);
     const q = capturedQueries.find(isActiveSessionsQuery);
-    assert.match(q.sql, /cs\.spec_md/);
+    // #6793: the plan is read only where sessionAwaitsInput would read it.
+    assert.match(q.sql,
+      /CASE WHEN lt\.role = 'assistant' AND lt\.asks IS NOT TRUE AND cs\.pr_number IS NULL\s+THEN cs\.spec_md END AS spec_md/);
+    assert.doesNotMatch(q.sql, /cs\.test_results, cs\.spec_md/);
+    assert.match(q.sql, /AS failing_results/);
     assert.match(q.sql, /lt\.role AS last_turn_role, lt\.asks AS last_turn_asks/);
     // The newest user/assistant row: system rows (scout cards, status lines)
     // are not turns and must not decide whose turn it is.
@@ -684,6 +689,36 @@ test('shared-sessions returns linked_issues per row', async () => {
   } finally {
     appAccess.getAppForUser = prevGet;
     poolQueryHandler = async () => ({ rows: [] });
+    server.close();
+  }
+});
+
+// #6793: the query keeps only the rows that did not pass (with their
+// excerpts), the card's summary is built from them, and they then leave the
+// wire like the raw column did.
+test('#6793: failing_checks comes from the failing rows the query kept, which are not sent', async () => {
+  poolQueryHandler = async () => ({
+    rows: [
+      sessionRow({ id: 51, check_state: 'failing', failing_results: [
+        { name: 'Open settings', path: '/#settings', status: 'fail', failureReason: 'Button missing' },
+        { name: 'Advisory note', path: '/', status: 'fail', advisory: true },
+      ] }),
+      sessionRow({ id: 52, check_state: 'passing', failing_results: [] }),
+    ],
+  });
+  const server = await startServer();
+  try {
+    const { body } = await fetchActiveSessions(server);
+    const byId = Object.fromEntries(body.sessions.map((s) => [s.id, s]));
+    assert.strictEqual(byId[51].failing_checks.total, 2);
+    assert.strictEqual(byId[51].failing_checks.blocking, 1);
+    assert.strictEqual(byId[51].failing_checks.rows[0].reason, 'Button missing');
+    assert.strictEqual('failing_checks' in byId[52], false);
+    for (const s of body.sessions) {
+      assert.strictEqual('failing_results' in s, false);
+      assert.strictEqual('test_results' in s, false);
+    }
+  } finally {
     server.close();
   }
 });

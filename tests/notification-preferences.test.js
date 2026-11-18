@@ -33,8 +33,15 @@ test('every gated kind is also push-eligible, or the two could disagree', () => 
   // THE invariant behind "always in sync". A kind gated here but missing
   // from the closed push policy would be a category a person can turn ON
   // that still never reaches their phone.
-  const missing = [...prefs.GATED_KINDS].filter((kind) => !ALLOWED_KINDS.has(kind));
+  //
+  // #6100: one kind is bell-only on purpose. `change_closed` (the author's
+  // Closed row) follows the "Your proposals" switch and is never pushed to a
+  // phone: it has no push category, so the switch still decides the row and
+  // nothing rings either way.
+  const BELL_ONLY = new Set(['change_closed']);
+  const missing = [...prefs.GATED_KINDS].filter((kind) => !BELL_ONLY.has(kind) && !ALLOWED_KINDS.has(kind));
   assert.deepEqual(missing, []);
+  for (const kind of BELL_ONLY) assert.equal(ALLOWED_KINDS.has(kind), false, kind);
 });
 
 test('the ten app categories are the ones that were agreed', () => {

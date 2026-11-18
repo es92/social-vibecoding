@@ -575,3 +575,121 @@ test('close-ups reach only a viewer in the experiment, in their own shape, and n
     assert.equal(out.artifacts.length, 0, JSON.stringify(odd));
   }
 });
+
+// ── The previous version's shots and shots carried across a merge of main ──
+//
+// tests/shots-previous-version.test.js has the shots machine's side: the
+// slot keeps the published run a head move left (shots_detail.previous) and
+// names the merged head a clean merge of main carried its shots to.
+
+const PREVIOUS = 'f'.repeat(32);
+function previousRun(overrides = {}) {
+  return {
+    ...run({
+      state: 'stale',
+      headSha: OTHER,
+      artifactSummary: [
+        { id: 'e'.repeat(32), storyId: 'dialog', viewport: 'desktop', side: 'base', variant: 'context', media: 'png', contentType: 'image/png' },
+        { id: ARTIFACT, storyId: 'dialog', viewport: 'desktop', side: 'head', variant: 'context', media: 'png', contentType: 'image/png' },
+      ],
+      shotResults: [{ id: 'dialog', status: 'ready', reason: null, note: 'The empty list is not shown.' }],
+      screens: [{ viewport: 'desktop', shot: 'dialog', stories: ['dialog'], width: 1280, heightBefore: 800, heightAfter: 800,
+        regions: [{ story: 'dialog', b: [1, 2, 3, 4], a: [1, 2, 3, 4], bMark: null, aMark: null }] }],
+    }),
+    id: PREVIOUS,
+    sessionId: 42,
+    ...overrides,
+  };
+}
+const moving = (overrides = {}) => session({
+  shots_state: 'exploring',
+  shots_detail: { headSha: HEAD, previous: { runId: PREVIOUS, headSha: OTHER } },
+  ...overrides,
+});
+
+test('the previous version\'s shots read as a published run of their own, for this proposal only', () => {
+  const previous = view.serializePrevious(previousRun(), moving(), 'demo-app');
+  assert.equal(previous.state, 'verified');
+  assert.equal(previous.headSha, OTHER, 'they say which version they were taken on');
+  assert.deepEqual(previous.artifacts.map((a) => a.url), [
+    `/api/apps/demo-app/proposals/42/shots/${'e'.repeat(32)}`,
+    `/api/apps/demo-app/proposals/42/shots/${ARTIFACT}`,
+  ]);
+  assert.equal(previous.screens[0].regions.length, 1);
+  assert.equal(previous.shotResults[0].note, 'The empty list is not shown.');
+  for (const key of ['failureReason', 'progress', 'previous', 'automaticRetryPending']) {
+    assert.equal(Object.hasOwn(previous, key), false, `${key}: nothing about the run under way`);
+  }
+  assert.equal(view.serializePrevious(previousRun({ sessionId: 43 }), moving(), 'demo-app'), null, 'another proposal\'s run');
+  assert.equal(view.serializePrevious(previousRun({ id: 'c'.repeat(32) }), moving(), 'demo-app'), null, 'not the one the slot keeps');
+  assert.equal(view.serializePrevious(previousRun({ artifactSummary: [] }), moving(), 'demo-app'), null, 'a run with no pictures left');
+});
+
+test('the previous version\'s shots stand beside this version\'s state until this version\'s publish', async () => {
+  const runs = [];
+  const pool = {
+    async query(sql, params) {
+      runs.push(sql.replace(/\s+/g, ' '));
+      if (/r\.state IN \('verified', 'stale'\)/.test(sql)) {
+        assert.deepEqual(params, [[PREVIOUS]]);
+        const r = previousRun();
+        return { rows: [{ id: PREVIOUS, session_id: 42, state: 'stale', head_sha: OTHER, base_sha: BASE,
+          intent: { version: 1, stories: [{ id: 'dialog', claim: r.claims[0].claim, persona: 'member', viewports: [{ name: 'desktop' }],
+            intent: { steps: ['Open dialog'], baseState: 'present', animation: 'none' } }] },
+          hard_verdict: { stories: r.shotResults, screens: r.screens }, artifact_summary: r.artifactSummary }] };
+      }
+      return { rows: [] };
+    },
+  };
+  // A run of this version under way, as the slot reads before its row exists.
+  const out = await view.getForSession(pool, moving(), 'demo-app');
+  assert.equal(out.state, 'exploring');
+  assert.equal(out.previous.state, 'verified');
+  assert.equal(out.previous.headSha, OTHER);
+  assert.equal(out.previous.artifacts.length, 2);
+  // Published: no previous version, and nothing is read for one.
+  runs.length = 0;
+  const done = await view.getForSession({ async query() { return { rows: [] }; } },
+    moving({ shots_state: 'verified' }), 'demo-app');
+  assert.equal(done.previous, null);
+  assert.equal(view.withPrevious({ state: 'verified' }, { state: 'verified' }).previous, null);
+  assert.equal(view.withPrevious({ state: 'not_required' }, { state: 'verified' }).previous, null);
+  assert.deepEqual(view.withPrevious({ state: 'failed' }, { state: 'verified' }).previous, { state: 'verified' });
+});
+
+test('shots carried across a clean merge of main stand for the merged head', () => {
+  const carried = session({ reviewed_head_sha: OTHER, shots_detail: { headSha: OTHER, carriedFrom: HEAD } });
+  const result = view.serialize(run(), carried, 'demo-app', OTHER);
+  assert.equal(result.state, 'verified');
+  assert.equal(result.artifacts.length, 1);
+  assert.equal(result.headSha, HEAD, 'they say which commit they were taken on');
+  // Without the carry the same run is stale for that head.
+  assert.equal(view.serialize(run(), session({ reviewed_head_sha: OTHER, shots_detail: { headSha: OTHER } }), 'demo-app', OTHER).state, 'stale');
+  // A carry that names another run's head, or a run that did not publish, is no carry.
+  assert.equal(view.serialize(run(), session({ reviewed_head_sha: OTHER, shots_detail: { headSha: OTHER, carriedFrom: BASE } }), 'demo-app', OTHER).state, 'stale');
+  assert.equal(view.serialize(run({ state: 'failed' }), carried, 'demo-app', OTHER).state, 'stale');
+});
+
+test('lists read the previous version\'s shots in one query, only for proposals with none published', async () => {
+  const asked = [];
+  const r = previousRun();
+  const pool = {
+    async query(sql, params) {
+      if (/r\.state IN \('verified', 'stale'\)/.test(sql)) {
+        asked.push(params[0]);
+        return { rows: [{ id: PREVIOUS, session_id: 42, state: 'stale', head_sha: OTHER, base_sha: BASE,
+          intent: { version: 1, stories: [{ id: 'dialog', claim: r.claims[0].claim, persona: 'member', viewports: [{ name: 'desktop' }],
+            intent: { steps: ['Open dialog'], baseState: 'present', animation: 'none' } }] },
+          hard_verdict: { stories: r.shotResults }, artifact_summary: r.artifactSummary }] };
+      }
+      return { rows: [] };
+    },
+  };
+  const out = await view.getForSessions(pool, [
+    moving({ shots_state: 'failed', shots_detail: { headSha: HEAD, failureReason: 'No row.', previous: { runId: PREVIOUS, headSha: OTHER } } }),
+    session({ id: 43, shots_state: 'verified', shots_detail: { headSha: HEAD, previous: { runId: 'c'.repeat(32), headSha: OTHER } } }),
+  ], 'demo-app');
+  assert.deepEqual(asked, [[PREVIOUS]], 'one read, and none for a proposal whose own shots are published');
+  assert.equal(out.get(42).previous.headSha, OTHER);
+  assert.equal(out.get(43).previous, null);
+});

@@ -2682,7 +2682,10 @@ async function reconcilePromotedSweepHead({ config, pool, session }) {
 // field below being present. Placeholders: $1 = app_id, $2 = the viewer's
 // user id (for the per-viewer my_vote / my_kudos subqueries). Callers
 // append their own WHERE / ORDER / LIMIT.
-function mergedRowSelect() {
+function mergedRowSelect(opts = null) {
+  // #6793: a list passes the list form of the check results; an item's own
+  // read keeps the stored column.
+  const results = (opts && opts.results) || 'cs.test_results';
   return `SELECT cs.id, cs.pr_number, cs.pr_url, cs.pr_title, cs.pr_summary_md, cs.pr_summary_stale, cs.pr_body, cs.user_id, cs.status, cs.linked_issues, cs.merge_commit_sha, COALESCE(u.username, 'Deleted user') AS username, cs.created_at,
            -- #1264: the exact merge time (and the promotion time beside it)
            -- so the progress report can date completed work by when it
@@ -2725,7 +2728,7 @@ function mergedRowSelect() {
            cs.console_check_state, cs.console_errors, cs.console_checked_at,
            -- #47: checks snapshot, kept visible on merged proposals for
            -- post-hoc review (a merged proposal passed, by the gate).
-           cs.check_state, cs.test_results, cs.checks_checked_at,
+           cs.check_state, ${results}, cs.checks_checked_at,
            -- Which half of a 'pending' run is in flight ('building' |
            -- 'testing'), so the checks card names the stage instead of
            -- showing one opaque "still running". NULL = legacy wording.
@@ -4335,7 +4338,8 @@ function voteRoutes(config) {
            -- #47: "CI for proposals" check snapshot for the checks badge +
            -- per-test detail block. Unlike the console snapshot this GATES
            -- merge (the merge gate blocks a non-'passing' proposal).
-           cs.check_state, cs.test_results, cs.checks_checked_at,
+           -- #6793: the board's list form is made here, not in JavaScript.
+           cs.check_state, ${listTestResults.resultsSelect(req, 'cs')}, cs.checks_checked_at,
            cs.checks_commit_sha,
            -- #1442: the freshness cache. behind_main above is now written
            -- THROUGH from freshness_behind_by, so it and these agree; the
@@ -4505,6 +4509,7 @@ function voteRoutes(config) {
          ORDER BY cs.created_at DESC`,
         [appRows[0].id, userId]
       );
+      listTestResults.unpackListed(rows);
 
       const visualsService = require('../services/visuals');
       const stagingService = require('../services/staging');
@@ -4726,7 +4731,8 @@ function voteRoutes(config) {
           // warning block reads it, and the requirements list its step.
           row.releaseHold = holdsBySession.get(Number(row.id)) || row.releaseHold || null;
           row.mergeRequirements = requirementsSvc.readRequirements({
-            ...row,
+            // The unit suite's passing row, which the list form leaves out.
+            ...listTestResults.listedRowForServer(row),
             release_hold: row.releaseHold,
             shotsEnforced: row.shotsEnforced,
             app_main_check_state: mainCheck.state,
@@ -4747,7 +4753,7 @@ function voteRoutes(config) {
       await require('./sessions').attachChangePlans(pool, rows, userId);
       res.json({
         // `?results=failing`: the shell's list form (services/list-test-results.js).
-        promoted: listTestResults.forListing(req, rows),
+        promoted: listTestResults.forListing(req, rows, { slim: true }),
         // services/main-watch.js: the unit suite's verdict on the last
         // merge commit, and whether it is pausing this app's merges.
         mainCheck,
@@ -4879,7 +4885,7 @@ function voteRoutes(config) {
           ? [appRows[0].id, userId, before.toISOString(), beforeIdRaw, limit + 1]
           : [appRows[0].id, userId, before.toISOString(), limit + 1];
       const { rows: prRows } = await pool.query(
-        `${mergedRowSelect()}
+        `${mergedRowSelect({ results: listTestResults.resultsSelect(req, 'cs') })}
          WHERE cs.app_id = $1 AND cs.status = 'merged'
            ${noNewerMergedTwin()}
            ${prCursorSql}
@@ -4888,6 +4894,7 @@ function voteRoutes(config) {
         // Fetch limit+1 so an extra row signals there's another page.
         prParams
       );
+      listTestResults.unpackListed(prRows);
       const mergedShots = config.shots?.present
         ? await shotsView.getForSessions(pool, prRows, req.params.slug, { viewer: req.user })
         : new Map();
@@ -5171,7 +5178,7 @@ function voteRoutes(config) {
       await require('./sessions').attachChangePlans(pool, rows, userId);
       res.json({
         // `?results=failing`: the shell's list form (services/list-test-results.js).
-        merged: listTestResults.forListing(req, rows),
+        merged: listTestResults.forListing(req, rows, { slim: true }),
         hasMore, total, deployment, ...(shipped ? { shipped } : {}),
       });
     } catch (err) {

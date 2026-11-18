@@ -58,21 +58,27 @@ function stillsSql(scope) {
 
 // A change up for a vote, at the head its shots were taken of (the change
 // page's own rule, routes/shots.js).
-const OPEN_SCOPE = `s.id = ANY($1::bigint[]) AND s.status IN ('promoted', 'merging')
-       AND r.head_sha = COALESCE(
+// Shots carried across a clean merge of main (the shots machine's carry)
+// were taken on the head it left, and the slot names the merged head.
+const AT_HEAD = `(r.head_sha = COALESCE(
              CASE WHEN s.source = 'imported' THEN s.imported_pr_head_sha ELSE s.reviewed_head_sha END,
              s.checks_commit_sha,
-             s.handoff_head_sha)`;
+             s.handoff_head_sha)
+         OR (r.head_sha = s.shots_detail->>'carriedFrom'
+           AND s.shots_detail->>'headSha' = COALESCE(
+             CASE WHEN s.source = 'imported' THEN s.imported_pr_head_sha ELSE s.reviewed_head_sha END,
+             s.checks_commit_sha,
+             s.handoff_head_sha)))`;
+
+const OPEN_SCOPE = `s.id = ANY($1::bigint[]) AND s.status IN ('promoted', 'merging')
+       AND ${AT_HEAD}`;
 
 // A change voted in and live, at the head its shots were taken of: what a
 // visitor's page shows of what went live lately (services/public-project.js,
 // What it's like and Recently live). The same rules as one up for a vote,
 // less its status: the run is still the change's current, verified one.
 const MERGED_SCOPE = `s.id = ANY($1::bigint[]) AND s.status = 'merged' AND s.live_at IS NOT NULL
-       AND r.head_sha = COALESCE(
-             CASE WHEN s.source = 'imported' THEN s.imported_pr_head_sha ELSE s.reviewed_head_sha END,
-             s.checks_commit_sha,
-             s.handoff_head_sha)`;
+       AND ${AT_HEAD}`;
 
 /**
  * One change's pair from its passing rows: the first screen (by change and

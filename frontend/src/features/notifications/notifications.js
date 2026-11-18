@@ -1559,6 +1559,8 @@ const Notifications = {
       const proposalKinds = new Set([
         'pr_proposed', 'stale_pr', 'kudos', 'check_failed',
         'pr_merged', 'proposal_vote', 'vote_digest', 'revision_recheck', 'change_ready',
+        // #6100: the author's news that their change was closed opens it.
+        'change_closed',
         // #4787: a change the viewer voted on going live opens that change,
         // the same way the author's own "Live" row does.
         // #6643: an admin asked to approve a held change opens that change.
@@ -2859,6 +2861,37 @@ function headline(label, subject) {
   };
 }
 
+// #6100: why a closed change was closed, from the reason code the close
+// recorded (`closeReason`, services/notifications.js). The same sentences
+// the change's page shows (AppView.CLOSE_REASON_IDS), one whole catalog id
+// per code; a code this build does not know maps to nothing, and the row
+// says only what it always did.
+const CLOSE_REASON_IDS = Object.freeze({
+  'auto-rejected': 'core:change.closedWhy.autoRejected',
+  'admin-no': 'core:change.closedWhy.adminNo',
+  'admin-declined': 'core:change.closedWhy.adminDeclined',
+  'approver-no': 'core:change.closedWhy.approverNo',
+  'proposal-replaced': 'core:change.closedWhy.replaced',
+  superseded: 'core:change.closedWhy.superseded',
+  'already-on-main': 'core:change.closedWhy.alreadyOnMain',
+  'request-closed': 'core:change.closedWhy.requestClosed',
+  'red-checks': 'core:change.closedWhy.redChecks',
+  'stale-pr': 'core:change.closedWhy.stale',
+  'campaign-refused': 'core:change.closedWhy.campaignRefused',
+  'pr-closed': 'core:change.closedWhy.prClosed',
+  'pr-merged': 'core:change.closedWhy.prMerged',
+  'update-skipped': 'core:change.closedWhy.updateSkipped',
+  'update-replaced': 'core:change.closedWhy.updateReplaced',
+  'update-refused': 'core:change.closedWhy.updateRefused',
+  'merged-elsewhere': 'core:change.closedWhy.mergedElsewhere',
+  manual: 'core:change.closedWhy.withdrawn',
+});
+
+function closedWhy(head, code) {
+  const id = code && Object.prototype.hasOwnProperty.call(CLOSE_REASON_IDS, code) ? CLOSE_REASON_IDS[code] : null;
+  return id ? { ...head, segments: [...head.segments, { t: 'text', v: t(id) }] } : head;
+}
+
 // #3233: `detail` is "<old>:<new>" (services/app-allowance.js). Say it in
 // words, and which way it moved; a token this build cannot read still says
 // what happened.
@@ -3444,7 +3477,10 @@ function rowWords(n) {
       return { ...base, needsYou: false, icon: '\u{1F680}', by: n.sourceUsername || null, ...headline(t('notifications:row.changeReady.goingLive'), subject) };
     }
     if (n.sessionStatus === 'archived') {
-      return { ...base, needsYou: false, icon: '\u{1F5C2}\uFE0F', by: n.sourceUsername || null, ...headline(t('notifications:row.changeReady.closed'), subject) };
+      return {
+        ...base, needsYou: false, icon: '\u{1F5C2}\uFE0F', by: n.sourceUsername || null,
+        ...closedWhy(headline(t('notifications:row.changeReady.closed'), subject), n.closeReason),
+      };
     }
     return {
       ...base,
@@ -3452,6 +3488,14 @@ function rowWords(n) {
       by: n.sourceUsername || null,
       ...headline(t('notifications:row.changeReady.ready'), subject),
     };
+  }
+
+  // #6100: the author's own change was closed, with why. The row opens the
+  // change, as their "Live" row does (proposalKinds). A change reopened
+  // since keeps the row and drops the reason, which went with the reopen.
+  if (n.kind === 'change_closed') {
+    const head = headline(t('notifications:row.changeClosed.label'), prLabel || n.sessionTitle || t('notifications:row.changeClosed.yourChange'));
+    return { ...base, needsYou: false, icon: '\u{1F5C2}\uFE0F', ...closedWhy(head, n.closeReason) };
   }
 
   // ── #1374's five ────────────────────────────────────────────────────

@@ -139,6 +139,17 @@ test('the shots demo states build on staging seeds that still exist', () => {
   assert.match(issues, /mk\(900017, '\[Mock\] Issue with an open proposal against it',/);
   assert.doesNotMatch(issues.slice(issues.indexOf('const mockInProgress')), /\[900017, \{/,
     'no synthetic work state on #900017');
+  // The request nobody picked up is the mock nothing else marks: no
+  // synthetic work state, and not one of the ten the seeds' change closes.
+  assert.match(issues, /mk\(900013, '\[Mock\] Bare issue — no priority, no category, nobody assigned',/);
+  assert.doesNotMatch(issues.slice(issues.indexOf('const mockInProgress')), /\[900013, \{/,
+    'no synthetic work state on #900013');
+  assert.match(migrate, /\[900001, 900002, 900003, 900004, 900005, 900006, 900007, 900008, 900009, 900010\]\]/,
+    'the seeds\' change that closes ten requests stops at #900010');
+  assert.doesNotMatch(migrate, /\b900013\b/, 'no staging seed writes #900013');
+  // The seeds open the member's chat with Homeroom bot at boot, so the chat
+  // states write into that chat (shots-demo-states.js existingBotChat).
+  assert.match(migrate, /async function seedStagingMainChatLastVisit[\s\S]{0,2500}INSERT INTO conversation_direct_pairs/);
   assert.match(migrate, /'staging-demo-general-lin'/);
   assert.match(migrate, /SELECT 'Staging demo forkable app', 'staging-demo-forkable', 'running', 'public', id/,
     'the remix\'s original is a running public app');
@@ -148,5 +159,7 @@ test('the shots demo states build on staging seeds that still exist', () => {
   assert.match(states, /const FIXTURE_EVENT_CHALLENGE_ID = 900507;/);
   assert.match(states, /const FIXTURE_FORK_SOURCE_SLUG = 'staging-demo-forkable';/);
   assert.match(states, /const FIXTURE_REQUEST_NUMBER = 900017;/);
+  assert.match(states, /number: 900013, title: '\[Mock\] Bare issue — no priority, no category, nobody assigned',/);
+  assert.match(states, /const APPROVED_APP_MAKER = 'staging-demo-general-lin';/);
   assert.match(states, /\['staging-demo-topochain-participant-6', 'shots_fixture_ada'/);
 });

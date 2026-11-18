@@ -4617,9 +4617,10 @@ test('list_my_proposals asks for imported proposals, which is what it opens', ()
   // sat 15 characters inside 3000 until #1959 put a second LATERAL and two
   // columns ahead of the WHERE clause, and #5379 added the settings gate
   // beside it. #6042 put the merged/merging gate (and its comment) ahead of
-  // the WHERE clause too, which carried the filter past 4500.
-  assert.match(route.slice(0, 5600), /cs\.source IS DISTINCT FROM 'imported'/);
-  assert.match(route.slice(0, 5600), /cs\.source IS DISTINCT FROM 'settings'/);
+  // the WHERE clause too, which carried the filter past 4500. #6793 selects
+  // only the failing check rows there, which carried it past 5600.
+  assert.match(route.slice(0, 6600), /cs\.source IS DISTINCT FROM 'imported'/);
+  assert.match(route.slice(0, 6600), /cs\.source IS DISTINCT FROM 'settings'/);
   assert.match(SRC.slice(SRC.indexOf("server.registerTool('submit_work'")), /pr-import/);
 
   // And the connector allowlist matches on the PATH, so the query string

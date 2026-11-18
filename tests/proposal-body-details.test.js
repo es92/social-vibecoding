@@ -69,7 +69,7 @@ function makeAppView(renderMarkdown) {
 test('both live and completed proposal rows include the full PR body', () => {
   assert.match(
     VOTES_SRC,
-    /function mergedRowSelect\(\)[\s\S]*?SELECT[^`]*cs\.pr_summary_md, cs\.pr_summary_stale, cs\.pr_body,/
+    /function mergedRowSelect\([^)]*\)[\s\S]*?SELECT[^`]*cs\.pr_summary_md, cs\.pr_summary_stale, cs\.pr_body,/
   );
   assert.match(
     VOTES_SRC,

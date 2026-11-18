@@ -802,6 +802,15 @@ export interface ChangeThreadView {
     changes?: { n: number; text: string }[];
     /** The change the shots are of, for the detail column its Expand opens. */
     changeId?: number | null;
+    /** The change this viewer may start its failed run again on, or null (AppView._canRetakeShots). */
+    retake?: number | null;
+    /**
+     * The shots shown are the previous version's (shots-view.js `previous`):
+     * this version's are being taken (`waiting`), or failed or were skipped
+     * (`detail` says why). `line` labels the picture as the previous
+     * version's. Absent when the shots are this version's own.
+     */
+    previous?: { state: string; waiting: boolean; line: string; detail: string | null } | null;
   } | null;
   /**
    * The change shows nothing a person can see, so no shots were asked for

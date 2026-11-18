@@ -104,17 +104,20 @@ test('the states the October changes went unshot for are ready-made on Homeroom\
   // Each has a ready-made state. PR 4622's line still needs the bot to take
   // its turn, which no state makes, so it is warned about the model; and
   // the nearly spent allowance is the full admin's, so a member's change
-  // that needs it is told whose it is.
-  assert.equal(own.warnings.length, 2);
+  // that needs it is told whose it is. 18 Nov 2026: a request's hand-off to
+  // a person is on its page now, never in the chat with the bot, and the
+  // state that drew it there is retired, so PR 4763's line is told nothing
+  // ready-made holds it.
+  assert.equal(own.warnings.length, 3);
   assert.match(own.warnings[0], /^low-credits-note seems to need a weekly allowance nearly spent, and the ready-made state that holds it on these copies is for full_admin \(see availableStates\)\. Declare the change for full_admin, or add hints\.setup/);
   assert.match(own.warnings[1], /^working-line seems to need a live reply from a model/);
+  assert.match(own.warnings[2], /^person-card seems to need a Homeroom bot hand-off that needs a person to decide, and no ready-made state on these copies holds it \(see availableStates\)/);
   const asFullAdmin = declare(story('low-credits-note', held.stories[1].claim,
     { persona: 'full_admin', steps: held.stories[1].intent.steps }));
   assert.deepEqual(warned(asFullAdmin, true), [], 'declared for the persona the state is for');
   const names = own.availableStates.map((state) => state.name);
   for (const id of ['shots-demo-member-voted-change-live-v1', 'shots-demo-full-admin-allowance-low-v1',
-    'shots-demo-member-bot-built-proposal-v1', 'shots-demo-member-bot-deciders-v1',
-    'shots-demo-member-checks-part-way-v1']) {
+    'shots-demo-member-bot-built-proposal-v1', 'shots-demo-member-checks-part-way-v1']) {
     const state = readyStates.READY_STATES.find((each) => each.id === id);
     assert.ok(names.includes(state.name), id);
   }
@@ -206,6 +209,39 @@ test('no warning when the author says how to make it, for the guest\'s own state
   // The steps and the checkpoint are its words too.
   assert.equal(warned(declare(story('steps', 'The card has a new line.',
     { steps: ['Open the hub as a member on the waitlist'] })), true).length, 1);
+});
+
+// 18 Nov 2026: the bot's own screens whose shots failed for want of data
+// (PRs 6695, 6682, 6662, among others): a request waiting its turn, one
+// nobody picked up under Not moving, and a change whose votes are in while
+// its checks run. Each is the member's on Homeroom's copies, and named on a
+// child app's.
+test('the bot tab\'s waiting rows and an approved change still checking are ready-made for the member', () => {
+  const held = declare(
+    story('queued-row', 'A request waiting its turn says its number in line on the bot\'s tab.'),
+    story('still-lit', 'A row under Not moving stays lit while its panel is open.'),
+    story('approved-checking', 'When a change\'s votes are all in while its checks are still running, it says Approved.'),
+  );
+  assert.deepEqual(warned(held, true), [], 'each has a ready-made state for the member');
+  const needs = warned(held, false).map((w) => w.split(' to need ')[1].split(', and ')[0]);
+  assert.deepEqual(needs, [
+    'a request waiting its turn to be built',
+    'a request nobody has picked up (Not moving)',
+    'a change whose votes are in while its checks still run',
+  ]);
+  // The read-only admin is not who they are for.
+  const asAdmin = warned(declare(story('queued-row', held.stories[0].claim, { persona: 'read_only_admin' })), true);
+  assert.equal(asAdmin.length, 1);
+  assert.match(asAdmin[0], /is for member \(see availableStates\)/);
+  const names = readyStates.declarationAdvice(held, { selfApp: true }).availableStates.map((state) => state.name);
+  for (const id of ['shots-demo-member-request-queued-v1', 'shots-demo-member-request-not-moving-v1',
+    'shots-demo-member-approved-checks-running-v1']) {
+    assert.ok(names.includes(readyStates.READY_STATES.find((state) => state.id === id).name), id);
+  }
+  // Retired: the chat with the bot draws neither any more.
+  for (const id of ['shots-demo-member-bot-run-card-v1', 'shots-demo-member-bot-deciders-v1']) {
+    assert.ok(!demoStates.STATE_IDS.includes(id), id);
+  }
 });
 
 test('a change whose steps wait for a model\'s reply is warned about whatever setup or state it names', () => {

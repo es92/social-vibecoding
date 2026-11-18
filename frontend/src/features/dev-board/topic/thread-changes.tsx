@@ -69,7 +69,7 @@ import { Avatar } from '@/components/ui/feed';
 import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 import { ActionButton, StatusPill } from '../card/dev-card';
 import type { DevCardModel } from '../card/model';
-import { ChangeFoot, ChangeGates, ShotsCard , phaseOf } from './change-head';
+import { ChangeFoot, ChangeGates, PreviousShotsLine, ShotsCard , phaseOf } from './change-head';
 import { ballotHeadline, fixStanding } from './card-model';
 import { StepLayer, ThreadCardContext, ThreadFoot , NoPicture } from './thread-card';
 import { closeStep, openStep, publishLead, useOpenStep } from './step-store';
@@ -487,6 +487,8 @@ function ShotsPair({ id, number, s }: {
   };
   return (
     <div className="dev-thread-shots" data-thread-change-shots={id}>
+      {/* The previous version's pair, while this version's are taken. */}
+      {s.previous ? <PreviousShotsLine s={s} /> : null}
       <button type="button" className="dev-thread-shots-pair" onClick={expand} aria-label={t('project:topic.thread.page.shotsOpen')}>
         {(['before', 'after'] as const).map((side) => (
           <span key={side} className="dev-thread-shot" data-thread-shot={side}>

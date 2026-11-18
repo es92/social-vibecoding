@@ -1517,6 +1517,41 @@ test('#6521 list row and Testing card agree on a pass from an older version', ()
   assert.match(src, /cs\.reviewed_head_sha,\n\s+-- #6521[\s\S]{0,400}cs\.checks_commit_sha,/);
 });
 
+test('after a new commit the Before and after card keeps the previous version\'s picture, labelled, until this version\'s publish', () => {
+  // shots-view.js `previous` (tests/shots-previous-version.test.js): the
+  // published run a head move left. 18 Nov 2026: in a week 168 runs went
+  // stale this way, and each move left the card with no picture.
+  const av = context();
+  const claim = { id: 's1', claim: 'The preview waits for sign-in', viewports: ['desktop'], steps: ['Open a preview'] };
+  const url = (side) => `/api/apps/example/proposals/4090/shots/${side.repeat(32)}`;
+  const previous = { state: 'verified', claims: [claim], baseSha: 'a'.repeat(40), headSha: 'c'.repeat(40),
+    artifacts: [{ storyId: 's1', viewport: 'desktop', side: 'base', variant: 'context', url: url('a') },
+      { storyId: 's1', viewport: 'desktop', side: 'head', variant: 'context', url: url('b') }] };
+  const taking = render(av, { ...PR, shots: { state: 'exploring', claims: [claim], artifacts: [], previous } }).page;
+  assert.match(taking, /<section class="dev-change-shots" data-change-shots="previous"[^>]*><p class="dev-change-shots-line dev-change-shots-previous-line" data-shots-previous="exploring" role="status"><span class="dc-status-spinner-arc" aria-hidden="true"><\/span><span>These are from the previous version\. New screenshots are being taken and will replace them\.<\/span><\/p>/);
+  assert.match(taking, /<section data-shots="1" data-shots-state="previous" aria-label="Before and after" class="dev-change-shots-body">/);
+  assert.match(taking, /src="\/api\/apps\/example\/proposals\/4090\/shots\/b{32}"/, 'the previous version\'s after shot is the picture');
+  assert.doesNotMatch(taking, /Taking the screenshots\. They show up here when they are ready\./, 'no empty well');
+  // This version's failed: the picture stays, with why this version has none,
+  // and its author's retake.
+  const failed = { state: 'failed', failureReason: 'The dialog never opened.', claims: [claim], artifacts: [], previous, repairAvailable: true };
+  const view = av._changeShotsView('proposal', { ...PR, user_id: 42, shots: failed });
+  assert.equal(view.state, 'verified');
+  assert.equal(view.previous.state, 'failed');
+  assert.equal(view.previous.waiting, false);
+  assert.equal(view.previous.line, 'These are from the previous version. This version has no screenshots yet.');
+  assert.match(view.previous.detail, /The dialog never opened\./);
+  assert.equal(view.retake, 4090);
+  const page = render(av, { ...PR, user_id: 42, shots: failed }).page;
+  assert.match(page, /data-shots-previous="failed" role="status"><span>These are from the previous version\. This version has no screenshots yet\.<\/span><span>[^<]*The dialog never opened\.<\/span><button type="button" class="gc-vote-btn" data-shots-retake="1"/);
+  // This version's own published: no label.
+  const own = render(av, { ...PR, shots: { ...previous, previous } }).page;
+  assert.doesNotMatch(own, /data-shots-previous|data-change-shots="previous"/);
+  // The copy is the catalog's.
+  assert.equal(message('changes:page.shots.previousTaking'), 'These are from the previous version. New screenshots are being taken and will replace them.');
+  assert.equal(message('changes:page.shots.previous'), 'These are from the previous version. This version has no screenshots yet.');
+});
+
 test('a failed run offers its author or an admin Take the screenshots again on the Before and after card (#6551)', () => {
   const av = context();
   const claim = { id: 's1', claim: 'The preview waits for sign-in', viewports: ['desktop'], steps: ['Open a preview'] };

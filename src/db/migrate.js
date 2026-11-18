@@ -14047,6 +14047,37 @@ async function seedStagingArchiveProposalFixtures(pool, config) {
     );
   }
 
+  // #6100: the shots' own member (usernode-capture) made a change the vote
+  // set aside, so a fresh staging copy can show why a change was closed, on
+  // its page and in its author's bell. Obviously fake and written only here:
+  // the row is the state a real close leaves (the proposal machine did not
+  // run). Idempotent on the branch name.
+  const whyBranch = 'staging-fixture/change-closed-reason';
+  const { rows: [member] } = await pool.query(
+    "SELECT id FROM users WHERE username = 'usernode-capture'"
+  );
+  if (member) {
+    const { rows: [whyClosed] } = await pool.query(
+      `INSERT INTO chat_sessions
+         (app_id, user_id, branch_name, pr_number, pr_title, status, close_reason,
+          created_at, promoted_at, archived_at)
+       SELECT $1::int, $2::int, $3::varchar, 9302,
+              '[Mock] Closed change, with why it closed',
+              'archived', 'auto-rejected',
+              NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day'
+        WHERE NOT EXISTS (SELECT 1 FROM chat_sessions WHERE app_id = $1 AND branch_name = $3)
+       RETURNING id`,
+      [appId, member.id, whyBranch]
+    );
+    if (whyClosed) {
+      await pool.query(
+        `INSERT INTO notifications (user_id, app_id, session_id, kind, detail)
+         VALUES ($1, $2, $3, 'change_closed', 'event:staging-fixture')`,
+        [member.id, appId, whyClosed.id]
+      );
+    }
+  }
+
   // Active, non-promoted session — surfaces as a chip in the viewer's
   // "Your dev session" strip with the new inline Archive button. No
   // promoted_at so it stays a live in-progress session (not a proposal

@@ -143,13 +143,15 @@ test('the brief\'s dark mode names the parameter the copy answers', () => {
       intent: contract.parseIntent(fixtures.intent()),
       ...options,
     });
+    // save_shot takes the dark shots where the page stands (#6787); the
+    // parameter is for the ones it leaves.
     assert.deepEqual(briefFor({ childApp: true }).darkMode, {
       param: 'un-theme', value: 'dark',
-      note: 'Add un-theme=dark to the start path\'s query to open a page in dark mode.',
+      note: 'save_shot takes the dark shots. For one it lists in darkLeft, add un-theme=dark to the start path\'s query.',
     });
     assert.deepEqual(briefFor({ selfApp: true }).darkMode, {
       param: 'theme', value: 'dark',
-      note: 'Add theme=dark to the start path\'s query to open a page in dark mode.',
+      note: 'save_shot takes the dark shots. For one it lists in darkLeft, add theme=dark to the start path\'s query.',
     });
   } finally {
     fs.rmSync(checkout, { recursive: true, force: true });
@@ -639,4 +641,29 @@ test('a platform fault is read off the error, and GitHub\'s limit waits for its 
   ]) {
     assert.equal(fault(error), null, String(error?.code || error?.message || error?.shotsPlatformFault || error));
   }
+});
+
+// trace_summary.tokenUsage was null on every shots run (18 Nov 2026). The
+// run adds up what its turn spent from whichever way the turn's end arrived:
+// the dispatch's own usage (also for a turn that failed or ran out of time),
+// or the result of a turn a restart followed, whose cost is in dollars.
+test('a run\'s trace says what its agent spent, however the turn ended', () => {
+  const live = orchestrator.newRunMetrics();
+  orchestrator.addAgentUsage(live, { result: { exitCode: 0 }, usage: { inputTokens: 5, outputTokens: 7, costCents: 2 } });
+  assert.deepEqual(orchestrator.traceSummary(live).tokenUsage, { inputTokens: 5, outputTokens: 7, costCents: 2 });
+
+  const followed = orchestrator.newRunMetrics();
+  orchestrator.addAgentUsage(followed, { result: { inputTokens: 10, cachedInputTokens: 900, outputTokens: 40, costUsd: 0.125 } });
+  assert.deepEqual(orchestrator.traceSummary(followed).tokenUsage,
+    { inputTokens: 10, cachedInputTokens: 900, outputTokens: 40, costCents: 12.5 });
+
+  const stopped = orchestrator.newRunMetrics();
+  orchestrator.addAgentUsage(stopped, { result: null, agentError: { code: 'shots_agent_timeout' },
+    usage: { inputTokens: 30, cachedInputTokens: 500, outputTokens: 2, streamed: 1 } });
+  assert.deepEqual(orchestrator.traceSummary(stopped).tokenUsage,
+    { inputTokens: 30, cachedInputTokens: 500, outputTokens: 2, streamed: 1 });
+
+  const none = orchestrator.newRunMetrics();
+  orchestrator.addAgentUsage(none, { result: null, agentError: { code: 'shots_agent_failed' } });
+  assert.equal(Object.hasOwn(orchestrator.traceSummary(none), 'tokenUsage'), false);
 });

@@ -15196,6 +15196,13 @@ div.dev-card-topic [data-work-note] { font-size: 12.5px; line-height: 1.45; marg
 .dev-change-shots .shots-noticed { padding: 4px 14px 14px; }
 .dev-change-shots-plain { padding: 12px 14px 14px; }
 .dev-change-shots-line { margin: 8px 0 0; display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-muted); }
+/* The previous version's shots keep their picture under a line that says
+   whose they are (change-head.tsx PreviousShotsLine): inside the card it
+   sits in the card's own padding; over the slider, and over a request
+   page's small pair (thread-changes.tsx ShotsPair), it is a line above. */
+.dev-change-shots-previous-line { flex-wrap: wrap; }
+.dev-change-shots > .dev-change-shots-previous-line { margin: 0; padding: 10px 14px 4px; }
+.dev-thread-shots > .dev-change-shots-previous-line { flex-basis: 100%; margin: 0; }
 .dev-change-shots-tiles { margin-top: 8px; }
 .dev-change-closed-note { margin: 0; padding: 6px 16px 12px; font-size: 15px; color: var(--text-muted); }
 /* 1 Nov 2026 (one page per thread): a change on its request's page carries

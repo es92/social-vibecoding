@@ -232,9 +232,9 @@ function createObserver({
     noteAnswer(text) {
       try { notePage(reportedPageUrl(text)); } catch { /* the next answer says */ }
     },
-    // A close-up the shots tools had this browser save (startControl): it
-    // shows the page the browser is on now, so it is stamped with that site,
-    // as the agent's own screenshots are.
+    // A close-up or a dark shot the shots tools had this browser save
+    // (startControl): it shows the page the browser is on now, so it is
+    // stamped with that site, as the agent's own screenshots are.
     stampCloseup(name) {
       try {
         const file = path.join(outputDir || '', path.basename(String(name || '')));
@@ -607,6 +607,9 @@ function createPointerParker({
 // itself, by name from the sample set (shots-samples.js), and sends the
 // browser the upload the agent cannot: the page gets a sample or nothing.
 const CONTROL_LINE_MAX_BYTES = 4096;
+// How long a page switched to dark mode is given to repaint before its dark
+// shot (an `action: 'dark'`), in seconds.
+const DARK_SETTLE_SECONDS = 0.6;
 const CONTROL_ANSWER_MAX_CHARS = 200_000;
 
 function sameToken(value, expected) {
@@ -643,6 +646,34 @@ function startControl({ dir, name, token, samplesDir, parker, emit = () => {}, b
       if (answer.outcome !== 'ok') return { ok: false, code: 'closeup_failed', outcome: answer.outcome };
       try { onCloseup?.(file); } catch { /* unstamped: refused later */ }
       return { ok: true, file };
+    }
+    if (message.action === 'dark') {
+      // The screen as it stands, in dark mode (#6787): the page's
+      // prefers-color-scheme switched where it is, so the shot has its light
+      // one's framing with no second navigation, then switched back before
+      // anything else runs in this browser. A page that follows only a URL
+      // parameter does not change, and Homeroom says so (sameAsLight).
+      const file = `dark-${crypto.randomBytes(8).toString('hex')}.png`;
+      const on = await parker.inject('browser_emulate_media', { colorScheme: 'dark' });
+      if (on.outcome !== 'ok') {
+        emit({ kind: 'dark_shot', ...browser, outcome: on.outcome });
+        return { ok: false, code: 'dark_unavailable', outcome: on.outcome };
+      }
+      let shot = { outcome: 'not_taken' };
+      let restored = { outcome: 'not_taken' };
+      try {
+        // Colours that ease from one mode to the other settle first.
+        await parker.inject('browser_wait_for', { time: DARK_SETTLE_SECONDS });
+        shot = await parker.inject('browser_take_screenshot', { filename: file });
+      } finally {
+        restored = await parker.inject('browser_emulate_media', { colorScheme: 'light' });
+      }
+      emit({ kind: 'dark_shot', ...browser, outcome: shot.outcome, ...(restored.outcome !== 'ok' ? { restored: restored.outcome } : {}) });
+      if (shot.outcome !== 'ok') {
+        return { ok: false, code: 'dark_failed', outcome: shot.outcome, lightRestored: restored.outcome === 'ok' };
+      }
+      try { onCloseup?.(file); } catch { /* unstamped: refused later */ }
+      return { ok: true, file, lightRestored: restored.outcome === 'ok' };
     }
     if (message.action !== 'upload') return { ok: false, code: 'unknown_action' };
     let paths;

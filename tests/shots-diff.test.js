@@ -332,3 +332,50 @@ test('averaging down keeps a block\'s mean colour', () => {
   const two = { width: 2, height: 2, data: Buffer.from([0, 0, 0, 255, 255, 255, 255, 255, 0, 0, 0, 255, 255, 255, 255, 255]) };
   assert.deepEqual([...diff.averageDown(two, 2).d], [128, 128, 128, 255]);
 });
+
+// #6787: a dark shot scrolled to another part of the page than its light one
+// showed the wrong place in the card's crop. Colours change everywhere with
+// the mode, but where text and edges sit does not.
+test('a dark screen is framed like its light one only when its detail sits in the same rows', () => {
+  // A page of lines of text at uneven places (a real page is not a grid),
+  // light: dark marks on a pale ground.
+  const at = [8, 31, 52, 90, 104, 139, 171, 186, 230, 247, 281, 322, 337, 371, 409, 431, 466];
+  const lines = (shift, color, bg) => screen(320, 400, at
+    .flatMap((y, k) => glyphs(12 + (k % 3) * 9, y - shift, 14 + ((k * 7) % 5) * 5, color))
+    .filter(([, y]) => y >= 0 && y + 9 <= 400), bg);
+  const light = lines(0, [30, 30, 40], [245, 245, 247]);
+  // The same page in dark: pale marks on a dark ground, at the same place.
+  const dark = lines(0, [225, 225, 232], [18, 18, 24]);
+  assert.deepEqual(diff.framing(light, dark), { same: true, reason: 'aligned', shift: 0, inPlace: 1 });
+  // Scrolled down by three lines: it lines up shifted, not in place.
+  const scrolled = diff.framing(light, lines(81, [225, 225, 232], [18, 18, 24]));
+  assert.equal(scrolled.same, false);
+  assert.equal(scrolled.reason, 'scrolled');
+  assert.ok(Math.abs(scrolled.shift + 81) <= 2, `lines up ${scrolled.shift} rows over`);
+  // Another size is another screen.
+  assert.deepEqual(diff.framing(light, screen(320, 380)), { same: false, reason: 'size', shift: 0 });
+  // Too little on a page to tell is never a refusal.
+  assert.equal(diff.framing(screen(320, 400), screen(320, 400, [], [10, 10, 10])).same, null);
+});
+
+test('checkSave compares a dark screen with its light one and finds an element shot in its screen', () => {
+  const page = screen(200, 120, [...glyphs(10, 20, 12), ...glyphs(10, 60, 8), [140, 50, 40, 24, [40, 90, 210]]]);
+  const darkPage = screen(200, 120, [...glyphs(10, 20, 12, [220, 220, 230]), ...glyphs(10, 60, 8, [220, 220, 230]),
+    [140, 50, 40, 24, [90, 140, 250]]], [16, 16, 22]);
+  const dark = diff.checkSave({ kind: 'dark', light: png(page), lightDensity: 1, dark: png(darkPage), darkDensity: 1 });
+  assert.equal(dark.kind, 'dark');
+  assert.equal(dark.same, true, 'the same layout, its colours changed');
+  assert.equal(dark.unchanged, false);
+  assert.equal(diff.checkSave({ kind: 'dark', light: png(page), dark: png(page) }).unchanged, true,
+    'the same picture has nothing to switch to');
+  const button = crop(page, 136, 46, 48, 32);
+  assert.deepEqual(diff.checkSave({ kind: 'element', screen: png(page), element: png(button) }),
+    { kind: 'element', found: true, decided: true });
+  // An element shot from another state of the page is not in this screen.
+  const other = crop(screen(200, 120, [[140, 50, 40, 24, [200, 40, 40]], ...glyphs(150, 56, 3)]), 136, 46, 48, 32);
+  assert.deepEqual(diff.checkSave({ kind: 'element', screen: png(page), element: png(other) }),
+    { kind: 'element', found: false, decided: true });
+  // One larger than the screen cannot be looked for: undecided, never a warning.
+  assert.deepEqual(diff.checkSave({ kind: 'element', screen: png(button), element: png(page) }),
+    { kind: 'element', found: false, decided: false });
+});

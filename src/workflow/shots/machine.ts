@@ -451,7 +451,10 @@ function adopt(sessionId: number, f: Facts, ctx: TransitionContext): { s: Live; 
   if (typeof detail?.headSha === 'string' && SHA.test(detail.headSha)) d.head = detail.headSha;
   const run = slot?.run;
   if (run && slot?.runId === run.id) {
-    d.head = run.head;
+    // Shots carried across a clean merge of main stand for the merged head.
+    const carried = run.state === 'verified' && detail?.carriedFrom === run.head
+      && typeof detail?.headSha === 'string' && SHA.test(detail.headSha);
+    d.head = carried ? detail.headSha : run.head;
     const open = !!f.session && OPEN.has(f.session.status);
     const inFlight = ACTIVE_RUN_STATES.has(run.state);
     if (inFlight || (run.state === 'failed' && run.failureCode === 'shots_run_interrupted')) {
@@ -519,8 +522,36 @@ const declared: Handler = (s, e, f, ctx, deps) => {
   return step({ name: 'waiting_for_preview', data: d }, { writes, cancel, work, timer: null });
 };
 
+// The moves that are pure git over the head they leave (the proposal
+// machine's MECHANICAL_MOVES): a clean merge of main. Its checks' green
+// verdict carries onto the merged head, and so do its published shots: the
+// change they show is the same change.
+export const MECHANICAL_MOVES: ReadonlySet<string> = new Set(['mechanical', 'imported_head_mechanical']);
+
+// Shots published on the head a clean merge of main left stand for the
+// merged head: the slot names the new head (shots_detail.headSha, which the
+// merge gate and the readers go by) and the run it was taken on
+// (carriedFrom), and no run is taken again. Whoever waits on the slot hears
+// it settled on the new head.
+function carriesShots(s: Live, e: Event<any>, f: Facts): boolean {
+  const p = e.payload;
+  const slot = f.session?.slot;
+  return MECHANICAL_MOVES.has(p.reason || '') && s.name === 'published'
+    && slot?.state === 'verified' && slot.run?.state === 'verified' && slot.runId === slot.run.id
+    && (!p.from || p.from === s.data.head);
+}
+
+function carry(s: Live, head: string, ctx: TransitionContext): Outcome<SState> {
+  const d: Data = { ...s.data, head, last: null, notStarted: null };
+  return step({ name: 'published', data: d }, {
+    writes: [{ type: 'carried', sessionId: d.sessionId, from: s.data.head, head }, settledNote(d)],
+    work: settledWork(d, ctx), timer: null,
+  });
+}
+
 const headMoved: Handler = (s, e, f, ctx) => {
   if (s.data.head === e.payload.head) return step(s);
+  if (carriesShots(s, e, f)) return carry(s, e.payload.head, ctx);
   return moveHead(s, f, ctx, e.payload.head, e.payload.reason).out;
 };
 
@@ -961,8 +992,35 @@ async function tell(tx: Tx, ctx: any, sessionId: number, state: string | null) {
   ctx.push(voteUpdate({ sessionId, appId: s.app_id, appSlug: s.slug, merged: false, action: 'shots', shotsState: state }));
 }
 
+// The shots people last saw, kept on the slot (shots_detail.previous) while
+// a newer version of the proposal is shot: its card keeps showing them,
+// labelled as the previous version's, until the new head's shots publish
+// (services/shots-view.js). A head move makes the published run of another
+// head the previous one; one already kept stays (a second move before the
+// new shots publish); a declaration that needs no shots drops it.
+const RUN_ID = /^[0-9a-f]{32}$/;
+async function previousFor(tx: Tx, w: any): Promise<{ runId: string; headSha: string } | null> {
+  if (w.state === 'not_required') return null;
+  const { rows: [s] } = await tx.query(
+    `SELECT cs.shots_detail->'previous' AS previous, r.id AS run_id, r.state AS run_state, r.head_sha,
+            cs.shots_detail->>'headSha' AS slot_head
+       FROM chat_sessions cs LEFT JOIN shot_runs r ON r.id = cs.shots_run_id
+      WHERE cs.id = $1`, [w.sessionId]);
+  if (!s) return null;
+  // The head its shots stand for: the run's own, or the merged head they
+  // were carried to.
+  const shownFor = s.slot_head || s.head_sha;
+  if (s.run_id && s.run_state === 'verified' && w.head && shownFor !== w.head && s.head_sha !== w.head) {
+    return { runId: s.run_id, headSha: s.head_sha };
+  }
+  const kept = s.previous;
+  if (!kept || typeof kept !== 'object' || !RUN_ID.test(String(kept.runId || ''))) return null;
+  if (!SHA.test(String(kept.headSha || '')) || kept.headSha === w.head) return null;
+  return { runId: kept.runId, headSha: kept.headSha };
+}
+
 // The run's row moved: the slot shows its summary (with its files, once
-// published).
+// published), and the previous version's shots until its own publish.
 async function showRun(tx: Tx, ctx: any, runIdOf: string) {
   const { rows: [run] } = await tx.query('SELECT * FROM shot_runs WHERE id = $1', [runIdOf]);
   if (!run) return;
@@ -973,7 +1031,19 @@ async function showRun(tx: Tx, ctx: any, runIdOf: string) {
               width, height, bytes, sha256, focus_rect AS "focusRect", stage_labels AS "stageLabels"
          FROM shot_artifacts WHERE run_id = $1 ORDER BY story_id, viewport, side, variant, theme`, [runIdOf]));
   }
-  const detail = { ...runSummary(run, artifacts), intent: run.intent };
+  const { rows: [slot] } = await tx.query(
+    `SELECT shots_detail->'previous' AS previous, shots_detail->>'carriedFrom' AS carried_from,
+            shots_detail->>'headSha' AS head
+       FROM chat_sessions WHERE id = $1 AND shots_run_id = $2`, [run.session_id, run.id]);
+  const kept = slot?.previous;
+  const previous = run.state !== 'verified' && run.state !== 'not_required' && kept && typeof kept === 'object'
+    && RUN_ID.test(String(kept.runId || '')) && kept.runId !== run.id ? kept : null;
+  const carried = run.state === 'verified' && !!slot && slot.carried_from === run.head_sha && SHA.test(String(slot.head || ''));
+  const detail = {
+    ...runSummary(run, artifacts), intent: run.intent,
+    ...(carried ? { headSha: slot.head, carriedFrom: run.head_sha } : {}),
+    ...(previous ? { previous: { runId: previous.runId, headSha: previous.headSha } } : {}),
+  };
   const { rowCount } = await tx.query(
     `UPDATE chat_sessions SET shots_state = $2, shots_run_id = $3, shots_detail = $4::jsonb, shots_updated_at = NOW()
       WHERE id = $1 AND shots_run_id = $3`, [run.session_id, run.state, run.id, JSON.stringify(detail)]);
@@ -1011,6 +1081,7 @@ const WRITES = {
   // end (one under way is cancelled, a settled one goes stale), and the slot
   // shows the declaration for the head. `keepHead`: runs on this head stand.
   declared: async (tx: Tx, w: any, ctx: any) => {
+    const previous = await previousFor(tx, w);
     await tx.query(
       `UPDATE shot_runs
           SET state = CASE WHEN ${ACTIVE_RUN} THEN 'cancelled' ELSE 'stale' END,
@@ -1022,8 +1093,22 @@ const WRITES = {
       [w.sessionId, w.head, w.cancelCode, w.cancelReason, !!w.keepHead]);
     await tx.query(
       `UPDATE chat_sessions SET shots_state = $2, shots_run_id = NULL, shots_detail = $3::jsonb, shots_updated_at = NOW()
-        WHERE id = $1`, [w.sessionId, w.state, JSON.stringify(w.detail)]);
+        WHERE id = $1`, [w.sessionId, w.state, JSON.stringify(previous ? { ...w.detail, previous } : w.detail)]);
     await tell(tx, ctx, w.sessionId, w.state);
+  },
+  // Published shots carried across a clean merge of main (carry): the slot
+  // names the merged head, and the run they were taken on. The run's own
+  // row keeps its head. shots_updated_at is left alone: it says how long
+  // the slot has waited.
+  carried: async (tx: Tx, w: any, ctx: any) => {
+    const { rowCount } = await tx.query(
+      `UPDATE chat_sessions cs
+          SET shots_detail = COALESCE(cs.shots_detail, '{}'::jsonb)
+                || jsonb_build_object('headSha', $2::text, 'carriedFrom', r.head_sha)
+         FROM shot_runs r
+        WHERE cs.id = $1 AND r.id = cs.shots_run_id AND r.state = 'verified' AND cs.shots_state = 'verified'`,
+      [w.sessionId, w.head]);
+    if (rowCount) await tell(tx, ctx, w.sessionId, 'verified');
   },
   // A run starts: every other run of the proposal ends, and the slot points
   // at it.

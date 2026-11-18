@@ -54,7 +54,7 @@ import type {
   WorkRequest, WorkResultPayload, WriteContext,
 } from '../kernel/index.ts';
 import { boardMoved, chatLine, issueUpdate, sessionUpdate, threadChanged, toUser, voteUpdate } from '../pushes.ts';
-import { settleDecidedChange } from '../rules/change-notifications.ts';
+import { createChangeClosedNotification, settleDecidedChange } from '../rules/change-notifications.ts';
 import { createConnectorSubmittedNotification, createPrProposedNotifications, createStalePrNotification } from '../rules/proposal-notifications.ts';
 import { invalidateHeadMoveSql } from '../rules/summary-freshness.ts';
 import { claimRefusal } from '../rules/merge-claim.ts';
@@ -799,7 +799,9 @@ function close(s: Live, e: Event<any>, f: Facts, reason: string, more: { byOwner
     d = doom(d, purge);
     work.push(purge);
   }
-  const writes: DomainWrite[] = [{ type: 'closed', eventId: e.id, sessionId: d.sessionId, appId: d.appId }];
+  // #6100: why, and whose it is, so its page and its author's bell can say it.
+  const writes: DomainWrite[] = [{ type: 'closed', eventId: e.id, sessionId: d.sessionId, appId: d.appId,
+    reason, ownerId: row.userId, byOwner: !!more.byOwner }];
   if (row.prNumber) writes.push(line(e, d, closedLine(row, reason, !!more.byOwner, more.base ?? null)));
   if (reason === 'request-closed') {
     // A change of the Homeroom bot's withdrawn because every request it is
@@ -1958,7 +1960,8 @@ export function proposal(deps: Deps): Machine<PState, Facts> {
       await tx.query(
         `UPDATE chat_sessions
             SET status = $2,
-                archived_at = CASE WHEN $2 = 'archived' THEN COALESCE(archived_at, NOW()) ELSE NULL END
+                archived_at = CASE WHEN $2 = 'archived' THEN COALESCE(archived_at, NOW()) ELSE NULL END,
+                close_reason = CASE WHEN $2 = 'archived' THEN close_reason ELSE NULL END
           WHERE id = $1 AND status IS DISTINCT FROM $2 AND status <> 'merged'`,
         [(after as Live).data.sessionId, status]);
     },
@@ -2059,7 +2062,11 @@ const WRITES = {
   // abandoned; a value it declared is discarded with it; the bell stops
   // asking about it.
   closed: async (tx: Tx, w: any, ctx: WriteContext) => {
-    await tx.query('UPDATE chat_sessions SET approval_epoch = approval_epoch + 1 WHERE id = $1', [w.sessionId]);
+    // #6100: the reason rides the close, so a page or a bell read later can
+    // say why. The projection clears it whenever the change leaves
+    // 'archived' (reopen, unarchive).
+    await tx.query('UPDATE chat_sessions SET approval_epoch = approval_epoch + 1, close_reason = $2 WHERE id = $1',
+      [w.sessionId, w.reason ?? null]);
     await tx.query(
       `UPDATE external_agent_tasks SET status = 'abandoned'
         WHERE origin_session_id = $1 AND status = 'open' AND session_id IS NULL`, [w.sessionId]);
@@ -2069,6 +2076,9 @@ const WRITES = {
     for (const userId of await settleDecidedChange(tx, w.sessionId, { status: 'archived' })) {
       ctx.push(toUser(userId, { type: 'notifications_changed' }));
     }
+    named(ctx, await createChangeClosedNotification(tx, {
+      userId: w.ownerId ?? null, appId: w.appId, sessionId: w.sessionId, eventId: w.eventId, byOwner: !!w.byOwner,
+    }));
   },
   claimed: async (tx: Tx, w: any) => tx.query(
     `UPDATE chat_sessions SET merge_attempt_at = NOW(), integration_block_reasons = '[]'::jsonb WHERE id = $1`, [w.sessionId]),

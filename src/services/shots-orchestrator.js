@@ -656,9 +656,12 @@ function shotsBrief({
     darkMode: {
       param: selfApp ? 'theme' : 'un-theme',
       value: 'dark',
+      // save_shot takes each light screen's dark shot where the page stands
+      // (worker/shots-mcp.js takeDarkShots); the parameter is for what it
+      // leaves (darkLeft).
       note: selfApp
-        ? 'Add theme=dark to the start path\'s query to open a page in dark mode.'
-        : 'Add un-theme=dark to the start path\'s query to open a page in dark mode.',
+        ? 'save_shot takes the dark shots. For one it lists in darkLeft, add theme=dark to the start path\'s query.'
+        : 'save_shot takes the dark shots. For one it lists in darkLeft, add un-theme=dark to the start path\'s query.',
     },
     ...(moment ? {
       previewAt: {
@@ -1035,15 +1038,22 @@ function addTiming(metrics, key, startedAtMs) {
   return elapsed;
 }
 
-function addAgentUsage(metrics, dispatched) {
-  const result = dispatched?.result;
-  if (!result || typeof result !== 'object') return;
+// What a turn spent, added to the run's: the `usage` its dispatch worked out
+// (shots-agent.turnUsage, also on a turn that failed or ran out of time),
+// else read off its result, which is all a turn a restart followed has.
+// Usage used to be read only off the live dispatch's own result, by keys that
+// result does not all carry (its cost is `costUsd`, in dollars), so no run
+// recorded what it cost.
+function addAgentUsage(metrics, turn) {
+  const usage = turn?.usage && typeof turn.usage === 'object' ? turn.usage
+    : shotsAgent.turnUsage(turn?.result) || (turn?.result && typeof turn.result === 'object' ? turn.result : null);
+  if (!usage) return;
   for (const key of [
     'inputTokens', 'cachedInputTokens', 'cacheWriteInputTokens',
-    'outputTokens', 'reasoningOutputTokens', 'costCents',
+    'outputTokens', 'reasoningOutputTokens', 'costCents', 'streamed',
   ]) {
-    if (result[key] == null) continue;
-    const value = Number(result[key]);
+    if (usage[key] == null) continue;
+    const value = Number(usage[key]);
     if (!Number.isFinite(value) || value < 0) continue;
     metrics.tokenUsage[key] = (metrics.tokenUsage[key] || 0) + value;
   }
@@ -1394,15 +1404,14 @@ async function dispatchAgent(config, pool, {
         ...(extra.holdTurnRecord ? { holdTurnRecord: true } : {}),
         ...(typeof extra.onTurnRecord === 'function' ? { onTurnRecord: extra.onTurnRecord } : {}),
       }, injected.agentDependencies || {});
-      addAgentUsage(metrics, dispatched);
       dispatchTrace.backend = String(dispatched.backend || 'claude_code').slice(0, 64);
       dispatchTrace.model = safeModelId(dispatched.model);
       dispatchTrace.outcome = 'completed';
-      return { result: dispatched.result };
+      return { result: dispatched.result, ...(dispatched.usage ? { usage: dispatched.usage } : {}) };
     } catch (error) {
       dispatchTrace.outcome = 'failed';
       dispatchTrace.code = errorCode(error);
-      return { result: null, agentError: agentErrorOf(error) };
+      return { result: null, agentError: agentErrorOf(error), ...(error?.shotsUsage ? { usage: error.shotsUsage } : {}) };
     }
   };
   const turn = await deps.durableTurn.runTurn(steps || deps.durableSteps.none(), key, {
@@ -1412,6 +1421,9 @@ async function dispatchAgent(config, pool, {
     onProgress,
   });
   const routed = turn.routed || {};
+  // Whichever way the turn's end arrived: this dispatch, the turn a restart
+  // followed, or the step's kept result.
+  addAgentUsage(metrics, routed);
   let error = routed.agentError || null;
   if (!error && typeof routed.error === 'string') error = { code: 'shots_agent_failed', message: routed.error, busy: false, died: false };
   if (!error && turn.followed) error = followedErrorOf(routed.result);

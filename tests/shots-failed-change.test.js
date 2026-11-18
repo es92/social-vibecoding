@@ -234,12 +234,13 @@ test('holdsReady waits for shots on the head, and only while they can still come
 test('every way the shots slot settles tells whoever waits on it, by a message that commits with it', () => {
   // The shots machine (src/workflow/shots/) writes the bot's message
   // whenever the slot settles: a published, failed, waived or closed run, a
-  // run that will not start, a declaration that needs none; a run still
-  // under way tells nobody. A write in the settle's transaction, not a
+  // run that will not start, a declaration that needs none, published shots
+  // carried across a clean merge of main; a run still under way tells
+  // nobody. A write in the settle's transaction, not a
   // callback after commit: a crash loses none (tests/workflow-shots-postgres.test.js S1, S3).
   const machine = read('src/workflow/shots/machine.ts');
   assert.match(machine, /const settledNote = \(d: Data\): DomainWrite => toBotChange\(d\.sessionId, 'ShotsSettled'\);/);
-  assert.equal(machine.match(/settledNote\(/g).length, 6, 'each way it settles');
+  assert.equal(machine.match(/settledNote\(/g).length, 7, 'each way it settles');
   assert.doesNotMatch(read('src/workflow/shots/services.ts'), /botNote/, 'no work of its own tells the bot');
   assert.doesNotMatch(read('src/services/shots-state.js'), /settleListener|setImmediate/);
 });

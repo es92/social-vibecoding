@@ -7,6 +7,7 @@
 
 const agentTurn = require('./agent-turn');
 const worker = require('./worker');
+const liveAgentSpend = require('./live-agent-spend');
 const { repoParts } = require('./shots-environment');
 
 class ShotsAgentError extends Error {
@@ -56,26 +57,38 @@ test number and phoneSignIn.code, on the two addresses only, as
 phoneSignIn.use says. Signing in leaves that browser signed in on that
 address, so sign it out again before a change that needs it signed out.
 
+Spend your calls on shots. Every browser action already answers with the
+page's snapshot, so read the page from that; never take a screenshot only to
+look. Each browser_take_screenshot should be one you save. The screenshot
+tool itself waits, up to three seconds, until the page's requests have
+finished and its markup has stopped changing, so do not wait before it as a
+habit.
+
 For each declared change and each of its screen sizes (viewports):
 1. In the browser screenBrowsers names for that change and screen, call
    browser_resize with that width and height. Then open the start path
    again, even when the page is already open: some apps choose their layout
    once, when the page loads, so a page loaded at another size keeps the
-   wrong layout (a desktop page squeezed into a phone screen).
+   wrong layout (a desktop page squeezed into a phone screen). Do the
+   changes that share a browser and a size one after another, so each
+   browser is resized once per size.
 2. On the after address, start at intent.startPath and follow intent.steps.
    When intent.hints is there, use hints.focusTarget to find the element and
-   hints.expectText to know you have arrived. Before you shoot, wait for the
-   finished state: call browser_wait_for with text you expect on it (from
-   hints.expectText or the checkpoint), and make sure it is not a loading,
-   error, empty, or sign-in page. For a guest change, a sign-in or landing
-   page can be the very state the checkpoint describes: shoot it then.
-   Let anything still moving settle first (text that types itself out, a
-   fade or slide, a toast, a "new messages" pill): call browser_wait_for
-   with a time of a second or two. If a sheet, menu or dialog you opened on
-   the way covers what the claim describes, close it before you shoot,
+   hints.expectText to know you have arrived. Check in the snapshot that it
+   is the finished state, not a loading, error, empty, or sign-in page.
+   For a guest change, a sign-in or landing
+   page can be the very state the checkpoint describes: shoot it then. Only
+   when the snapshot shows the state has not arrived yet, call
+   browser_wait_for with text you expect on it (from hints.expectText or
+   the checkpoint). Let anything still moving settle first, but only what
+   you can see moving (text that types itself out, a fade or slide, a
+   toast, a "new messages" pill): then call browser_wait_for with a time of
+   a second or two. If a sheet, menu or dialog you opened on the way covers
+   what the claim describes, close it before you shoot,
    unless that sheet is itself the change.
-3. Bring the changed element into view. The app scrolls inside its own
-   panes, so a fullPage screenshot shows no more than the screen does; call
+3. Bring the changed element into view when it is not already. The app
+   scrolls inside its own panes, so a
+   fullPage screenshot shows no more than the screen does; call
    browser_hover on the element to scroll it into view. Hovering can open
    controls that only show on hover (a reactions bar, a tooltip) over the
    change, so then call browser_mouse_move_xy to an empty spot away from the
@@ -92,7 +105,8 @@ For each declared change and each of its screen sizes (viewports):
    Pick the smallest element that holds the whole change, including anything
    drawn over its edges such as a badge on a corner; for a change only a few
    pixels across, pick the bar or card around it.
-6. Save both in one save_shot call: list each file with the change id, the
+6. Save both in one save_shot call, before you leave that state: list each
+   file with the change id, the
    screen name, side "after", and kind "screen" or "element". When the same
    screen also shows another declared change at this size, list the
    screenshot again for that change in the same call instead of shooting it
@@ -117,7 +131,10 @@ For each declared change and each of its screen sizes (viewports):
 
 Read what save_shot answers. It refuses an element shot wider than its
 screen or more than two screens tall: retake the screen after opening the
-start path again, and shoot a smaller element. When it warns that a before
+start path again, and shoot a smaller element. When it answers
+elementNotInScreen, the element shot is not part of the screen shot of the
+same side: the page moved between the two, so take both again in one state
+and save them together. When it warns that a before
 and an after are the same image, the two sides were not shot in the states
 the claim compares: check the steps, the data and the scroll position on
 each side and shoot again, or, if these copies cannot show the change, call
@@ -156,17 +173,21 @@ keeping any query the path already has (for example
 "/rota?un-now=2026-10-08T18:00:00.000Z"). Do this for every change, screen
 and clip, so the two sides differ only by the change.
 
-If the brief has darkMode, every screen is also shot in dark mode, but only
-once a change's light shots are all saved: dark shots come last, so a run
-that runs out of time loses only them. For each change, screen and side:
-open the start path again with darkMode.param set to darkMode.value added to
-its query (keeping any previewAt or installStrip parameters the light shot
-used), follow the steps to the same state and framing as the light shot, and
-save one whole-screen shot with save_shot listing theme "dark". No element
-shot and no clip in dark: only the screen, on the before and the after
-address alike (the brief's afterOnly rule applies: that run has no before
-side in dark either). When save_shot answers sameAsLight, this screen looks
-the same in both modes: leave out the rest of the dark shots for this app.
+If the brief has darkMode, every screen is also shot in dark mode, and
+save_shot takes those shots itself: as it saves a light screen shot, it
+switches that page to dark where it stands, shoots it at the same framing,
+switches it back and saves it (its answer's dark). That is why each state's
+shots are saved before you leave it. Take a dark shot yourself only for what
+an answer lists in darkLeft, and only once every light shot is saved, so a
+run that runs out of time loses only them: open the start path again with
+darkMode.param set to darkMode.value added to its query (keeping any
+previewAt or installStrip parameters the light shot used), follow the steps
+to the same state, scrolled to the same place as the light shot, and save
+one whole-screen shot with save_shot listing theme "dark". save_shot refuses
+a dark shot not framed like its light one. No element shot and no clip in
+dark (the brief's afterOnly rule applies: that run has no before side in dark
+either). When save_shot answers sameAsLight, this screen looks the same in
+both modes: leave out the rest of the dark shots for this app.
 
 The copies hold demo data for each persona. The brief's availableFixtures
 lists it: who it is for (persona, alsoFor), what it shows and its path. Look
@@ -267,8 +288,53 @@ const TASK_PROMPT = `Read your brief with get_brief, then save a before and an
 after shot of every declared change on each of its screens (plus a clip of
 each side for motion changes), or skip a change you cannot reach and say why.
 When the brief has afterOnly, save the after side only. When the brief has
-darkMode, save a dark whole-screen shot of each side too, after the light
-ones (theme "dark" in save_shot).`;
+darkMode, save_shot takes the dark shots as you save the light ones; take
+one yourself (theme "dark") only for what its answers list in darkLeft,
+after all the light ones.`;
+
+// What one turn spent, from the worker's result (services/worker.js): the
+// token counts Claude Code reported on its result event, as it splits them
+// (input without the cached reads and writes), and its cost, which it reports
+// in dollars, in cents. A turn stopped before its result event (out of time,
+// or ended with its run when the proposal moved on) reported none: then what
+// its model calls streamed, with `streamed` saying so, its input counting
+// the cache writes. Null when neither is known. Plain numbers only, so the
+// durable step can keep it.
+function turnUsage(result) {
+  if (!result || typeof result !== 'object') return null;
+  const out = {};
+  for (const key of ['inputTokens', 'cachedInputTokens', 'cacheWriteInputTokens', 'outputTokens', 'reasoningOutputTokens']) {
+    if (result[key] == null) continue;
+    const value = Number(result[key]);
+    if (Number.isFinite(value) && value >= 0) out[key] = value;
+  }
+  const usd = Number(result.costUsd);
+  if (result.costUsd != null && Number.isFinite(usd) && usd > 0) out.costCents = Math.round(usd * 10_000) / 100;
+  else if (result.costCents != null && Number.isFinite(Number(result.costCents)) && Number(result.costCents) >= 0) {
+    out.costCents = Number(result.costCents);
+  }
+  if (Object.keys(out).length) return out;
+  let streamed = null;
+  try { streamed = result.liveSpend ? liveAgentSpend.usageTotals(result.liveSpend) : null; } catch { streamed = null; }
+  if (!streamed || !(streamed.requests > 0)) return null;
+  return {
+    inputTokens: Math.max(0, streamed.inputTokens - streamed.cachedInputTokens),
+    cachedInputTokens: streamed.cachedInputTokens,
+    outputTokens: streamed.outputTokens,
+    streamed: 1,
+  };
+}
+
+// The turn's own result once it settles, within `ms`: after its clock ran
+// out the turn is stopped, and its usage is in what it ends with.
+function settledWithin(promise, ms) {
+  let timer;
+  return Promise.race([
+    Promise.resolve(promise).then((value) => value, (error) => error?.turnResult || null),
+    new Promise((resolve) => { timer = setTimeout(() => resolve(null), ms); }),
+  ]).finally(() => clearTimeout(timer));
+}
+const LATE_RESULT_MS = 15_000;
 
 function resultThreadId(result) {
   return result?.sessionId || result?.initSessionId || null;
@@ -351,7 +417,8 @@ async function dispatchClaude(config, options, deps) {
   reportDiagnostic(options, { kind: 'backend_selected', backend: 'claude_code' });
   reportDiagnostic(options, { kind: 'turn_start' });
   let result;
-  try { result = await withDispatchTimeout(deps.workerService.execInWorker(session.id, {
+  let turn = null;
+  try { result = await withDispatchTimeout(turn = deps.workerService.execInWorker(session.id, {
     mode: 'shots',
     // A shots eval's trial (the shots-eval machine) tries other prompts; every
     // proposal's own run takes these.
@@ -412,6 +479,11 @@ async function dispatchClaude(config, options, deps) {
     if (error && typeof error === 'object') {
       error.shotsBackend = 'claude_code';
       error.shotsModel = model;
+      // A turn out of time was stopped; what it spent is in its result.
+      const late = error.code === 'shots_agent_timeout' && turn
+        ? await settledWithin(turn, options.lateResultMs ?? LATE_RESULT_MS) : error.turnResult;
+      const usage = turnUsage(late);
+      if (usage) error.shotsUsage = usage;
     }
     throw error;
   }
@@ -436,9 +508,12 @@ async function dispatchClaude(config, options, deps) {
     error.shotsModel = model;
     error.shotsExitCode = exitCode;
     error.shotsExitCause = exitCause;
+    const usage = turnUsage(result);
+    if (usage) error.shotsUsage = usage;
     throw error;
   }
-  return { backend: 'claude_code', model, result, threadId: resultThreadId(result) };
+  const usage = turnUsage(result);
+  return { backend: 'claude_code', model, result, threadId: resultThreadId(result), ...(usage ? { usage } : {}) };
 }
 
 // Every shots agent is the platform's Claude one on its own model, whatever
@@ -467,6 +542,7 @@ module.exports = {
   SYSTEM_PROMPT,
   TASK_PROMPT,
   failedResult,
+  turnUsage,
   resultThreadId,
   ensureShotsWorker,
   temporaryShotsWorker,

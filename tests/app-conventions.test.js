@@ -299,7 +299,7 @@ test('conventions doc says no shots persona is the app\'s creator or admin, and 
   const start = doc.indexOf('### Who the before & after shots see');
   assert.ok(start > 0, 'the section is there');
   const section = doc.slice(start, doc.indexOf('\n### ', start + 1)).replace(/\s+/g, ' ');
-  assert.match(section, /Five things it cannot do by itself/);
+  assert.match(section, /Six things it cannot do by itself/);
   assert.match(section, /\*\*No persona is your app's creator or one of its admins\.\*\*/);
   assert.match(section, /Homeroom tells your app who is signed in, never their role in it/);
   assert.match(section, /`read_only_admin` and `full_admin` are Homeroom's own administrators, which your app is not told/);
@@ -325,6 +325,10 @@ test('conventions doc says to seed a new state in the same proposal, within the 
   assert.match(section, /never seed a signal your code reads to decide something, so a seed never answers the question the change's own code asks/);
   assert.match(section, /A reply from an AI feature is seeded as the stored reply, never asked for/);
   assert.match(section, /A seed cannot help a change to a state that already existed, which both copies need/);
+  // What no seed or step reaches, and what to declare then (18 Nov 2026).
+  assert.match(section, /\*\*Some states cannot be staged at all\.\*\* A controlled failure covers one API GET, never a POST, PUT or DELETE; there is no native phone app/);
+  assert.match(section, /two requests cannot be made to race/);
+  assert.match(section, /declare `impact: "none"` with a reason that names what the copies cannot do, rather than claim a state they cannot reach/);
 
   // The seed rule points there, in the full text and in the offline excerpt.
   const visitor = doc.slice(doc.indexOf('**Never seed the visitor.**'), doc.indexOf('**Request-time seeding only'))

@@ -620,11 +620,18 @@ export function ShotsCard({ s, single = false, status = null }: {
     pick.checked = true;
     pick.dispatchEvent(new Event('change', { bubbles: true }));
   };
+  // The previous version's shots (AppView._changeShotsView `previous`): the
+  // picture stays, under a line that says whose it is and where this
+  // version's stand.
+  const previous = s.previous ? <PreviousShotsLine s={s} /> : null;
   // A run that worked out its screens is drawn with the Needs you page's
   // slider (./thread-picture.tsx); the viewer stays behind its Expand. A
   // change that is up for a vote keeps the slider's own words on each side.
   if (single && s.state === 'verified' && s.screens && s.screens.length) {
     const voting = !!chips && chips.after === t('project:topic.card.shots.chipIfPasses');
+    if (previous) {
+      return <div className="dev-change-shots-previous" data-change-shots="previous">{previous}<ThreadPicture s={s} captions={voting ? null : chips} /></div>;
+    }
     return <ThreadPicture s={s} captions={voting ? null : chips} />;
   }
   if (s.state === 'verified') {
@@ -632,11 +639,12 @@ export function ShotsCard({ s, single = false, status = null }: {
       <section
         ref={box}
         className="dev-change-shots"
-        data-change-shots="verified"
+        data-change-shots={s.previous ? 'previous' : 'verified'}
         data-thread-picture={single ? '' : undefined}
         data-thread-chips={chips ? '' : undefined}
         style={chips ? ({ '--thread-chip-after': JSON.stringify(chips.after), '--thread-chip-before': JSON.stringify(chips.before) } as CSSProperties) : undefined}
       >
+        {previous}
         {/* AppView.shotsHtml's `thread` reading — escaped where it is built. */}
         <Html className="dev-change-shots-html" html={s.html} />
         {single && (tiles.length || legend) ? (
@@ -684,6 +692,34 @@ export function ShotsCard({ s, single = false, status = null }: {
         </button>
       ) : null}
     </section>
+  );
+}
+
+/**
+ * Over the previous version's shots: they are the previous version's, and
+ * this version's are being taken, or why it has none (its failure or skip,
+ * as the card would say it), with the retake when this viewer may press it.
+ */
+export function PreviousShotsLine({ s }: { s: NonNullable<ChangeThreadView['shots']> }): ReactNode {
+  const p = s.previous;
+  if (!p) return null;
+  return (
+    <p className="dev-change-shots-line dev-change-shots-previous-line" data-shots-previous={p.state} role="status">
+      {p.waiting ? <span className="dc-status-spinner-arc" aria-hidden="true"></span> : null}
+      <span>{p.line}</span>
+      {p.detail ? <span>{p.detail}</span> : null}
+      {s.retake ? (
+        <button
+          type="button"
+          className="gc-vote-btn"
+          data-shots-retake="1"
+          title={translate('changes:page.menu.takeShotsAgainTitle')}
+          onClick={(e) => (window as any).AppView?.rerunShots?.(s.retake!, e.currentTarget)}
+        >
+          {translate('changes:shots.card.takeAgain')}
+        </button>
+      ) : null}
+    </p>
   );
 }
 

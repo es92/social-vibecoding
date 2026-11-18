@@ -165,18 +165,25 @@ test('the shots agent prompt asks for before/after shots and leaves judgement to
   assert.match(prompt, /If the brief has makeProject, a project made on these copies never finishes\s+setting up/);
   assert.match(prompt, /Read makeProject\.note before a change whose\s+steps make, remix or import a project/);
   assert.match(prompt, /a\s+change that needs a made project to run is skipped at once/);
-  // Dark shots (#4459): after the light ones, whole screens only, and the
-  // answer that a screen looks the same in both modes stops the rest.
-  assert.match(prompt, /If the brief has darkMode, every screen is also shot in dark mode, but only\s+once a change's light shots are all saved/);
-  assert.match(prompt, /dark shots come last, so a run\s+that runs out of time loses only them/);
-  assert.match(prompt, /open the start path again with darkMode\.param set to darkMode\.value added to\s+its query/);
-  assert.match(prompt, /save one whole-screen shot with save_shot listing theme "dark"/);
-  assert.match(prompt, /No element\s+shot and no clip in dark/);
-  assert.match(prompt, /When save_shot answers sameAsLight, this screen looks\s+the same in both modes: leave out the rest of the dark shots for this app/);
+  // Dark shots (#4459): whole screens only, and the answer that a screen
+  // looks the same in both modes stops the rest. save_shot takes them where
+  // the page stands (#6787: a dark shot the agent took again by its own
+  // navigation was scrolled to another part of the page); the agent takes
+  // only what it leaves, after the light ones.
+  assert.match(prompt, /If the brief has darkMode, every screen is also shot in dark mode, and\s+save_shot takes those shots itself/);
+  assert.match(prompt, /switches that page to dark where it stands, shoots it at the same framing,\s+switches it back/);
+  assert.match(prompt, /Take a dark shot yourself only for what\s+an answer lists in darkLeft, and only once every light shot is saved/);
+  assert.match(prompt, /run that runs out of time loses only them/);
+  assert.match(prompt, /open the start path again with\s+darkMode\.param set to darkMode\.value added to its query/);
+  assert.match(prompt, /scrolled to the same place as the light shot/);
+  assert.match(prompt, /save_shot refuses\s+a dark shot not framed like its light one/);
+  assert.match(prompt, /save\s+one whole-screen shot with save_shot listing theme "dark"/);
+  assert.match(prompt, /No element shot and no clip in\s+dark/);
+  assert.match(prompt, /When save_shot answers sameAsLight, this screen looks the same in\s+both modes: leave out the rest of the dark shots for this app/);
   assert.ok(prompt.includes(`narrower than ${require('../src/services/visible-changes').PHONE_WIDTH_BELOW} px`),
     'the prompt names the same threshold the brief is built with');
   assert.match(prompt, /browser_take_screenshot with a filename/);
-  assert.match(prompt, /Save both in one save_shot call: list each file with the change id, the\s+screen name, side "after"/);
+  assert.match(prompt, /Save both in one save_shot call, before you leave that state: list each\s+file with the change id, the\s+screen name, side "after"/);
   // Fewer round trips: each tool call is a model turn, which is what the
   // first production run spent its time on.
   assert.match(prompt, /list the\s+screenshot again for that change in the same call instead of shooting it\s+twice/);
@@ -184,7 +191,20 @@ test('the shots agent prompt asks for before/after shots and leaves judgement to
   assert.match(prompt, /on the before address with side "before"/);
   assert.match(prompt, /kind "screen" or "element"/);
   // What the dry run on real proposals showed the agent getting wrong.
-  assert.match(prompt, /call browser_wait_for with text you expect/, 'waits for the finished state');
+  assert.match(prompt, /call\s+browser_wait_for with text you expect/, 'waits for the finished state');
+  // Production, 18 Nov 2026: a passing run made about 48 tool calls to save
+  // about 6 shots, 12.6 of them screenshots and 8.6 waits. Calls go on shots:
+  // the page is read from each action's snapshot, and the screenshot tool
+  // waits for the page to settle itself (patch-playwright-mcp.js).
+  assert.match(prompt, /never take a screenshot only to\s+look\. Each browser_take_screenshot should be one you save/);
+  assert.match(prompt, /The screenshot\s+tool itself waits, up to three seconds, until the page's requests have\s+finished and its markup has stopped changing, so do not wait before it as a\s+habit/);
+  assert.match(prompt, /Only\s+when the snapshot shows the state has not arrived yet, call/);
+  assert.match(prompt, /but only what\s+you can see moving/);
+  assert.match(prompt, /Bring the changed element into view when it is not already/);
+  assert.match(prompt, /so each\s+browser is resized once per size/);
+  // An element shot not inside its screen shot places no outline (save_shot
+  // says so while the agent can still retake both).
+  assert.match(prompt, /When it answers\s+elementNotInScreen, the element shot is not part of the screen shot of the\s+same side/);
   assert.match(prompt, /fullPage screenshot shows no more than the screen does; call\s+browser_hover/,
     'the shell scrolls inside its panes, so hover scrolls the element into view');
   assert.match(prompt, /look at it: it should show what the\s+checkpoint describes/);
@@ -259,7 +279,7 @@ test('the shots agent takes only the after side when the brief has afterOnly', (
   assert.match(prompt, /A change is ready with its after shots\./);
   assert.match(agent.TASK_PROMPT, /When the brief has afterOnly, save the after side only\./);
   assert.match(agent.TASK_PROMPT,
-    /When the brief has\s+darkMode, save a dark whole-screen shot of each side too, after the light\s+ones \(theme "dark" in save_shot\)\./);
+    /When the brief has\s+darkMode, save_shot takes the dark shots as you save the light ones; take\s+one yourself \(theme "dark"\) only for what its answers list in darkLeft,\s+after all the light ones\./);
 });
 
 // reloop PR 12, smart-cashier PR 2 and pixora PR 3 went unshot (2026-10-09 to
@@ -445,3 +465,46 @@ test('the worker records clips only when the run needs them', async () => {
   }
 });
 
+
+// trace_summary.tokenUsage was null on every shots run (18 Nov 2026): usage
+// was read off the live dispatch's result alone, by keys it does not all
+// carry (its cost is costUsd, in dollars), and never off a turn that failed,
+// ran out of time or ended with its run. Each now says what it spent.
+test('a shots turn says what it spent, also when it failed or ran out of time', async () => {
+  // Claude Code's result event, as worker.js keeps it: Anthropic's split, and dollars.
+  assert.deepEqual(agent.turnUsage({
+    inputTokens: 12, cachedInputTokens: 40_000, cacheWriteInputTokens: 3_000, outputTokens: 900, costUsd: 0.4167,
+  }), { inputTokens: 12, cachedInputTokens: 40_000, cacheWriteInputTokens: 3_000, outputTokens: 900, costCents: 41.67 });
+  // Stopped before its result event: what its model calls streamed.
+  const liveAgentSpend = require('../src/services/live-agent-spend');
+  const tracker = liveAgentSpend.createTracker();
+  liveAgentSpend.observe(tracker, { type: 'stream_event', event: { type: 'message_start', message: { id: 'm1',
+    model: 'claude-sonnet-5-5',
+    usage: { input_tokens: 10, cache_read_input_tokens: 500, cache_creation_input_tokens: 20, output_tokens: 1 } } } });
+  const streamed = agent.turnUsage({ liveSpend: tracker });
+  assert.equal(streamed.streamed, 1);
+  assert.equal(streamed.cachedInputTokens, 500);
+  assert.equal(streamed.inputTokens, 30, 'its input and cache writes, without the cached reads');
+  assert.equal(agent.turnUsage({ exitCode: 0 }), null);
+  assert.equal(agent.turnUsage(null), null);
+
+  const session = { id: 42, repo_url: 'https://github.com/acme/demo.git', branch_name: 'proposal', agent_backend: 'claude_code' };
+  const input = { pool: {}, session, runId: 'b'.repeat(32), origins: { base: 'http://b', head: 'http://h' }, authTokens: {} };
+  const spent = { exitCode: 0, inputTokens: 5, outputTokens: 7, costUsd: 0.02 };
+  const done = await agent.dispatch({ shots: {} }, input, { workerService: {
+    ensureWorker: async () => ({}), execInWorker: async () => spent,
+  } });
+  assert.deepEqual(done.usage, { inputTokens: 5, outputTokens: 7, costCents: 2 });
+  // A turn that ended badly (its run moved on and it was stopped).
+  await assert.rejects(agent.dispatch({ shots: {} }, input, { workerService: {
+    ensureWorker: async () => ({}), execInWorker: async () => ({ ...spent, exitCode: 143 }),
+  } }), (error) => error.code === 'shots_agent_failed' && error.shotsUsage.costCents === 2);
+  // One out of time: stopped, and its result read once it settles.
+  let settle;
+  await assert.rejects(agent.dispatch({ shots: {} }, { ...input, timeoutMs: 5, lateResultMs: 1000 }, { workerService: {
+    ensureWorker: async () => ({}),
+    execInWorker: () => new Promise((resolve) => { settle = resolve; }),
+    stopTurn: async () => { setTimeout(() => settle({ exitCode: 143, inputTokens: 3, outputTokens: 4 }), 5); },
+  } }), (error) => error.code === 'shots_agent_timeout'
+    && JSON.stringify(error.shotsUsage) === JSON.stringify({ inputTokens: 3, outputTokens: 4 }));
+});

@@ -56,7 +56,7 @@ test('the routes read the shared fragment', () => {
   // shared fragment both /merged and the single-proposal fetch select
   // through, and both bind the viewer as $2 — assert on the function body,
   // not the file, so the match names THIS select and not /promoted's.
-  const mergedSelect = /function mergedRowSelect\(\) \{[\s\S]*?\n\}/.exec(votes);
+  const mergedSelect = /function mergedRowSelect\([^)]*\) \{[\s\S]*?\n\}/.exec(votes);
   assert.ok(mergedSelect, 'mergedRowSelect found');
   assert.match(mergedSelect[0],
     /COALESCE\(\$\{botRequestedBySql\('cs', '\$2'\)\}, FALSE\) AS requested_by_me/,

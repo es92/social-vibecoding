@@ -703,8 +703,10 @@ function visibleChangesSubmissionFields(result = {}) {
 
 // Revision-scoped before & after shots metadata follows the commit through every
 // update surface. Omission preserves the prior declaration. A head move first
-// hides old media, then re-plans the preserved (or newly supplied) intent for
-// the new SHA. This is best-effort after a Git push: metadata storage must not
+// retires the old head's shots (the shots machine keeps the last published
+// ones on the card as the previous version's until the new head's publish:
+// shots_detail.previous), then re-plans the preserved (or newly supplied)
+// intent for the new SHA. This is best-effort after a Git push: metadata storage must not
 // falsely report that code which already landed did not land.
 async function applyShotsRevision({
   pool, config, session, headSha, visibleChanges, headChanged = false, pin = null, from = null,

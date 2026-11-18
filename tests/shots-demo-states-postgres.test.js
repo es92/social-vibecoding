@@ -34,8 +34,6 @@ const { composeInProgress } = require('../src/routes/issues');
 const { resolveIssueProposalRefs } = require('../src/services/issue-proposal-ref');
 const notificationsSvc = require('../src/services/notifications');
 const { botRequestedBySql } = require('../src/services/bot-requested-by');
-const homeroomBot = require('../src/services/homeroom-bot');
-const botDm = require('../src/services/homeroom-bot-dm');
 const limits = require('../src/services/limits');
 const express = require('express');
 const path = require('node:path');
@@ -113,8 +111,9 @@ const SLUG = 'usernode-2d5619';
 // platform app, the staging seeds' topochain season the challenge states join
 // (with the players on its standings) and their fork-lineage source the
 // member's remix points at (src/db/migrate.js), beside a newer season of
-// production's. No Homeroom bot account: the bot run card's state makes one
-// where a copy has none.
+// production's. No Homeroom bot account, and no chat between the member and
+// the bot: the first chat state makes both where a copy has none (a real
+// copy's staging seeds open the chat; the test below holds that case).
 async function seedCopy(pool) {
   await pool.query(
     `INSERT INTO users (username, password, is_admin, admin_readonly) VALUES
@@ -228,7 +227,7 @@ test('demo states go into both shots copies or neither, once', { timeout: 180000
   assert.deepEqual(result.skipped.map((state) => state.id), ['shots-demo-homeroom-bot-verdict-v1']);
   assert.deepEqual(result.installed.map((state) => state.id),
     both.filter((id) => id !== 'shots-demo-homeroom-bot-verdict-v1'));
-  // The verdict's run is the one with a build; the bot run card's has none.
+  // The verdict's run is the one with a build; the other states' runs have none.
   for (const { pool } of [base, head]) {
     assert.equal((await pool.query('SELECT COUNT(*)::int AS n FROM homeroom_bot_runs WHERE build_branch IS NOT NULL'))
       .rows[0].n, 0);
@@ -447,20 +446,10 @@ test('each demo state reads back the way its screen needs it', { timeout: 180000
   assert.equal((await appAllowance.read(pool, { id: member })).quota.remaining, 6);
   await pool.query(`UPDATE apps SET status = 'running' WHERE id = $1`, [demoStates.IDS.firstVersionApp]);
 
-  // The member's chat with the Homeroom bot: two activity cards on one
-  // request, read through the cards' own reader. The older one's build is
-  // ready and waiting its turn, so it is working though a newer card began
-  // on the same request; both are read, and nothing went to the bell.
+  // The member's chat with the Homeroom bot, read as the member: its cards
+  // through the cards' own reader. Nothing went to the bell.
   const viewer = { id: member, username: 'usernode-capture' };
   const { cards: allCards } = await botActivity.cardsFor(pool, { user: viewer });
-  const cards = allCards.filter((card) =>
-    card.links.request === `#app/${SLUG}/dev/issues/${demoStates.IDS.botRequest}`);
-  assert.equal(cards.length, 2);
-  const [newer, older] = cards;
-  assert.ok(older.messageId < newer.messageId);
-  assert.equal(older.state, 'working');
-  assert.equal(older.stage, 'build_queued');
-  assert.equal(newer.state, 'working', 'the request\'s own progress: its build is waiting its turn');
   const chats = await conversations.listConversations(pool, viewer);
   const chat = chats.find((conversation) => conversation.id === demoStates.IDS.botConversation);
   assert.equal(chat.homeroomBot, true);
@@ -472,7 +461,7 @@ test('each demo state reads back the way its screen needs it', { timeout: 180000
   assert.deepEqual(bellRows.map((row) => [row.kind, !!row.read_at]),
     [['voted_change_merged', false], ['build_needs_you', true], ['build_needs_you', true], ['build_needs_you', true]]);
 
-  // After them in the same chat, the plan for the member's new project,
+  // In the same chat, the plan for the member's new project,
   // answered with Build it, and the bot's thanks under it: the card Build
   // it moved under the plan, read through the chat's own layout and the
   // cards' reader. Its build waits its turn, so its line is Building it,
@@ -499,7 +488,7 @@ test('each demo state reads back the way its screen needs it', { timeout: 180000
   assert.equal(plan.metadata.homeroomBot.firstVersion, true);
   assert.equal(thanks.content, botActivity.thanksText('[shots fixture] Book club'));
   assert.equal(thanks.id, messages.at(-5).id, 'under it the close offer\'s pair and the drafted request\'s pair');
-  assert.ok(newer.messageId < plan.id && plan.id < thanks.id, 'after the bot run card\'s cards');
+  assert.ok(plan.id < thanks.id, 'the plan, then the thanks under it');
   // The plan and its thanks card are replies in the first version's thread
   // now, in that order. Read as the thread shows them (its replies, with no
   // thread above them), the card Build it moved sits under the plan.
@@ -518,35 +507,6 @@ test('each demo state reads back the way its screen needs it', { timeout: 180000
             (SELECT COUNT(*)::int FROM homeroom_bot_first_versions f WHERE f.app_id = a.id) AS first_versions
        FROM apps a WHERE a.id = $1`, [demoStates.IDS.firstVersionApp]);
   assert.deepEqual(project, { created_by: member, view_visibility: 'private', first_versions: 0 });
-
-  // Between the bot run card's cards and the plan, the bot's hand-off on a
-  // request of the member's on a project somebody else runs (#4763): who
-  // decides there is its maker, as the bot's own whoDecides reads the
-  // project, and the message names them, in dmText's words, with no Go
-  // ahead. It is read, and it adds nothing to the bot's tray (no run).
-  const { rows: [garden] } = await pool.query(
-    'SELECT id, slug, name, created_by FROM apps WHERE slug = $1', ['shots-demo-garden-club']);
-  assert.equal(Number(garden.id), demoStates.IDS.decidersApp);
-  assert.equal(Number(garden.created_by), ids['staging-demo-general-lin']);
-  const decider = await homeroomBot.whoDecides(pool, garden, { userId: member, username: 'usernode-capture' });
-  assert.equal(decider.requesterDecides, false);
-  assert.deepEqual(decider.deciders.map((d) => [d.username, d.role]), [['staging-demo-general-lin', 'creator']]);
-  const handOff = messages.find((message) => message.metadata?.homeroomBot?.kind === 'person');
-  assert.ok(newer.messageId < handOff.id && handOff.id < plan.id, 'after the run card\'s cards, before the plan');
-  assert.equal(handOff.sender.id, (await pool.query('SELECT id FROM users WHERE username = $1', ['homeroom_bot'])).rows[0].id);
-  assert.equal(handOff.content, botDm.dmText('person', {
-    reason: 'Taking a page down changes what the club offers its members, so the people who run the project should decide it.',
-    deciders: decider.deciders.map((d) => d.username),
-  }, { appName: garden.name, issueNumber: 2, issueTitle: 'Take the plant swap page down' }));
-  assert.match(handOff.content, /On \[shots fixture\] Garden club, @staging-demo-general-lin decides things like this\./);
-  assert.equal(handOff.metadata.homeroomBot.actions, undefined, 'no Go ahead');
-  assert.equal(handOff.metadata.homeroomBot.mirrors, true);
-  const { rows: [handOffRecord] } = await pool.query(
-    'SELECT kind, app_id, issue_number, user_id FROM homeroom_bot_dm_messages WHERE message_id = $1', [handOff.id]);
-  assert.deepEqual([handOffRecord.kind, Number(handOffRecord.app_id), handOffRecord.issue_number, handOffRecord.user_id],
-    ['person', demoStates.IDS.decidersApp, 2, member]);
-  assert.equal((await pool.query('SELECT COUNT(*)::int AS n FROM homeroom_bot_runs WHERE app_id = $1',
-    [garden.id])).rows[0].n, 0);
 
   // Second to last in the same chat, the bot's offer to open a vote on
   // closing request #900001, quoting the member's message that says it is
@@ -825,6 +785,33 @@ test('each demo state reads back the way its screen needs it', { timeout: 180000
   assert.deepEqual(chip, { done: 620, total: 840, pct: 74, text: '620 of 840 checks done' });
   assert.equal(partWay.checks_progress.unit.done, true, 'the unit suite finished');
 
+  // Homeroom bot's tab, read through its own reader (ai-work.js workFor),
+  // as the member: under Waiting & in progress, their request whose build
+  // waits its turn, their request nobody picked up (which the tab folds
+  // under Not moving), and their change on a project of somebody else's
+  // whose one vote is in while its checks still run (18 Nov 2026).
+  const tab = await require('../src/services/ai-work').workFor(pool, {
+    user: { id: member, username: 'usernode-capture' }, showSelfHosted: true,
+  });
+  const queuedRow = tab.waiting.find((row) => row.app?.slug === SLUG && row.number === demoStates.IDS.queuedRequest);
+  assert.ok(queuedRow, 'the request waiting its turn is listed under Waiting');
+  assert.equal(queuedRow.title, '[shots fixture] Show who is online on the members page');
+  assert.deepEqual([queuedRow.work.stage, queuedRow.work.line?.code], ['building', 'queued']);
+  const stillRow = tab.waiting.find((row) => row.app?.slug === SLUG && row.number === 900013);
+  assert.ok(stillRow, 'the request nobody picked up is listed under Waiting');
+  assert.deepEqual([stillRow.work.stage, stillRow.work.line?.code], ['reading', 'waiting'], 'the rows Not moving folds');
+  assert.equal(stillRow.href, `#app/${SLUG}/dev/issues/900013`);
+  const approvedRow = tab.waiting.find((row) => row.app?.slug === 'shots-demo-choir');
+  assert.ok(approvedRow, 'the approved change is listed under Waiting');
+  assert.deepEqual([approvedRow.kind, approvedRow.work.stage, approvedRow.work.line?.code],
+    ['change', 'checking', 'approved_checking']);
+  const { rows: [choir] } = await pool.query(
+    `SELECT a.created_by, a.approvals_required, cs.user_id, cs.check_state,
+            (SELECT COUNT(*)::int FROM pr_votes pv WHERE pv.session_id = cs.id AND ${currentVotePredicateSql('pv', 'cs')}) AS counted
+       FROM apps a JOIN chat_sessions cs ON cs.app_id = a.id WHERE cs.id = $1`, [demoStates.IDS.approvedProposal]);
+  assert.deepEqual([Number(choir.created_by), choir.approvals_required, Number(choir.user_id), choir.check_state, choir.counted],
+    [ids['staging-demo-general-lin'], 1, member, 'pending', 1]);
+
   // The full admin's weekly allowance nearly spent: under 15% left, so the
   // credits pill is red, whichever credit policy the copy runs; the
   // member's is untouched.
@@ -844,6 +831,71 @@ test('each demo state reads back the way its screen needs it', { timeout: 180000
     else process.env.IDENTITY_CREDIT_POLICY = policy;
   }
   assert.equal((await limits.getBudgetSnapshot(pool, member)).spentCents, 0, 'the member\'s allowance is untouched');
+});
+
+// A real copy's staging seeds open the member's chat with Homeroom bot at
+// boot (src/db/migrate.js seedStagingMainChatLastVisit and the private
+// thread seeds), with an id of the sequence's, before any demo state is
+// written. Until 18 Nov 2026 every chat state asked for no chat at all, so
+// a real copy got none of them: the first version's Building it, the close
+// offer, the drafted request and the bot's rings were never on the copies.
+test('the chat states go into the chat a copy\'s staging seeds already opened', { timeout: 180000 }, async (t) => {
+  const copies = await pairOfCopies(t);
+  if (!copies) return;
+  const { base, head } = copies;
+  for (const { pool } of [base, head]) {
+    await pool.query(
+      `INSERT INTO users (username, password, is_synthetic, display_name)
+       VALUES ('homeroom_bot', 'staging-demo-not-a-login', TRUE, 'Homeroom bot')`);
+    const { rows: people } = await pool.query(
+      `SELECT id, username FROM users WHERE username IN ('usernode-capture', 'homeroom_bot')`);
+    const member = people.find((row) => row.username === 'usernode-capture').id;
+    const bot = people.find((row) => row.username === 'homeroom_bot').id;
+    const { rows: [chat] } = await pool.query(
+      `INSERT INTO conversations (kind, created_by) VALUES ('direct', $1) RETURNING id`, [member]);
+    await pool.query(
+      `INSERT INTO conversation_direct_pairs (conversation_id, user_low_id, user_high_id)
+       VALUES ($1, LEAST($2::int, $3::int), GREATEST($2::int, $3::int))`, [chat.id, member, bot]);
+    await pool.query(
+      `INSERT INTO conversation_members (conversation_id, user_id, role, status)
+       VALUES ($1, $2, 'member', 'member'), ($1, $3, 'member', 'member')`, [chat.id, member, bot]);
+    await pool.query(
+      `INSERT INTO conversation_messages (conversation_id, sender_id, content, idempotency_key, created_at)
+       VALUES ($1, $2, 'Staging demo: anything else?', 'staging-demo-main-chat-caught-up', NOW() - INTERVAL '2 days')`,
+      [chat.id, bot]);
+  }
+  const chatStates = ['shots-demo-member-first-version-thanks-v1', 'shots-demo-member-bot-close-offer-v1',
+    'shots-demo-member-bot-file-offer-v1', 'shots-demo-member-bot-rings-v1'];
+  for (const side of [base, head]) {
+    const ready = await demoStates.inspectDemoStates(side.input);
+    for (const id of chatStates) assert.ok(ready.includes(id), `${id} is ready beside the seeds' chat`);
+  }
+  const result = await demoStates.installDemoStates({ base: base.input, head: head.input }, chatStates);
+  assert.deepEqual(result.skipped, []);
+  assert.deepEqual(result.installed.map((state) => state.id), chatStates);
+  const pool = base.pool;
+  const { rows: [seeded] } = await pool.query(
+    `SELECT p.conversation_id FROM conversation_direct_pairs p
+       JOIN users m ON m.username = 'usernode-capture' JOIN users b ON b.username = 'homeroom_bot'
+      WHERE p.user_low_id = LEAST(m.id, b.id) AND p.user_high_id = GREATEST(m.id, b.id)`);
+  const chatId = Number(seeded.conversation_id);
+  assert.notEqual(chatId, demoStates.IDS.botConversation, 'the seeds\' own chat');
+  assert.equal((await pool.query('SELECT COUNT(*)::int AS n FROM conversations WHERE id = $1',
+    [demoStates.IDS.botConversation])).rows[0].n, 0, 'no second chat with the bot');
+  const { rows: threads } = await pool.query(
+    'SELECT kind, conversation_id, root_message_id FROM private_threads ORDER BY root_message_id');
+  assert.deepEqual(threads.map((row) => [row.kind, Number(row.conversation_id)]),
+    [['first_version', chatId], ['idea', chatId], ['idea', chatId]]);
+  // Where the brief sends the agent is that thread, in that chat.
+  assert.equal(result.installed[0].shows[0].path, `/#homeroom-bot/thread/${Number(threads[0].root_message_id)}`);
+  const { rows: rings } = await pool.query(
+    `SELECT conversation_id FROM notifications WHERE kind = 'build_needs_you'`);
+  assert.equal(rings.length, 3);
+  assert.ok(rings.every((row) => Number(row.conversation_id) === chatId), 'the rings open the same chat');
+  // The seeds' own line is left as it was.
+  assert.equal((await pool.query(
+    `SELECT COUNT(*)::int AS n FROM conversation_messages WHERE idempotency_key = 'staging-demo-main-chat-caught-up'`))
+    .rows[0].n, 1);
 });
 
 // Every row a table holds, keyed by its primary key (the whole row where it
@@ -898,7 +950,10 @@ test('both copies hold the same demo-state rows, every time in them from the pai
   const { rows: defaulted } = await base.pool.query(
     `SELECT table_name || '.' || column_name AS name FROM information_schema.columns
       WHERE table_schema = current_schema() AND column_default ILIKE '%now()%'`);
-  const stampedByPostgres = new Set(defaulted.map((row) => row.name));
+  // A trigger's NOW() is Postgres's own stamp too: a thread closes when its
+  // last open item does (threads_refresh_state), as a state's merged change
+  // closes its thread on each side's clock.
+  const stampedByPostgres = new Set([...defaulted.map((row) => row.name), 'threads.closed_at']);
   const nearNow = (value) => typeof value === 'string' && /^\d{4}-\d\d-\d\dT/.test(value)
     && Math.abs(Date.parse(value) - Date.now()) < 3600000;
   let compared = 0;

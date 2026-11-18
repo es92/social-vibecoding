@@ -300,6 +300,39 @@ async function getForSession(pool, sessionId, { headSha = null } = {}) {
   return row ? runSummary(row, row.artifact_summary || []) : null;
 }
 
+// Published runs by id, with their files, whatever their state now (a run
+// of an earlier head went stale when the head moved): the previous
+// version's shots a proposal's card keeps while its current version's are
+// taken (shots_detail.previous, shots-view.js). Only a run that published
+// has files. Each summary carries its id and its proposal's.
+async function getPublishedRuns(pool, runIds) {
+  const ids = [...new Set((Array.isArray(runIds) ? runIds : [])
+    .filter((id) => /^[0-9a-f]{32}$/.test(String(id || ''))))];
+  if (!ids.length) return new Map();
+  const { rows } = await pool.query(
+    `SELECT r.*,
+            COALESCE((
+              SELECT jsonb_agg(jsonb_build_object(
+                'id', a.id, 'storyId', a.story_id, 'viewport', a.viewport,
+                'side', a.side, 'variant', a.variant, 'media', a.media,
+                'theme', a.theme,
+                'contentType', a.content_type, 'width', a.width,
+                'height', a.height, 'bytes', a.bytes,
+                'density', a.density, 'denseWidth', a.dense_width, 'denseHeight', a.dense_height,
+                'focusRect', a.focus_rect, 'stageLabels', a.stage_labels,
+                'part', a.part, 'scale', a.scale
+              ) ORDER BY a.story_id, a.viewport, a.side, a.variant, a.theme, a.part)
+                FROM shot_artifacts a WHERE a.run_id = r.id
+            ), '[]'::jsonb) AS artifact_summary
+       FROM shot_runs r
+      WHERE r.id = ANY($1::varchar[]) AND r.state IN ('verified', 'stale')`,
+    [ids]
+  );
+  return new Map(rows.map((row) => [String(row.id), {
+    ...runSummary(row, row.artifact_summary || []), id: String(row.id), sessionId: Number(row.session_id),
+  }]));
+}
+
 module.exports = {
   currentCode,
   AGENT_BUSY_REASON,
@@ -328,6 +361,7 @@ module.exports = {
   getRun,
   runSummary,
   getForSession,
+  getPublishedRuns,
   READY_HOLD_MS,
   brokenOnHead,
   seedableSkip,

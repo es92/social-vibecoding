@@ -805,7 +805,7 @@ Two related notes on `path:` form:
 ### Who the before & after shots see
 
 The shots agent signs in as the persona each declared change names, on
-throwaway copies of the app. Five things it cannot do by itself, which
+throwaway copies of the app. Six things it cannot do by itself, which
 account for most changes that end up with no shots:
 
 - **It finds only the data the copies hold.** Each copy is a fresh
@@ -860,6 +860,13 @@ account for most changes that end up with no shots:
   shoots each side's home-screen tile from that side's `dapp.json`. A change
   to the app's `icon`, `name` or colour is a visible change: declare it
   with impact `ui` and a claim naming the home-screen tile, not `none`.
+- **Some states cannot be staged at all.** A controlled failure covers one
+  API GET, never a POST, PUT or DELETE; there is no native phone app, so
+  anything only its bridge shows cannot be shown; two requests cannot be
+  made to race; and nothing answers with a model. Check each state against
+  these before you declare it. When one stands in the way and no seed can
+  hold the state, declare `impact: "none"` with a reason that names what the
+  copies cannot do, rather than claim a state they cannot reach.
 
 ### Testing `path:` for the hybrid-routed self-app
 

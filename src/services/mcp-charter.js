@@ -45,6 +45,7 @@
 // one tool's arguments belongs on that tool.
 
 const { SERVER_INSTRUCTIONS_MAX_CHARS } = require('./mcp-connect-constants');
+const { copyLimitsText } = require('./shots-copy-limits');
 
 // Each section: a stable `id` (the charter's own anchor, and what
 // get_connector_guidance lists), a human `title`, the full `text`, and
@@ -211,6 +212,16 @@ const CHARTER_SECTIONS = Object.freeze([
     id: 'two-audiences',
     title: 'Write both halves: what a user sees, and what you changed',
     text: 'A proposal is read by the app\'s whole group, and not all of them are developers. submit_work takes TWO pieces of prose for that reason, and they are shown as two sections. `summary` is the user-facing half and the first thing anybody reads: one to three short sentences, plain everyday English, saying what changes for somebody USING the app — what looks different, what they can now do, what stops going wrong. No file names, no identifiers, no code, no developer vocabulary. `description` is the technical half: it becomes the pull request body and sits behind a collapsed "Technical details" disclosure, so implementation, trade-offs and testing detail belong there and are not lost. Sending only `description` is the common mistake and it is the one worth avoiding: a proposal that arrives without a summary shows a non-technical voter nothing but the diff explained in developer terms. Write the summary from what the person voting would notice, not from what you edited. On-platform sessions have this written for them; a submission through this connector does not, so it is yours to write.',
+  },
+  {
+    // Charter-only. It binds a coding agent declaring `visibleChanges` on
+    // submit_work, which the work order also tells it at that moment; the
+    // list itself lives in shots-copy-limits.js, so the bot's build lines,
+    // the work order and this say the same (18 Nov 2026: 31% of Homeroom's
+    // own shots runs failed, most on a state the copies cannot reach).
+    id: 'what-the-copies-cannot-show',
+    title: 'What the before & after copies cannot show',
+    text: `Before & after shots are taken on two throwaway copies of the app, and \`visibleChanges\` should claim only what they can reach. ${copyLimitsText({ rule: false })} So before you submit, check each declared change against that list. A state the copies lack is seeded in the same change, as the work order says; one that can be neither reached nor seeded is a blocker to report in your summary, not a claim to make.`,
   },
   {
     // Charter-only, and #1225's own reasoning applies to the placement: this

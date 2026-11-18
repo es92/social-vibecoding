@@ -160,19 +160,26 @@ function internalRoutes(_config) {
   const shotBody = raw({ type: 'application/octet-stream', limit: '21mb' });
   router.post('/api/internal/shots/:runId/shot', shotsAuth, shotsLimiter, shotBody, async (req, res) => {
     try {
-      const result = await withShotsControl(req, (c) => c.saveShot({
-        change: req.query.change,
-        screen: req.query.screen,
-        side: req.query.side,
-        kind: req.query.kind,
-        theme: req.query.theme,
-        // What the worker says the still was saved at; read only in a run
-        // taken at device density (shots-control.stillDensity).
-        density: req.query.density,
-        // The agent's answer to whether the still shows anybody's private
-        // things (shots-control.publicSafeOf).
-        showsPrivate: req.query.showsPrivate,
-      }, Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0)));
+      const result = await withShotsControl(req, async (c, db) => {
+        const raw = {
+          change: req.query.change,
+          screen: req.query.screen,
+          side: req.query.side,
+          kind: req.query.kind,
+          theme: req.query.theme,
+          // What the worker says the still was saved at; read only in a run
+          // taken at device density (shots-control.stillDensity).
+          density: req.query.density,
+          // The agent's answer to whether the still shows anybody's private
+          // things (shots-control.publicSafeOf).
+          showsPrivate: req.query.showsPrivate,
+        };
+        const body = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0);
+        // A dark screen against its light one, an element shot against its
+        // screen shot (shots-control.saveChecksFor); none when it cannot run.
+        const check = await shotsControl.saveChecksFor(db, c, raw, body);
+        return c.saveShot(raw, body, { check });
+      });
       return res.json({ ok: true, result });
     } catch (err) { return shotsError(res, err); }
   });

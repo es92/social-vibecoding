@@ -24,13 +24,14 @@ test('retention prunes old terminal runs whose copies are gone, and keeps the re
   }
   t.after(async () => { try { await client.query('ROLLBACK'); } finally { await client.end(); } });
   await client.query(`BEGIN;
-    CREATE TEMP TABLE chat_sessions (id int PRIMARY KEY, app_id int, shots_run_id text) ON COMMIT DROP;
+    CREATE TEMP TABLE chat_sessions (id int PRIMARY KEY, app_id int, shots_run_id text, shots_detail jsonb) ON COMMIT DROP;
     CREATE TEMP TABLE shot_runs (
       id varchar(32) PRIMARY KEY, session_id int, state text, failure_code text,
       trace_summary jsonb, completed_at timestamptz, updated_at timestamptz
     ) ON COMMIT DROP;
     CREATE TEMP TABLE shot_artifacts (run_id varchar(32)) ON COMMIT DROP;
-    INSERT INTO chat_sessions VALUES (42, 1, repeat('7', 32));`);
+    INSERT INTO chat_sessions VALUES (42, 1, repeat('7', 32),
+      jsonb_build_object('previous', jsonb_build_object('runId', repeat('8', 32))));`);
   const id = (n) => n.toString(16).repeat(32);
   const old = new Date(Date.now() - 40 * 86_400_000);
   const fresh = new Date();
@@ -42,6 +43,7 @@ test('retention prunes old terminal runs whose copies are gone, and keeps the re
     [4, 'failed', { cleanupComplete: true, cleanupVersion: 1 }, old],   // an older cleanup version
     [5, 'failed', cleaned, fresh],                               // not old enough
     [7, 'stale', cleaned, old],                                  // the proposal still points at it
+    [8, 'stale', cleaned, old],                                  // its card shows it as the previous version's
   ];
   for (const [n, state, trace, updated] of cases) {
     await client.query('INSERT INTO shot_runs VALUES ($1, 42, $2, NULL, $3, $4, $4)', [id(n), state, trace, updated]);
@@ -55,4 +57,5 @@ test('retention prunes old terminal runs whose copies are gone, and keeps the re
   assert.ok(kept.has(id(4)), 'a cleanup an older version marked is not trusted');
   assert.ok(kept.has(id(5)), 'a recent run is kept');
   assert.ok(kept.has(id(7)), 'the current session-owned run is retained');
+  assert.ok(kept.has(id(8)), 'the run the card shows as the previous version\'s is retained');
 });
