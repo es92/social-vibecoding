@@ -42,7 +42,7 @@ function homeStubs({ pins = [], joined = [], owed = {}, apps = [], grid = {}, mo
       scrollParent: () => null,
     },
     '../add-apps-sheet': { openAddAppsSheet() {} },
-    '../use-home-query': { useHomeQuery: () => query, matchesQuery },
+    '../use-home-query': { useHomeQuery: () => query, useSettledHomeQuery: () => query, matchesQuery },
     '../panels-store': { panelsStore: fixedStore({ painted: true, challenges }) },
     '../../app-frame/live-apps': { useLiveAppSlugs: () => live, liveAppLabel: () => 'Still open' },
     '../../workshop/community-scope': { communityScopeStore: fixedStore({ slug: null, list: [], badgeNeeds: needs }) },
@@ -124,7 +124,7 @@ test('what the first tour invented is gone: no Needs you rows, Live this week, Y
 
 test('the search field drives Home\'s own search, and the shortcut finds it', () => {
   assert.match(SRC, /own\.value = next;\s*own\.dispatchEvent\(new Event\('input', \{ bubbles: true \}\)\);/, 'each change is written into #home-search-input with the event home.js and use-home-query listen for');
-  assert.match(SRC, /const query = useHomeQuery\(\);/, 'the communities read the same words');
+  assert.match(SRC, /const query = useSettledHomeQuery\(\);/, 'the communities read the same words as the apps');
   assert.match(SRC, /setAttribute\('aria-keyshortcuts', HOME_SEARCH_SHORTCUT_KEYS\)/);
   assert.match(SRC, /if \(event\.key !== 'Escape' \|\| !words\) return;/, 'Escape clears it, as on the standard field');
   const home = read('frontend', 'src', 'features', 'home', 'home.js');

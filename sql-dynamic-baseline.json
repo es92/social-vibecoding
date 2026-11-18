@@ -187,16 +187,16 @@
     {
       "source": "src/routes/apps.js",
       "kind": "structural-template",
-      "fingerprint": "029f6b293ad32baa4104",
+      "fingerprint": "3ebf0a6fda28d39ecee9",
       "count": 1,
-      "preview": "` SELECT ${appAccess.nonSecretAppColumnList('a')}, COALESCE(msg_counts.cnt, 0) AS message_count, COALESCE(activity.total_seconds, 0) AS total_seconds, COALESCE("
+      "preview": "`SELECT ${appAccess.ACCESS_COLUMNS} FROM apps WHERE slug = $1 AND (NOT self_hosted OR $2::boolean)`"
     },
     {
       "source": "src/routes/apps.js",
       "kind": "structural-template",
-      "fingerprint": "3ebf0a6fda28d39ecee9",
+      "fingerprint": "4848ee7c9c4a5b91ede7",
       "count": 1,
-      "preview": "`SELECT ${appAccess.ACCESS_COLUMNS} FROM apps WHERE slug = $1 AND (NOT self_hosted OR $2::boolean)`"
+      "preview": "` SELECT ${appAccess.appListColumnList('a')}, COALESCE(msg_counts.cnt, 0) AS message_count, COALESCE(activity.total_seconds, 0) AS total_seconds, COALESCE(au.cn"
     },
     {
       "source": "src/routes/apps.js",

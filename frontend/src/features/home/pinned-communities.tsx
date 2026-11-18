@@ -49,7 +49,7 @@ import {
   homePinsStore, importDevicePins, loadHomePins, loadHomePinsForSession,
   wireHomePins, type HomePin, type PinActivity,
 } from './home-pins-store';
-import { matchesQuery, useHomeQuery } from './use-home-query';
+import { matchesQuery, useSettledHomeQuery } from './use-home-query';
 
 export const HEAD_ACTION = 'shrink-0 flex items-center text-[14px] font-semibold text-[color:var(--accent)] hover:underline whitespace-nowrap un-touch-target';
 const TILE = 'flex min-w-0 flex-col items-center gap-1.5 rounded-2xl py-1 text-center no-underline un-touch-target';
@@ -263,7 +263,9 @@ export function ActionTile({ label, icon, onClick, dashed = false, muted = false
 export function HomeCommunityMatches() {
   const t = useMessages('home');
   const state = useStoreState(homePinsStore);
-  const query = useHomeQuery();
+  // The words the grid last judged, so this list changes with the grid
+  // rather than one letter ahead of it (./use-home-query.ts, #6793).
+  const query = useSettledHomeQuery();
 
   useEffect(() => {
     const moved = (count: number) => t('home:devicePins.moved', { count });

@@ -61,6 +61,7 @@ test('the initial state renders NOTHING, which is the prerendered markup', () =>
   assert.equal(INITIAL_GRID.rowTemplate, '');
   assert.equal(INITIAL_GRID.resultsHeading, null);
   assert.equal(INITIAL_GRID.emptyQuery, null);
+  assert.equal(INITIAL_GRID.query, '', 'the grid has judged no words before its first render');
   assert.equal(INITIAL_GRID.notice, null);
   // …and no Create tile. It is data-placed (after the last tile), so drawing
   // it before the first Home.render() would add a child the prerendered

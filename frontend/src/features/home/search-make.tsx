@@ -25,7 +25,7 @@ import { useMessages } from '../../lib/i18n/react';
 import { useStoreState } from '../../lib/use-store-state';
 import type { GuestApp } from '../guest/guest-data';
 import { readDirectory } from './communities-to-join';
-import { gridStore } from './grid-store';
+import { gridStore, type HomeGridState } from './grid-store';
 import { homePinsStore } from './home-pins-store';
 import { matchesQuery, useHomeQuery } from './use-home-query';
 
@@ -35,9 +35,27 @@ const ADDRESS = /^(?:[a-z][a-z0-9+.-]*:\/\/\S+|[\w-]+(?:\.[\w-]+)+(?:[/?#]\S*)?)
 interface Named { slug: string; name?: string | null }
 
 /**
+ * The words the offer is about, or null when it is not on. `live` is only an
+ * empty box's test: an empty search has nothing to offer, at once. Otherwise
+ * this is the words the grid itself judged (gridStore.emptyQuery), not the
+ * field's live text — the grid applies the search on a 100 ms debounce
+ * (home.js `_wireSearch`), so reading the field here would unmount the offer
+ * for every keystroke inside that window and drop the sections below it.
+ */
+export function offerWords(
+  live: string,
+  grid: Pick<HomeGridState, 'view' | 'emptyQuery'>,
+): string | null {
+  if (!live) return null;
+  if (grid.view !== 'search' || grid.emptyQuery === null) return null;
+  return grid.emptyQuery.trim();
+}
+
+/**
  * The idea a search is, or null while anything matches it or a list has not
- * answered yet. `noApps` is the grid's own verdict for these exact words
- * (gridStore.emptyQuery), so the two can never disagree about the apps.
+ * answered yet. `noApps` is the grid's own verdict for the words it judged
+ * (gridStore.emptyQuery), and `query` is those same words, so the two can
+ * never disagree about the apps.
  */
 export function searchIdea(query: string, lists: {
   noApps: boolean;
@@ -87,7 +105,8 @@ export function HomeSearchMake() {
   // The directory is asked for only once a search has come up empty on the
   // apps, and `readDirectory` answers from the read Communities to join
   // already made.
-  const noApps = !!query && grid.view === 'search' && grid.emptyQuery !== null && grid.emptyQuery.trim() === query;
+  const words = offerWords(query, grid);
+  const noApps = words !== null;
   useEffect(() => {
     if (!noApps) return undefined;
     let live = true;
@@ -98,7 +117,7 @@ export function HomeSearchMake() {
   // tile either, ./pinned-communities.tsx).
   const win = typeof window !== 'undefined' ? (window as any) : null;
   if (!noApps || !pins.ready || !win?.App?.user || win.App.user.privateMember) return null;
-  const idea = searchIdea(query, {
+  const idea = words === null ? null : searchIdea(words, {
     noApps,
     communities: [...pins.pins, ...pins.joined],
     directory,

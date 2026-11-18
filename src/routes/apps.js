@@ -822,7 +822,7 @@ function appRoutes(config, { pool = getPool(config) } = {}) {
       // View-private apps are simply absent from the list for outsiders
       // — same non-disclosure stance as the self_hosted filter.
       const { rows } = await pool.query(`
-        SELECT ${appAccess.nonSecretAppColumnList('a')},
+        SELECT ${appAccess.appListColumnList('a')},
           COALESCE(msg_counts.cnt, 0) AS message_count,
           COALESCE(activity.total_seconds, 0) AS total_seconds,
           COALESCE(au.cnt, 0) AS active_users,
@@ -1056,13 +1056,13 @@ function appRoutes(config, { pool = getPool(config) } = {}) {
         const lf = (canSeeFailure && a.last_failure && typeof a.last_failure === 'object')
           ? a.last_failure : null;
         const contributorCount = contributorCounts.get(a.id) || 0;
-        return {
+        return appAccess.withoutUnsentListKeys({
           ...appAccess.stripAppSecrets(a),
-          // The launcher's copy of the manifest: everything but the declared
-          // tests and platform env, which no client reads and which were most
-          // of this payload (see summarizeManifestSnapshot). GET
-          // /api/apps/:slug still answers the whole snapshot.
-          manifest_snapshot: appAccess.summarizeManifestSnapshot(a.manifest_snapshot),
+          // The launcher's copy of the manifest: its one line, the only part
+          // a client reads (#6794). The query already left out the declared
+          // tests and platform env (appListColumnList). GET /api/apps/:slug
+          // still answers the whole snapshot.
+          manifest_snapshot: appAccess.listManifestSnapshot(a.manifest_snapshot),
           // Offline apps (services/offline-cache.js): the shell frames this app
           // at its cacheable address.
           offline_cache: offlineCache.forApp(a),
@@ -1102,7 +1102,7 @@ function appRoutes(config, { pool = getPool(config) } = {}) {
           invite_link_out: inviteLinkOut(linksOut.get(Number(a.id)), a.member_count),
           ...accessFlags(a, req.user, a.is_collaborator, adminAppIds, contributorCount,
             config.selfAppSlug),
-        };
+        });
       }));
       // Resolve fork lineage (live source-name lookup, "<deleted>"
       // fallback) for every serialized app in one batched query.

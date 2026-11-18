@@ -13,11 +13,11 @@ import { useVisibility } from '../../lib/visibility-store';
 import type { GuestApp } from '../guest/guest-data';
 import { CommunitiesToJoin, readDirectory } from './communities-to-join';
 import { homePinsStore } from './home-pins-store';
-import { useHomeQuery } from './use-home-query';
+import { useSettledHomeQuery } from './use-home-query';
 
 export function HomeJoin() {
   const pins = useStoreState(homePinsStore);
-  const query = useHomeQuery();
+  const query = useSettledHomeQuery();
   const [apps, setApps] = useState<GuestApp[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);

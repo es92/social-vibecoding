@@ -1144,7 +1144,7 @@ const Home = {
     // only row sizing, exactly as before. Written BEFORE the innerHTML so the
     // first layout of the new children already has its tracks.
     gridStore.set({
-      ready: true, view, rowTemplate, items, resultsHeading, emptyQuery, notice: null, create, editing,
+      ready: true, view, rowTemplate, items, resultsHeading, emptyQuery, query, notice: null, create, editing,
     });
     // ...and, in the same push, the two hosts outside it: "Show all N apps"
     // and the iOS widget-editing strip. The strip renders ABOVE the grid, in

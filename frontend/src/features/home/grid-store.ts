@@ -151,6 +151,13 @@ export interface HomeGridState {
   /** Search view only: the query that matched nothing, or null. */
   emptyQuery: string | null;
   /**
+   * The words the last `Home.render()` judged (trimmed), `''` in the grid
+   * view. Home's search is debounced (home.js `_wireSearch`), so this trails
+   * the field by about 100 ms: everything that filters beside the grid reads
+   * it (./use-home-query.ts `settledQuery`), so no two lists disagree.
+   */
+  query: string;
+  /**
    * A whole-grid message from the LOAD path — offline with an empty cache, or
    * a failed fetch. It is in the model rather than written into `#app-list`
    * because React owns that subtree: an imperative write here would be a
@@ -183,6 +190,7 @@ export const INITIAL_GRID: HomeGridState = {
   items: [],
   resultsHeading: null,
   emptyQuery: null,
+  query: '',
   notice: null,
   create: null,
   editing: false,

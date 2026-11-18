@@ -49,6 +49,7 @@ const INITIAL_GRID = {
   items: [],
   resultsHeading: null,
   emptyQuery: null,
+  query: '',
   notice: null,
   create: null,
   editing: false,

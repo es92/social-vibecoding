@@ -90,6 +90,34 @@ test('the button opens the make screen with the whole search, as a search\'s ide
   assert.match(read('frontend/src/features/first-session/index.tsx'), /opts\?\.ideaSource === 'search' \? 'search'/);
 });
 
+test('the offer follows the grid\'s judged words, so it stays up while someone types', () => {
+  const { offerWords, searchIdea } = loadTsx(FILE);
+  // A keystroke inside the grid's 100 ms debounce: the field says "Vvvv",
+  // the grid has judged "Vvv". The offer stays, for the grid's words.
+  assert.equal(offerWords('Vvvv', { view: 'search', emptyQuery: 'Vvv' }), 'Vvv');
+  assert.equal(searchIdea('Vvv', lists()), 'Vvv', 'and it is an idea for those words');
+  // Clearing the box hides it at once, without waiting for the debounce.
+  assert.equal(offerWords('', { view: 'search', emptyQuery: 'Vvv' }), null);
+  // An app matched, or the grid is not searching: nothing to offer.
+  assert.equal(offerWords('Vvvv', { view: 'search', emptyQuery: null }), null);
+  assert.equal(offerWords('Vvvv', { view: 'grid', emptyQuery: 'Vvv' }), null);
+});
+
+test('settledQuery reads the grid\'s words, and the live text only where the grid has judged nothing', () => {
+  const { settledQuery } = loadTsx('frontend/src/features/home/use-home-query.ts', {
+    cache: false,
+    stubs: {
+      './grid-store': { gridStore: { get: () => ({}), subscribe: () => () => {} } },
+      '../../lib/use-store-state': { useStoreState: () => ({}) },
+    },
+  });
+  const grid = (over = {}) => ({ ready: true, notice: null, query: 'Vvv', ...over });
+  assert.equal(settledQuery('', grid()), '', 'an empty box settles at once');
+  assert.equal(settledQuery('Vvvv', grid()), 'Vvv', 'the lists trail the box by the grid\'s debounce');
+  assert.equal(settledQuery('Vvvv', grid({ notice: { text: 'offline', tone: 'muted' } })), 'Vvvv', 'the grid has judged nothing');
+  assert.equal(settledQuery('Vvvv', grid({ ready: false })), 'Vvvv', 'the grid has not rendered yet');
+});
+
 test('Home draws nothing before a search, or while the lists are still out', () => {
   const store = (state) => ({ get: () => state, subscribe: () => () => {} });
   const render = (query, grid, pins) => {
@@ -107,7 +135,8 @@ test('Home draws nothing before a search, or while the lists are still out', () 
   assert.equal(render('', {}, {}), '', 'the prerender: no search yet');
   assert.equal(render('zz', { view: 'search', emptyQuery: null }, {}), '', 'an app matches');
   assert.equal(render('zz', { view: 'search', emptyQuery: 'zz' }, {}), '', 'the directory has not been read on this render');
-  assert.equal(render('zz', { view: 'search', emptyQuery: 'z' }, {}), '', 'the grid has not caught up with the field');
+  assert.equal(render('', { view: 'search', emptyQuery: 'Vvv' }, {}), '', 'an empty box draws nothing, even with a stale verdict');
+  assert.equal(render('zz', { view: 'search', emptyQuery: 'z' }, {}), '', 'the grid judged a single letter');
 });
 
 test('Home mounts it under the apps section, outside a look\'s own page', () => {
