@@ -28580,6 +28580,49 @@ html.in-side-panel.side-panel-beside-ai .dev-thread-kicker { display: none; }
   .dev-thread-foot-acts > :has(> .dev-vote-btn) > .dev-vote-btn { width: 100%; }
 }
 
+/* THE VOTE FOLLOWS THE HEADER (18 Nov 2026, thread-card.tsx `FootFloat`).
+   While a change waits on the reader's vote and its foot has gone up behind
+   the header pill, the foot's headline, its short facts and its buttons ride
+   under the pill: a second pill, on the card's ground with the foot's tint,
+   so the reader can vote from "How it got here" and the replies. It lies in
+   the bar, over the scroller, so it moves nothing when it comes or goes. On
+   a wide page it ends where the card does, and the timeline beside the card
+   stays in sight. */
+.dev-thread-float {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  margin-top: 8px;
+  margin-inline-end: calc(var(--thread-rail-w, 0px) + var(--thread-rail-gap, 0px));
+  padding: 8px 8px 8px 20px;
+  border-radius: 28px;
+  background-color: var(--thread-card-solid, var(--dc-sheet-solid));
+  background-image: linear-gradient(var(--thread-foot, transparent), var(--thread-foot, transparent));
+  box-shadow: var(--thread-card-edge, inset 0 0 0 1px var(--app-sheet-line)), 0 8px 24px rgba(17, 24, 39, 0.08);
+  animation: dev-thread-float-in 160ms ease-out both;
+}
+.dev-thread-float-st { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.dev-thread-float-head,
+.dev-thread-float-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dev-thread-float-head { font-size: 15px; line-height: 20px; font-weight: 700; color: var(--text-primary); }
+.dev-thread-float[data-thread-float-tone="bad"] .dev-thread-float-head { color: var(--state-blocked); }
+.dev-thread-float-sub { font-size: 13px; line-height: 18px; color: var(--text-secondary); }
+.dev-thread-float-acts { flex: none; display: flex; align-items: center; gap: 8px; }
+.dev-thread-float-acts :is(button, a) {
+  height: 40px; min-height: 40px; padding-block: 0; padding-inline: 18px; border-radius: 999px;
+  font-size: 15px; font-weight: 650; line-height: 1;
+}
+.dev-thread-float-acts .dev-vote-caret { display: none; }
+@keyframes dev-thread-float-in { from { opacity: 0; transform: translateY(-6px); } }
+@media (prefers-reduced-motion: reduce) { .dev-thread-float { animation: none; } }
+@media (max-width: 520px) {
+  .dev-thread-float { gap: 8px; padding-inline-start: 16px; }
+  .dev-thread-float-acts { gap: 6px; }
+  .dev-thread-float-acts :is(button, a) { padding-inline: 14px; }
+}
+
 /* Where the picture will be, before there is one. */
 .dev-thread-wait,
 .dev-thread-card .dev-change-shots-plain {
@@ -31141,14 +31184,14 @@ html[data-skin="brand"]:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([d
    the thread stands on is boxed on the page's cream. The picture's switch
    is ink where it is on, and its chip ink too: green and red said "good"
    and "bad" about a before and an after, which are neither. */
-html[data-skin="brand"]:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) .dev-thread-foot-acts :is(.dev-vote-btn:not(.dev-vote-btn-yes), .dev-request-primary),
+html[data-skin="brand"]:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :is(.dev-thread-foot-acts, .dev-thread-float-acts) :is(.dev-vote-btn:not(.dev-vote-btn-yes), .dev-request-primary),
 html[data-skin="brand"]:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) .dev-thread-foot-ask .dev-vote-btn[aria-checked="true"] {
   background: var(--bl-sun);
   color: var(--bl-on-sun);
   box-shadow: var(--bl-pill-edge);
 }
-html[data-skin="brand"]:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) .dev-thread-foot-acts :is(.dev-vote-btn:not(.dev-vote-btn-yes), .dev-request-primary):hover { background: var(--bl-sun-lit); }
-html[data-skin="brand"]:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) .dev-thread-foot-acts :is(button, a):not(.dev-vote-btn, .dev-request-primary, .dev-change-gate-link) {
+html[data-skin="brand"]:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :is(.dev-thread-foot-acts, .dev-thread-float-acts) :is(.dev-vote-btn:not(.dev-vote-btn-yes), .dev-request-primary):hover { background: var(--bl-sun-lit); }
+html[data-skin="brand"]:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :is(.dev-thread-foot-acts, .dev-thread-float-acts) :is(button, a):not(.dev-vote-btn, .dev-request-primary, .dev-change-gate-link) {
   background: var(--bl-raise);
   color: var(--text-primary);
   box-shadow: var(--bl-raise-edge);

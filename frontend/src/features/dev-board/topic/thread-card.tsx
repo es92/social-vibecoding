@@ -19,6 +19,7 @@
  */
 
 import { createContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode , type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 
 import { SparklesIcon, XIcon } from '@/components/ui/icons';
 
@@ -123,7 +124,7 @@ export function WordsBy({ who, name = null, basis = null }: {
   );
 }
 
-export function ThreadFoot({ what, headline, sub, tone = null, progress = null, busy = false, children = null, extra = null }: {
+export function ThreadFoot({ what, headline, sub, tone = null, progress = null, busy = false, children = null, extra = null, float = null }: {
   /** For `data-thread-foot`: what the foot is saying. */
   what: string;
   headline: string;
@@ -136,6 +137,11 @@ export function ThreadFoot({ what, headline, sub, tone = null, progress = null, 
   children?: ReactNode;
   /** A full-width row under the status and its actions. */
   extra?: ReactNode;
+  /**
+   * What rides under the header pill once the foot has gone up behind it
+   * (`FootFloat`): its short line and the actions it keeps. Null draws none.
+   */
+  float?: { sub: string | null; actions: ReactNode } | null;
 }): ReactNode {
   const pct = progress == null ? null : Math.round(Math.max(0, Math.min(1, progress)) * 100);
   // Whether the foot ends its card: nothing drawn follows it, at any level
@@ -168,8 +174,64 @@ export function ThreadFoot({ what, headline, sub, tone = null, progress = null, 
       </div>
       {children ? <div className="dev-thread-foot-acts">{children}</div> : null}
       {extra ? <div className="dev-thread-foot-extra">{extra}</div> : null}
+      {float ? <FootFloat foot={box} what={what} tone={tone} headline={headline} sub={float.sub} actions={float.actions} /> : null}
     </div>
   );
+}
+
+/**
+ * THE VOTE FOLLOWS THE HEADER (18 Nov 2026). While a thread waits on the
+ * reader's vote, its foot's headline, its short facts and its buttons ride
+ * under the header pill once the foot itself has gone up behind it, so the
+ * reader can still vote from "How it got here" and the replies.
+ *
+ * Drawn into the sheet's bar (`#gc-thread-bar`, outside the scroller), found
+ * from the foot itself and never by a document-wide id: another pane can
+ * hold the same page (#4640). The bar lies over the scroller, so the strip
+ * coming or going moves nothing in the page (#6615's rule). It is rendered
+ * only while it shows, and wears none of the foot's own classes or data
+ * attributes, so whatever looks for the foot finds the foot. A browser
+ * without an observer draws no strip.
+ */
+function FootFloat({ foot, what, tone, headline, sub, actions }: {
+  foot: { current: HTMLDivElement | null };
+  what: string;
+  tone: FootTone;
+  headline: string;
+  sub: string | null;
+  actions: ReactNode;
+}): ReactNode {
+  const [bar, setBar] = useState<HTMLElement | null>(null);
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const el = foot.current;
+    const scroller = el?.closest<HTMLElement>('.dev-request-scroll') || null;
+    const host = scroller?.parentElement?.querySelector<HTMLElement>(':scope > .dev-request-bar') || null;
+    const pill = host?.querySelector<HTMLElement>('.messages-thread-header') || null;
+    if (!el || !scroller || !host || !pill || typeof IntersectionObserver !== 'function') return undefined;
+    setBar(host);
+    // The foot counts as gone once its last line is behind the pill: the
+    // observer's top edge is the pill's lower edge, measured in the scroller.
+    const under = Math.max(0, Math.round(pill.getBoundingClientRect().bottom - scroller.getBoundingClientRect().top));
+    const io = new IntersectionObserver((entries) => {
+      const entry = entries[entries.length - 1];
+      if (!entry) return;
+      const top = entry.rootBounds?.top ?? 0;
+      setShown(!entry.isIntersecting && entry.boundingClientRect.bottom <= top + 1);
+    }, { root: scroller, rootMargin: `-${under}px 0px 0px 0px` });
+    io.observe(el);
+    return () => { io.disconnect(); setShown(false); };
+  }, [foot]);
+  if (!bar || !shown) return null;
+  return createPortal((
+    <div className="dev-thread-float" data-thread-float={what} data-thread-float-tone={tone || undefined} role="group" aria-label={headline}>
+      <div className="dev-thread-float-st">
+        <b className="dev-thread-float-head">{headline}</b>
+        {sub ? <span className="dev-thread-float-sub">{sub}</span> : null}
+      </div>
+      <div className="dev-thread-float-acts">{actions}</div>
+    </div>
+  ), bar);
 }
 
 /**
