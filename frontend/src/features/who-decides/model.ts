@@ -31,6 +31,12 @@ export interface Group {
 /** A rule list, with the groups it can name. `preset` when it is one by name. */
 export interface RulesValue { preset: PresetKey | null; groups: Group[]; rules: Rule[] }
 
+/**
+ * #6811: a group the project's app has sent Homeroom: its name, how many
+ * people are in it, and when the app last sent its list. Counts only.
+ */
+export interface AppGroup { name: string; key: string; size: number; reportedAt: string | null }
+
 export const PRESET_KEYS: readonly PresetKey[] = ['you_or_the_group', 'two_yeses', 'open_floor', 'group_vote'];
 export const DEFAULT_PRESET: PresetKey = 'you_or_the_group';
 export const BUILT_IN_GROUPS = ['creator', 'members', 'admins'] as const;
@@ -120,6 +126,8 @@ export interface ApprovalPayload {
   preset?: PresetKey | null;
   rules?: Array<Rule & { size?: number; need?: number | null; empty?: boolean }> | null;
   groups?: Array<{ name: string; key?: string; people: string[]; keptByApp?: boolean; size?: number; reportedAt?: string | null }>;
+  /** #6811: the groups the app keeps, declared ones included. Absent from an older server. */
+  appGroups?: AppGroup[];
   creator?: { id: number; username: string; display_name?: string | null } | null;
   /** The creator's account no longer exists (apps.created_by is NULL on a
       project that is not the platform's own). Absent from an older server. */
@@ -151,6 +159,34 @@ export function ruleGroupChoices(
   const choices = ['creator', 'members', 'admins', ...groups.map((g) => groupKey(g.name))];
   if (opts.creatorGone && opts.current !== 'creator') return choices.filter((g) => g !== 'creator');
   return choices;
+}
+
+/**
+ * #6811: the app group a name names, capital letters and extra spaces aside
+ * (the server's groupKey), or null when the app has not sent that group.
+ */
+export function appGroupFor(
+  appGroups: readonly AppGroup[] | null | undefined,
+  name: string,
+): AppGroup | null {
+  const key = groupKey(name);
+  if (!key) return null;
+  return (appGroups || []).find((g) => (g.key || groupKey(g.name)) === key) || null;
+}
+
+/**
+ * #6811: the app's groups the draft does not name yet: not a group of the
+ * draft (a declared kept group starts there) and never a built-in.
+ */
+export function undeclaredAppGroups(
+  appGroups: readonly AppGroup[] | null | undefined,
+  groups: readonly Group[],
+): AppGroup[] {
+  const taken = new Set(groups.map((g) => groupKey(g.name)));
+  return (appGroups || []).filter((g) => {
+    const key = g.key || groupKey(g.name);
+    return !taken.has(key) && !isBuiltIn(key);
+  });
 }
 
 /**

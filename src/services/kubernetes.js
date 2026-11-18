@@ -2337,8 +2337,11 @@ const VOLUME_QUOTA_RETRIES = 10;
 // retried for a short while rather than once.
 // `memory` is this worker's limit in WORKER_MEMORY units (worker.js
 // workerMemoryFor); config.workerMemory when it is not given.
+// `avoidNodes`: nodes this worker must not be scheduled on, for a retry on a
+// fresh claim after its volume failed on one (worker-volume-heal.js).
 async function ensureWorker(config, { sessionId, env, onProgress, temporary = false,
-  reclaimVolumes = null, retryDelayMs = VOLUME_QUOTA_RETRY_MS, timeoutMs, retryAttempt = null, memory = null }) {
+  reclaimVolumes = null, retryDelayMs = VOLUME_QUOTA_RETRY_MS, timeoutMs, retryAttempt = null, memory = null,
+  avoidNodes = [] }) {
   const cfg = config.kubernetes;
   if (!cfg.workerImage?.includes('@sha256:')) throw new Error('KUBERNETES_WORKER_IMAGE must be an immutable digest');
   const namespace = cfg.workerNamespace;
@@ -2413,6 +2416,7 @@ async function ensureWorker(config, { sessionId, env, onProgress, temporary = fa
           // whole grace period.
           shareProcessNamespace: true,
           securityContext: nodePodSecurityContext(),
+          ...workerAvoidNodes(avoidNodes),
           containers: [{
             name: 'worker', image: cfg.workerImage, imagePullPolicy: 'IfNotPresent',
             env: [{ name: 'USERNODE_WORKER_REQUIRE_READY', value: '1' }],
@@ -2432,8 +2436,22 @@ async function ensureWorker(config, { sessionId, env, onProgress, temporary = fa
   });
   await waitForWorkerBootstrap(core, apps, { namespace, name, onProgress,
     imageRef: cfg.workerImage, environmentChecksum: envChecksum(env),
-    generation: deployed?.metadata?.generation || 0, timeoutMs });
+    generation: deployed?.metadata?.generation || 0, timeoutMs, claimName: temporary ? null : pvcName });
   return { runtimeKind: 'kubernetes', runtimeName: name, pvcName: temporary ? null : pvcName };
+}
+
+// A Node's name (a DNS subdomain), as the scheduler matches it.
+const NODE_NAME = /^[a-z0-9]([-a-z0-9.]{0,251}[a-z0-9])?$/;
+
+// The Pod spec's part that keeps a worker off `nodes`, by the Node's own
+// name (matchFields, not a hostname label a node may not carry). Nothing
+// for none: a worker's template is otherwise unchanged.
+function workerAvoidNodes(nodes) {
+  const names = [...new Set((Array.isArray(nodes) ? nodes : []).map(String).filter((n) => NODE_NAME.test(n)))];
+  if (!names.length) return {};
+  return { affinity: { nodeAffinity: { requiredDuringSchedulingIgnoredDuringExecution: { nodeSelectorTerms: [{
+    matchFields: [{ key: 'metadata.name', operator: 'NotIn', values: names }],
+  }] } } } };
 }
 
 async function getWorkerStatus(config, runtimeName) {
@@ -4249,7 +4267,7 @@ module.exports = {
   scaledPreviewDeployment, scalePreview, waitForPreview, ingressForSleep, routePreviewForSleep,
   dnsName, withSuffix, labels, appResourceName, createBuild, buildReadsBelowSourceRoot,
   deployApplication, getApplicationStatus, inspectApplication,
-  getApplicationLogs, getDebugLogs, restartApplication, deleteApplication, deleteBuilds, deleteFailedBuilds, ensureWorker,
+  getApplicationLogs, getDebugLogs, restartApplication, deleteApplication, deleteBuilds, deleteFailedBuilds, ensureWorker, workerAvoidNodes,
   attemptSecretName, previewResourcesPresent, deleteSecret, PREVIEW_ATTEMPT_ANNOTATION, attemptFence, fenceValue, fenceNewer,
   listManagedBuilds, readBuild, deleteBuildSnapshot,
   runCaptureJob, runUnitSuiteJob, cancelPreviewChecks, findCheckJobs, collectCheckJob,

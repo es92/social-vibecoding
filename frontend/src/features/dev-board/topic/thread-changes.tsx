@@ -69,7 +69,7 @@ import { Avatar } from '@/components/ui/feed';
 import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 import { ActionButton, StatusPill } from '../card/dev-card';
 import type { DevCardModel } from '../card/model';
-import { ChangeFoot, ChangeGates, ShotsCard , phaseOf } from './change-head';
+import { ChangeFoot, ChangeGates, PreviousShotsLine, ShotsCard , phaseOf } from './change-head';
 import { ballotHeadline, fixStanding } from './card-model';
 import { StepLayer, ThreadCardContext, ThreadFoot , NoPicture } from './thread-card';
 import { closeStep, openStep, publishLead, useOpenStep } from './step-store';
@@ -487,6 +487,8 @@ function ShotsPair({ id, number, s }: {
   };
   return (
     <div className="dev-thread-shots" data-thread-change-shots={id}>
+      {/* The previous version's pair, while this version's are taken. */}
+      {s.previous ? <PreviousShotsLine s={s} /> : null}
       <button type="button" className="dev-thread-shots-pair" onClick={expand} aria-label={t('project:topic.thread.page.shotsOpen')}>
         {(['before', 'after'] as const).map((side) => (
           <span key={side} className="dev-thread-shot" data-thread-shot={side}>
@@ -780,7 +782,7 @@ function ChangeBody({ item, view, plan = null, ballot = false, request, tail = n
         ? <ShotsCard s={view.v.shots} single status={view.v.status?.key || null} />
         : <ShotsPair id={item.id} number={item.number ?? null} s={view.v.shots} />)
         : lone && view && item.state !== 'underway' && hasCards(item)
-          ? <NoPicture none={!!view.v.shotsNone} phase={phaseOf(view.v)} stopped={fixStanding(view.v.testing) === 'stopped'} /> : null}
+          ? <NoPicture none={!!view.v.shotsNone} phase={phaseOf(view.v)} stopped={fixStanding(view.v.testing) === 'stopped'} touches={view.v.touches} /> : null}
       {/* On its own under the request's card, its foot says where it stands;
           the pair below is then the content of the layer the timeline's
           steps open (change-head.tsx ChangeGates). */}

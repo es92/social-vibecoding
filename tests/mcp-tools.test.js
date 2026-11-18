@@ -3097,6 +3097,67 @@ test('submit_work stores the diagram on the proposal and carries its text in the
   } finally { c.restore(); gh.isEnabled = real.gh; githubLink.isEnabled = real.link; }
 });
 
+// #6815: a change that shows nothing goes to the vote with "What it touches"
+// as its only picture unless its author sends a diagram. The answer says so;
+// the submission itself still goes through.
+test('submit_work warns, without failing, when a change with nothing visible arrives without a diagram', async (t) => {
+  const none = { version: 1, impact: 'none', rationale: 'Server only.' };
+  const gh = require('../src/services/github');
+  const githubLink = require('../src/services/github-link');
+  const real = { gh: gh.isEnabled, link: githubLink.isEnabled };
+  gh.isEnabled = () => true;
+  githubLink.isEnabled = () => true;
+  t.after(() => { gh.isEnabled = real.gh; githubLink.isEnabled = real.link; });
+  const make = (stored) => {
+    const queries = [];
+    const pool = {
+      async query(sql, params) {
+        queries.push({ sql, params });
+        if (/pr_diagram IS NOT NULL AS has/.test(sql)) return { rows: [{ has: stored }] };
+        return { rows: [{ app_slug: 'recipe-box' }] };
+      },
+    };
+    const c = connector(() => ({
+      updated: true, proposalId: 3140, appSlug: 'recipe-box', prNumber: 52,
+      headSha: 'b'.repeat(40), votesCleared: 0, submittedVia: 'update_branch',
+      visibleChangesAccepted: true,
+    }), { scopes: [READ_SCOPE, WRITE_SCOPE], pool });
+    return { c, queries };
+  };
+
+  const first = make(false);
+  try {
+    const res = await first.c.handlers.get('submit_work')({ proposalId: 3140, branch: 'my-fix', visibleChanges: none });
+    assert.notEqual(res.isError, true, 'the change is still submitted');
+    assert.equal(res.structuredContent.diagramAccepted, null);
+    assert.equal(res.structuredContent.warnings.length, 1);
+    assert.match(res.structuredContent.warnings[0], /What it touches/);
+    assert.ok(first.queries.some((q) => /pr_diagram IS NOT NULL AS has/.test(q.sql)), 'it asked whether one was stored');
+    const { z } = require('zod');
+    assert.equal(z.object(first.c.specs.get('submit_work').outputSchema).safeParse(res.structuredContent).success, true,
+      'warnings is part of the answer shape');
+  } finally { first.c.restore(); }
+
+  // A stored diagram (an earlier update's) is the picture voters get: no warning.
+  const kept = make(true);
+  try {
+    const res = await kept.c.handlers.get('submit_work')({ proposalId: 3140, branch: 'my-fix', visibleChanges: none });
+    assert.notEqual(res.isError, true);
+    assert.equal(Object.hasOwn(res.structuredContent, 'warnings'), false);
+  } finally { kept.c.restore(); }
+
+  // Sending one in the same call needs no reminder either.
+  const sent = make(false);
+  try {
+    const res = await sent.c.handlers.get('submit_work')({
+      proposalId: 3140, branch: 'my-fix', visibleChanges: none,
+      diagram: { version: 1, kind: 'changes', rows: [{ op: 'added', what: 'A warning' }] },
+    });
+    assert.notEqual(res.isError, true);
+    assert.equal(Object.hasOwn(res.structuredContent, 'warnings'), false);
+  } finally { sent.c.restore(); }
+});
+
 test('submit_work reports no evidence fields when no declaration was sent', async () => {
   const c = shotsUpdateConnector({
     updated: true, proposalId: 3140, appSlug: 'recipe-box', prNumber: 52,
@@ -4617,9 +4678,10 @@ test('list_my_proposals asks for imported proposals, which is what it opens', ()
   // sat 15 characters inside 3000 until #1959 put a second LATERAL and two
   // columns ahead of the WHERE clause, and #5379 added the settings gate
   // beside it. #6042 put the merged/merging gate (and its comment) ahead of
-  // the WHERE clause too, which carried the filter past 4500.
-  assert.match(route.slice(0, 5600), /cs\.source IS DISTINCT FROM 'imported'/);
-  assert.match(route.slice(0, 5600), /cs\.source IS DISTINCT FROM 'settings'/);
+  // the WHERE clause too, which carried the filter past 4500. #6793 selects
+  // only the failing check rows there, which carried it past 5600.
+  assert.match(route.slice(0, 6600), /cs\.source IS DISTINCT FROM 'imported'/);
+  assert.match(route.slice(0, 6600), /cs\.source IS DISTINCT FROM 'settings'/);
   assert.match(SRC.slice(SRC.indexOf("server.registerTool('submit_work'")), /pr-import/);
 
   // And the connector allowlist matches on the PATH, so the query string

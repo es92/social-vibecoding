@@ -84,16 +84,26 @@ test('the words stay true: the tabs as the bar names them, and no rule it did no
   assert.match(message('settings:guide.vote.build.body'), /any member can press Build it, and the bot's building time comes out of that member's week/);
   // The checks gate going live whatever the vote says.
   assert.match(message('settings:guide.vote.checks.body'), /can't go live until they pass/);
-  // #6513: One Home (#6361) took the Communities tab off the bar, so the
-  // guide sends people to Home for communities and Needs you, and Pinned
-  // apps is the apps you pin or build (Home.isYours), not every app of your
-  // communities.
-  assert.doesNotMatch(all, /Communities tab/);
-  assert.match(message('settings:guide.place.communities.body'), /Yours are on Home, under Pinned communities and All communities/);
+  // The Communities tab is on the bar again (18 Nov 2026). #6513 had taken
+  // its name out of the guide when One Home (#6361) took it off the bar and
+  // listed your communities on Home; they are the tab's page now, pinned
+  // and joined, so the guide sends people to the tab for them and names no
+  // Pinned communities section on Home. Pinned apps is the apps you pin or
+  // build (Home.isYours), not every app of your communities.
+  assert.equal(message('core:tabs.communities'), 'Communities');
+  assert.match(message('settings:guide.faq.findApp.body'), /open its community from the Communities tab/);
+  assert.match(message('settings:guide.place.communities.body'), /Communities tab/, 'where yours are: the tab, not Home');
+  assert.doesNotMatch(all, /Pinned communities/, 'Home has no Pinned communities section to name');
+  assert.doesNotMatch(all, /under .{0,40}All communities/, 'nor an All communities tile');
   assert.match(message('settings:guide.vote.up.body'), /listed under Needs you\./);
-  // Home's Needs you tile shows only while a vote waits; the list holds more.
-  assert.match(message('settings:guide.term.needsYou.body'), /Home shows a shortcut to it while a vote waits/);
+  // Needs you's tile left Home with Pinned communities (the Communities tab
+  // carries the count, and its page the tile, in the standard look), so the
+  // guide does not promise a shortcut on Home.
+  assert.doesNotMatch(message('settings:guide.term.needsYou.body'), /Home shows a shortcut/);
   assert.match(message('settings:guide.place.apps.body'), /holds the apps you pin and the ones you help build/);
+  // Pinned apps ends on New project; New community is the Communities page's.
+  assert.doesNotMatch(message('settings:guide.place.apps.body'), /New community/, 'the tile under Pinned apps is New project');
+  assert.equal(message('home:create.label'), 'New project');
   assert.doesNotMatch(all, /apps from your communities/);
   // Codex review: joining pins the community, not its app; a member is
   // needed to take part but is not always enough; one request can hold
@@ -106,8 +116,6 @@ test('the words stay true: the tabs as the bar names them, and no rule it did no
   assert.match(message('settings:guide.term.justYou.body'), /someone you invite joins/);
   assert.doesNotMatch(all, /Inviting someone makes it/);
   // The names it quotes are the screen's own.
-  assert.equal(message('home:communities.heading'), 'Pinned communities');
-  assert.equal(message('home:communities.all'), 'All communities');
   assert.equal(message('home:communities.new'), 'New community');
   assert.equal(message('home:join.heading'), 'Communities to join');
   assert.equal(message('home:communities.needs'), 'Needs you');

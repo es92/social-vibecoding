@@ -281,13 +281,15 @@ const INVITE_LINK_STATE_SQL = `CASE WHEN n.kind IN ('invite_link_busy', 'invite_
                 FROM community_invites guarded
                WHERE guarded.id = split_part(n.detail, ':', 1)::int AND guarded.created_by = n.user_id) END`;
 const LIVE_ROW_COLUMNS_SQL = `CASE WHEN cs.status = 'merged' AND (cs.live_at IS NULL OR ${RELEASE_PENDING_SQL}) THEN 'merging' ELSE cs.status END AS session_status,
+            cs.close_reason AS close_reason,
             CASE WHEN n.kind = 'vote_digest' THEN ${DIGEST_WAITING_SQL} END AS digest_waiting,
             bot_request.issue_number AS bot_request_number,
             ${INVITE_LINK_STATE_SQL} AS invite_link_state`;
 const INVITE_GUARD_KINDS = new Set(['invite_link_busy', 'invite_link_paused']);
 // The kinds whose row carries `sessionStatus`: a "ready to try" (Live, Going
 // live or Closed), and the author's and the voters' news that it went live.
-const SESSION_STATUS_KINDS = new Set(['change_ready', 'pr_merged', 'voted_change_merged']);
+// #6100: and the author's "Closed" row, which reads why off the change too.
+const SESSION_STATUS_KINDS = new Set(['change_ready', 'pr_merged', 'voted_change_merged', 'change_closed']);
 // 'filed' and 'group' are a request in the writer's words; 'revise' asked to
 // change one of the bot's changes before it went live. An offer not taken
 // up, a question or a dismissed read is still just what they said. The two
@@ -2426,6 +2428,9 @@ function serialize(row) {
     // #5064: the rows that say a change went live read it too, so they say
     // "going live" until production runs it.
     ...(SESSION_STATUS_KINDS.has(row.kind) ? { sessionStatus: row.session_status || null } : {}),
+    // #6100: why a closed change was closed, as the code the close recorded;
+    // the bell words it from its catalog. Null for a change that is not closed.
+    ...(SESSION_STATUS_KINDS.has(row.kind) ? { closeReason: row.close_reason || null } : {}),
     ...(row.kind === 'vote_digest' && row.digest_waiting != null
       ? { digestWaiting: Number(row.digest_waiting) } : {}),
     ...(row.kind === 'first_message' || row.kind === 'channel_message'

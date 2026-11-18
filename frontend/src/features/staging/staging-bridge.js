@@ -39,6 +39,7 @@ export const stagingBridge = {
     stagingStore.set({
       open: false,
       loaderVisible: false,
+      loaderShots: false,
       testBtnHidden: true,
       testPanelHidden: true,
       testHtml: '',
@@ -46,6 +47,7 @@ export const stagingBridge = {
       clockAsNow: false,
       changeTitle: '',
       changeNumber: 0,
+      changePending: false,
       appName: '',
       appTile: '',
       appTileImage: '',
@@ -64,8 +66,9 @@ export const stagingBridge = {
 
   /**
    * Which change the preview shows, for its header (`{ title, number, tile,
-   * tileImage, selfHosted }`). Only words the header; never touches the
-   * iframe.
+   * tileImage, selfHosted, pending }`). Only words the header; never touches
+   * the iframe. `pending` says its name is still being looked up; a name
+   * that arrives ends the wait.
    */
   setChange(change) {
     // A patch: a field left out keeps what the header shows, so the change's
@@ -73,6 +76,8 @@ export const stagingBridge = {
     const c = change || {};
     const next = {};
     if (c.title !== undefined) next.changeTitle = typeof c.title === 'string' ? c.title.trim().slice(0, 256) : '';
+    if (c.pending !== undefined) next.changePending = !!c.pending;
+    if (next.changeTitle) next.changePending = false;
     if (c.number !== undefined) {
       const number = Number(c.number);
       next.changeNumber = Number.isInteger(number) && number > 0 ? number : 0;
@@ -170,12 +175,15 @@ export const stagingBridge = {
    * #816: an EXPLICIT '' clears a line; `undefined` leaves it alone.
    * #3413: the retry label is reset on every call, so only a caller that
    * names it ("Retry preview") gets anything but "Retry sign-in".
+   * `offerShots` is reset the same way: only a wait or a dead end offers
+   * the change's before and after.
    */
   setLoader(visible, patch = {}) {
     const next = {
       loaderVisible: !!visible,
       loaderRetry: !!visible && !!patch.retry,
       loaderRetryLabel: patch.retryLabel || null,
+      loaderShots: !!visible && !!patch.offerShots,
     };
     if (patch.title !== undefined) next.loaderTitle = patch.title;
     if (patch.sub !== undefined) next.loaderSub = patch.sub;

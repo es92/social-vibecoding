@@ -53,6 +53,45 @@ import { adoptKitSurface } from './kit-surface';
 const REGISTRY = new Set();
 
 /**
+ * The input types that are NOT text entry — a sheet opened from another
+ * sheet must keep whatever control had focus, and a menu, a button or a
+ * checkbox is not holding a keyboard up.
+ */
+const NON_TEXT_INPUT_TYPES = new Set([
+  'checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'file', 'color',
+  'image', 'hidden',
+]);
+
+/** Is `el` a field a keyboard is (or would be) open for? */
+function isTextField(el) {
+  if (!el || typeof el !== 'object') return false;
+  if (el.isContentEditable === true) return true;
+  const tag = typeof el.tagName === 'string' ? el.tagName.toUpperCase() : '';
+  if (tag === 'TEXTAREA') return true;
+  if (tag !== 'INPUT') return false;
+  const type = typeof el.getAttribute === 'function' ? el.getAttribute('type') : null;
+  return !NON_TEXT_INPUT_TYPES.has(String(type || 'text').toLowerCase());
+}
+
+/**
+ * Put away the keyboard of a field BEHIND the sheet that is opening (#6813).
+ *
+ * iOS does not take focus from a text field when a button is tapped, so
+ * opening the bell while typing left the keyboard up; the kit rides the
+ * sheet on the keyboard, so the sheet opened lifted above the screen with
+ * only its last row visible. A field INSIDE the sheet keeps its focus: that
+ * is the sheet's own search box, and the sheet now fits above the keys.
+ *
+ * Every read is guarded for the sandboxed tests' minimal `document`.
+ */
+function blurFocusedFieldOutside(panel) {
+  const active = typeof document !== 'undefined' ? document.activeElement : null;
+  if (!isTextField(active)) return;
+  if (panel && typeof panel.contains === 'function' && panel.contains(active)) return;
+  if (typeof active.blur === 'function') active.blur();
+}
+
+/**
  * Dismiss every sheet built here, sparing `except`.
  *
  * Exported because the Improve panel needs it and is not built here: it has
@@ -116,6 +155,7 @@ export function createSheetController({
       const panel = document.getElementById(elementId);
       if (!panel) return;
       controller._closeSiblings();
+      blurFocusedFieldOutside(panel);
 
       if (!controller._sheet) {
         // Publish BEFORE presenting — see the header note.

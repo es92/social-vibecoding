@@ -21,6 +21,7 @@ const path = require('node:path');
 
 const bot = require('../src/services/homeroom-bot');
 const live = require('../src/services/homeroom-bot-live');
+const copyLimits = require('../src/services/shots-copy-limits');
 const prompts = require('../src/services/prompts');
 const { IN_LOOP_BROWSER_GUIDANCE } = require('../src/services/in-loop-browser');
 const credentialStore = require('../src/services/credential-store');
@@ -303,13 +304,18 @@ test('a first version\'s build uses the starter\'s design kit and records its lo
     const declare = live.buildVisibleChangesLines(null).join('\n');
     assert.ok(other.includes(declare) && !first.includes('declare_visible_changes'));
     // The copies have no model key, so no declared step waits for the bot (PR 4536).
-    assert.match(declare.replace(/\n/g, ' '), /The before and after copies have no model key, so nothing on them answers with a model: Homeroom bot only says it cannot reach its model there/);
+    assert.match(declare.replace(/\n/g, ' '), /The before and after copies have no model key, so nothing on them answers with a model: Homeroom bot is switched off there/);
     assert.match(declare.replace(/\n/g, ' '), /Never make a step ask Homeroom bot \(or any AI feature\) for something and wait for its reply\./);
     // A state new in the change is seeded in it: the after copy is the side
     // that needs it (22 failed runs and 13 skipped changes, 2026-10-09 to 10-12).
     assert.match(declare.replace(/\n/g, ' '), /add an idempotent, obviously fake staging seed for it in this same change: it reaches the after copy, which is the side a new state needs\./);
     assert.match(declare.replace(/\n/g, ' '), /fake people, never a signal your code reads to decide something, and a reply as the stored message, never asked for\./);
     assert.match(declare.replace(/\n/g, ' '), /A change to a state that already existed needs it on both copies, which a seed in this change cannot give/);
+    // What the copies cannot do at all, from the one shared list, and the
+    // two ways out (18 Nov 2026: 31% of the platform's own shots runs failed,
+    // most on one of these).
+    assert.ok(declare.replace(/\n/g, ' ').includes(copyLimits.copyLimitsText()), 'the shared list and rule, whole');
+    assert.match(declare.replace(/\n/g, ' '), /either seed it in this same change \(stored rows or a stored message, in the app's staging seed \(its IS_STAGING block; for Homeroom itself, the staging seeds in src\/db\/migrate\.js\)\) or declare impact "none" with a reason that names what the copies cannot do/);
     // And the order its spec ranked the work in.
     const order = live.FIRST_VERSION_ORDER_LINES.join('\n');
     assert.equal(first.replace(`${lines}\n`, '').replace(`${progress}\n`, '').replace(`${order}\n`, '').replace(`${pack4}\n`, ''), other.replace(`${declare}\n`, ''),
@@ -480,4 +486,31 @@ test('a first version\'s spec screens are handed to its first look, kept as draw
   const none = [];
   await live.buildAndPropose({ pool: md.pool, deps: md.deps, ...ARGS, model: 'm', firstVersion: true, onFirstLook: (a) => none.push(a) });
   assert.equal(none.length, 0);
+});
+
+// One list of what the before & after copies cannot do, read by the bot's
+// build lines, the work order and the connector charter (18 Nov 2026: 31%
+// of Homeroom's own settled shots runs failed, most as
+// shots_capture_incomplete on one of these).
+test('the copies\' limits name each thing the shots cannot reach, and the two ways out', () => {
+  const text = copyLimits.copyLimitsText();
+  for (const limit of [
+    /Homeroom bot is switched off there and says only that, so none of its replies, working cards, plans or builds appear unless a seed writes them/,
+    /a new project never finishes setting up there/,
+    /a controlled failure covers one API GET, never a POST, PUT or DELETE/,
+    /there is no native phone app, so anything only its bridge shows cannot be shown/,
+    /two requests cannot be made to race/,
+  ]) assert.match(text, limit);
+  assert.match(text, /Before you declare a change, check that the copies can reach its state\./);
+  assert.match(text, /Never declare a state the copies cannot reach\./);
+  // A work order keeps AGENTS.md's own rule for what can be neither reached
+  // nor seeded, so it takes the limits alone.
+  assert.ok(!copyLimits.copyLimitsText({ rule: false }).includes(copyLimits.COPY_LIMITS_RULE));
+  assert.doesNotMatch(text, /\u2014/, 'no em dash');
+  // Wrapped for a prompt of lines: the same words, none past the width.
+  for (const [width, indent] of [[115, ''], [78, '   ']]) {
+    const lines = copyLimits.copyLimitsLines({ width, indent });
+    assert.equal(lines.map((line) => line.slice(indent.length)).join(' '), text);
+    for (const line of lines) assert.ok(line.length <= width && line.startsWith(indent), line);
+  }
 });

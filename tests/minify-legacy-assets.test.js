@@ -1,0 +1,121 @@
+'use strict';
+
+// #6798: an image serves the legacy scripts and app.css without their
+// comments and indentation (scripts/minify-legacy-assets.js). Pinned here:
+// what the step may not change (names, strings, files, the order of CSS
+// rules), that it refuses a file it cannot shrink, and that a checkout's
+// own files are never touched by anything but the image build.
+//
+// Run with: node --test tests/minify-legacy-assets.test.js
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const vm = require('node:vm');
+
+const ROOT = path.join(__dirname, '..');
+const { minifyLegacyAssets, minifyScript, minifyStylesheet, loadEsbuild, STYLESHEETS } = require('../scripts/minify-legacy-assets');
+
+const esbuild = loadEsbuild();
+
+test('a script keeps its names, its strings and what it does; only what a browser skips goes', () => {
+  const source = `// A classic script: other scripts reach these by name.
+const Greeter = {
+  /* The words are data. */
+  WORDS: 'hello   world',   // inner spaces are the string's own
+  template: \`<p class="a  b">
+    \${1 + 1}
+  </p>\`,
+  greet(name) {
+    const unusedLocal = 1;
+    return Greeter.WORDS + ', ' + name + '\\u00a0!';
+  },
+};
+function topLevelHelper(value) { return value === undefined ? 'none' : String(value); }
+var legacyGlobal = topLevelHelper();
+`;
+  const code = minifyScript(esbuild, source);
+  assert.ok(code.length < source.length);
+  assert.doesNotMatch(code, /classic script|words are data|inner spaces/, 'comments are gone');
+  const run = (text) => {
+    const box = {};
+    vm.createContext(box);
+    vm.runInContext(`${text}\n;globalThis.out = { greet: Greeter.greet('Ada'), template: Greeter.template, helper: topLevelHelper(3), legacyGlobal, names: [typeof Greeter, typeof topLevelHelper] };`, box);
+    return JSON.stringify(box.out);
+  };
+  assert.equal(run(code), run(source), 'the same top-level names, strings and results');
+  assert.match(code, /\\u00a0|\\xA0/i, 'an escape stays an escape: nothing depends on how the file is served');
+});
+
+test('the stylesheet keeps every rule and declaration in order', () => {
+  const source = `/* A comment. */
+.a { color: red; }
+@media (min-width: 768px) {
+  .b:has(#x:not(.hidden)) > .c { margin: 0 auto; }
+}
+.a { color: blue; }   /* later wins: order is the cascade */
+.d::after { content: "\\203a"; }
+`;
+  const code = minifyStylesheet(esbuild, source);
+  assert.ok(code.length < source.length);
+  assert.doesNotMatch(code, /A comment|later wins/);
+  const order = ['.a{color:red}', '@media', '.b:has(#x:not(.hidden))>.c{margin:0 auto}', '.a{color:#00f}|.a{color:blue}', '.d:after{content:"\\\\203a"}|.d::after{content:"\\\\203a"}'];
+  let at = 0;
+  for (const want of order) {
+    const found = want.split('|').map((w) => code.indexOf(w.replace('\\\\', '\\'), at)).filter((i) => i >= 0);
+    assert.ok(found.length, `${want} is still there, after the rule before it`);
+    at = Math.min(...found);
+  }
+  assert.equal((code.match(/\.a\{/g) || []).length, 2, 'two rules for one selector are not merged');
+});
+
+test('every legacy script and app.css come out smaller and still parse, in a copy', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'minify-legacy-'));
+  try {
+    fs.cpSync(path.join(ROOT, 'public', 'js'), path.join(tmp, 'js'), { recursive: true });
+    fs.mkdirSync(path.join(tmp, 'css'));
+    fs.copyFileSync(path.join(ROOT, 'public', 'css', 'app.css'), path.join(tmp, 'css', 'app.css'));
+    const before = fs.readFileSync(path.join(ROOT, 'public', 'js', 'app.js'), 'utf8');
+    const results = minifyLegacyAssets({ publicDir: tmp, esbuild });
+    const names = results.map((r) => r.file).sort();
+    assert.ok(names.includes(path.join('js', 'app.js')) && names.includes(path.join('js', 'app-view.js')));
+    assert.ok(names.includes(path.join('css', 'app.css')));
+    assert.deepEqual(fs.readdirSync(path.join(tmp, 'js')).sort(), fs.readdirSync(path.join(ROOT, 'public', 'js')).sort(),
+      'the same files at the same paths: script tags and the worker\'s asset list are untouched');
+    for (const r of results) {
+      assert.ok(r.after < r.before, `${r.file} is smaller`);
+      if (r.file.endsWith('.js')) new vm.Script(fs.readFileSync(path.join(tmp, r.file), 'utf8'), { filename: r.file });
+    }
+    const total = (key) => results.reduce((n, r) => n + r[key], 0);
+    assert.ok(total('after') < total('before') * 0.7, 'at least 30% off the whole');
+    const app = fs.readFileSync(path.join(tmp, 'js', 'app.js'), 'utf8');
+    assert.match(app, /\bconst App\s*=/, 'the top-level name other scripts use is still declared');
+    assert.equal(fs.readFileSync(path.join(ROOT, 'public', 'js', 'app.js'), 'utf8'), before, 'the checkout\'s own file is not written');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('a file that cannot be minified fails the build rather than shipping half a shell', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'minify-legacy-bad-'));
+  try {
+    fs.mkdirSync(path.join(tmp, 'js'));
+    fs.writeFileSync(path.join(tmp, 'js', 'broken.js'), 'const = ;');
+    assert.throws(() => minifyLegacyAssets({ publicDir: tmp, esbuild }));
+    assert.equal(fs.readFileSync(path.join(tmp, 'js', 'broken.js'), 'utf8'), 'const = ;', 'and it is left as it was');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('only the image build runs it, on app.css and public/js alone', () => {
+  assert.deepEqual(STYLESHEETS, ['css/app.css'], 'not the kit apps load, and not the compiled Tailwind');
+  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+  for (const [name, script] of Object.entries(pkg.scripts)) {
+    assert.ok(!String(script).includes('minify-legacy-assets'), `npm run ${name} leaves the checkout readable`);
+  }
+  assert.ok(!fs.readFileSync(path.join(ROOT, 'scripts', 'ensure-shell-artifacts.js'), 'utf8').includes('minify-legacy-assets'));
+  assert.match(fs.readFileSync(path.join(ROOT, 'Dockerfile.kubernetes'), 'utf8'), /node scripts\/minify-legacy-assets\.js/);
+});

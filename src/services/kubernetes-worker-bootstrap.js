@@ -1,5 +1,6 @@
 'use strict';
 
+const log = require('./logger');
 const { boundedText, collectPodDiagnostics, conditionDetails } = require('./kubernetes-diagnostics');
 
 // Waits the kubelet reports while it cannot even start the container. None
@@ -24,11 +25,144 @@ function workerCouldNotStart(reason, detail) {
   return err;
 }
 
+// A worker's state volume that cannot be made or mounted. 18 Nov 2026: a
+// node's OpenEBS LVM thin pool, made at its first volume's 1 GiB and never
+// grown, filled, and every new worker claim there failed to format, then to
+// mount, or never provisioned. The Pod only ever reads ContainerCreating (or
+// Pending), so the wait ran out its whole five minutes, three times, on a
+// claim no retry could fix. The kubelet and the provisioner say why in
+// events within seconds; these are the ones that do not clear by waiting.
+// What happens to the claim next is worker-volume-heal.js's.
+const VOLUME_FAILURE_REASONS = Object.freeze({
+  provision: 'volume_provision_failed',
+  format: 'volume_format_failed',
+  mount: 'volume_mount_failed',
+});
+// The error's message: it reaches people as it is (a shots card, a sync's
+// status line, a build's failure). The kubelet's own words stay in the log.
+const VOLUME_FAILURE_TEXT = Object.freeze({
+  provision: 'This change’s worker couldn’t start: its disk volume couldn’t be created.',
+  format: 'This change’s worker couldn’t start: its disk volume failed to mount.',
+  mount: 'This change’s worker couldn’t start: its disk volume failed to mount.',
+});
+// The same, by the error's `bootstrapReason` (worker.js workerStartReason).
+const VOLUME_FAILURE_TEXT_BY_REASON = Object.freeze(Object.fromEntries(
+  Object.entries(VOLUME_FAILURE_REASONS).map(([kind, reason]) => [reason, VOLUME_FAILURE_TEXT[kind]]),
+));
+// How often the events are read while the Pod waits for its volume.
+const VOLUME_EVENT_POLL_MS = 4000;
+// A mount error fails the wait once it has been seen this long or this many
+// times (the kubelet retries a mount within a second or two at first). A
+// format or provisioning error fails it at once: neither clears by itself.
+const VOLUME_MOUNT_GRACE_MS = 10 * 1000;
+const VOLUME_MOUNT_TRIES = 3;
+// The platform's role needs `list` on events in the workers' namespace
+// (infra: rbac.yaml, social-runtime-worker-manager). Refused, the wait says
+// so once an hour and goes on as it did before: it waits out its time.
+const EVENTS_REFUSED_BACKOFF_MS = 60 * 60 * 1000;
+let eventsRefusedUntil = 0;
+
+// The provisioner's words for a volume it cannot make on the node it was
+// given (`ResourceExhausted - exit status 5` on 18 Nov), as opposed to a
+// call that timed out or a driver not yet up, which a retry gets past.
+const PROVISION_FAILURE = /ResourceExhausted|no space left|insufficient (?:space|capacity|storage)|not enough (?:space|free)|exit status \d+/i;
+const PROVISION_TRANSIENT = /DeadlineExceeded|deadline exceeded|code = Unavailable|connection refused|i\/o timeout|context canceled/i;
+// mount-utils' FormatAndMount: "format of disk ... failed ... output:(mkfs.xfs:
+// libxfs_device_zero write failed: No space left on device)". Checked before
+// the mount patterns, which the same sentence can also match.
+const FORMAT_FAILURE = /\bformat of disk\b|\bmkfs(?:\.\w+)?\b|\blibxfs_/i;
+// "mount failed: exit status 32 ... fsconfig() failed", and the filesystem's
+// own refusals. Not the kubelet's summary ("Unable to attach or mount
+// volumes ... timed out waiting for the condition"), nor a CSI driver that
+// has not registered yet: those clear.
+const MOUNT_FAILURE = /mount failed: exit status \d+|fsconfig\(\) failed|wrong fs type|bad superblock|can't read superblock|structure needs cleaning|no space left on device/i;
+
+/**
+ * Pure: which volume failure one Kubernetes event reports, or null.
+ *   'provision'  the claim's volume could not be made (ProvisioningFailed)
+ *   'format'     the volume could not be formatted (FailedMount, mkfs)
+ *   'mount'      the volume could not be mounted (FailedMount)
+ */
+function classifyVolumeEvent(event) {
+  if (!event || typeof event !== 'object') return null;
+  if (event.type && event.type !== 'Warning') return null;
+  const message = String(event.message || '');
+  if (event.reason === 'ProvisioningFailed') {
+    return PROVISION_FAILURE.test(message) && !PROVISION_TRANSIENT.test(message) ? 'provision' : null;
+  }
+  if (event.reason === 'FailedMount') {
+    if (FORMAT_FAILURE.test(message)) return 'format';
+    if (MOUNT_FAILURE.test(message)) return 'mount';
+  }
+  return null;
+}
+
+const eventCount = (event) => Math.max(1, Number(event?.count) || Number(event?.series?.count) || 1);
+const refused = (err) => [err?.code, err?.statusCode, err?.response?.statusCode, err?.response?.status].includes(403);
+
+// The worst volume failure the events of this Pod and its claim report now,
+// as { kind, reason, node, claim, claimUid, volume, bound, message, count, key },
+// or null. Only the current Pod's events and, while it has no volume yet,
+// the current claim's: an older Pod's mount error on the same volume may
+// have cleared since (the volume mounted after it), and an older claim of
+// the same name is another claim.
+async function readVolumeFailure(core, { namespace, pod, claimName, read }) {
+  let claim = null;
+  try {
+    claim = await read(() => core.readNamespacedPersistentVolumeClaim({ namespace, name: claimName }));
+  } catch { /* the claim is read for its node and identity; the events still count */ }
+  const unbound = !!claim && !claim.spec?.volumeName && claim.status?.phase !== 'Bound';
+  const queries = [];
+  if (pod?.metadata?.name) {
+    queries.push({ selector: `involvedObject.kind=Pod,involvedObject.name=${pod.metadata.name}`,
+      uid: pod.metadata.uid || null, kinds: ['format', 'mount'] });
+  }
+  if (unbound) {
+    queries.push({ selector: `involvedObject.kind=PersistentVolumeClaim,involvedObject.name=${claimName}`,
+      uid: claim.metadata?.uid || null, kinds: ['provision'] });
+  }
+  const rank = { provision: 0, format: 1, mount: 2 };
+  let found = null;
+  for (const q of queries) {
+    const list = await read(() => core.listNamespacedEvent({ namespace, fieldSelector: q.selector, limit: 50 }));
+    for (const event of list?.items || []) {
+      if (q.uid && event.involvedObject?.uid && event.involvedObject.uid !== q.uid) continue;
+      const kind = classifyVolumeEvent(event);
+      if (!kind || !q.kinds.includes(kind)) continue;
+      if (found && rank[found.kind] <= rank[kind]) continue;
+      found = {
+        kind,
+        reason: VOLUME_FAILURE_REASONS[kind],
+        node: pod?.spec?.nodeName || event.source?.host || event.reportingInstance
+          || claim?.metadata?.annotations?.['volume.kubernetes.io/selected-node'] || null,
+        claim: claimName,
+        claimUid: claim?.metadata?.uid || null,
+        volume: claim?.spec?.volumeName || null,
+        bound: !unbound && !!claim,
+        message: boundedText(event.message, 600),
+        count: eventCount(event),
+        key: `${q.uid || q.selector}/${kind}`,
+      };
+    }
+  }
+  return found;
+}
+
+function volumeFailed(failure) {
+  const err = new Error(VOLUME_FAILURE_TEXT[failure.kind]);
+  Object.defineProperty(err, 'bootstrapReason', { value: failure.reason, configurable: true, writable: true });
+  Object.defineProperty(err, 'volumeFailure', { value: failure, configurable: true, writable: true });
+  return err;
+}
+
 // Observe setup while the readiness probe is still false. Waiting for the
 // Deployment first hides clone failures and all setup progress until timeout.
+// `claimName`: the worker's state volume claim, whose failures (and its
+// Pod's) are read from events while the container has not started; null for
+// a worker on scratch storage.
 async function waitForWorkerBootstrap(core, apps, {
   namespace, name, imageRef, environmentChecksum, generation = 0,
-  onProgress, timeoutMs,
+  onProgress, timeoutMs, claimName = null,
 }) {
   if (!(timeoutMs > 0)) timeoutMs = 5 * 60 * 1000;
   const deadline = Date.now() + timeoutMs;
@@ -37,6 +171,8 @@ async function waitForWorkerBootstrap(core, apps, {
   let podName = null;
   let lastReadError = null;
   let stuck = null;
+  let nextVolumeReadAt = 0;
+  const volumeSeen = new Map();
   const warnings = new Set();
   const emit = text => { try { onProgress?.(text); } catch { /* observer only */ } };
   const read = async fn => {
@@ -66,6 +202,30 @@ async function waitForWorkerBootstrap(core, apps, {
         && pod.spec?.containers?.some(c => c.name === 'worker' && c.image === imageRef));
       candidates.sort((a, b) => new Date(b.metadata?.creationTimestamp || 0) - new Date(a.metadata?.creationTimestamp || 0));
       const pod = candidates[0];
+      const started = !!pod?.status?.containerStatuses?.find(c => c.name === 'worker')?.state?.running;
+      if (claimName && !started && Date.now() >= nextVolumeReadAt && Date.now() >= eventsRefusedUntil) {
+        nextVolumeReadAt = Date.now() + VOLUME_EVENT_POLL_MS;
+        let failure = null;
+        try {
+          failure = await readVolumeFailure(core, { namespace, pod, claimName, read });
+        } catch (err) {
+          if (refused(err)) {
+            eventsRefusedUntil = Date.now() + EVENTS_REFUSED_BACKOFF_MS;
+            log.warn('worker', 'Worker volume events cannot be read: the platform\'s role lacks list on events in the workers\' namespace', {
+              namespace, runtimeName: name,
+            });
+          } else lastReadError = boundedText(err.message, 500);
+        }
+        if (failure) {
+          const firstSeen = volumeSeen.get(failure.key) ?? Date.now();
+          volumeSeen.set(failure.key, firstSeen);
+          if (failure.kind !== 'mount' || failure.count >= VOLUME_MOUNT_TRIES
+              || Date.now() - firstSeen >= VOLUME_MOUNT_GRACE_MS) {
+            recent = [...recent, `[volume] ${failure.reason} on node ${failure.node || 'unknown'}: ${failure.message}`].slice(-20);
+            throw volumeFailed(failure);
+          }
+        }
+      }
       if (pod) {
         podName = pod.metadata.name;
         let output = '';
@@ -131,4 +291,12 @@ async function waitForWorkerBootstrap(core, apps, {
   }
 }
 
-module.exports = { waitForWorkerBootstrap, STUCK_WAITING_REASONS, STUCK_WAITING_GRACE_MS, UNSCHEDULABLE_GRACE_MS };
+// Tests start each case with the events readable.
+function _resetEventsRefusedForTests() { eventsRefusedUntil = 0; }
+
+module.exports = {
+  waitForWorkerBootstrap, STUCK_WAITING_REASONS, STUCK_WAITING_GRACE_MS, UNSCHEDULABLE_GRACE_MS,
+  classifyVolumeEvent, VOLUME_FAILURE_REASONS, VOLUME_FAILURE_TEXT, VOLUME_FAILURE_TEXT_BY_REASON,
+  VOLUME_MOUNT_GRACE_MS, VOLUME_EVENT_POLL_MS,
+  _resetEventsRefusedForTests,
+};

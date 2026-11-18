@@ -1,6 +1,7 @@
 'use strict';
 
 const express = require('express');
+const { pipeline } = require('stream');
 const { Router } = require('express');
 const { currentAppBridge } = require('../middleware/app-bridge');
 const { getPool } = require('../db/pool');
@@ -8,6 +9,7 @@ const appAccess = require('../services/app-access');
 const platformJwt = require('../services/platform-jwt');
 const appFiles = require('../services/app-files');
 const { appFileUploadLimiter } = require('../middleware/rate-limits');
+const { parseRange } = require('../services/byte-range');
 const log = require('../services/logger');
 
 // App file storage (#752) — the browser-facing halves. Two routers:
@@ -47,6 +49,68 @@ function verifyUserToken(raw, appId, staging) {
   return claims;
 }
 
+// Sends one stored file: whole, or the single byte range a `Range`
+// header asks for (audio and video seek; Safari asks for pieces). The
+// object store reads only that range. `file` is its app_files row; access
+// is the caller's to check first. `onMissing` answers a row whose object is
+// gone (a bare 404 unless the caller speaks JSON).
+async function sendAppFile(req, res, store, file, cacheControl, { onMissing = null } = {}) {
+  const size = Number(file.size_bytes);
+  const range = Number.isSafeInteger(size) && size > 0 ? parseRange(req.headers.range, size) : null;
+  const safeName = String(file.filename || 'file').replace(/["\\\r\n]/g, '_');
+  // Media renders on the page; everything else (PDFs, text kinds, an
+  // unknown stored type) downloads, so nothing but media can act as a
+  // document on the platform's own origin.
+  const disposition = appFiles.isInlineType(file.content_type) ? 'inline' : 'attachment';
+  res.set({
+    'Content-Type': file.content_type || 'application/octet-stream',
+    'X-Content-Type-Options': 'nosniff',
+    'Content-Disposition': `${disposition}; filename="${safeName}"`,
+    // no-transform: a compressed body would no longer match the byte
+    // offsets of Content-Range, nor the stored bytes' digest in the ETag.
+    'Cache-Control': `${cacheControl}, no-transform`,
+    'Accept-Ranges': 'bytes',
+  });
+  if (file.sha256) res.set('ETag', `"${file.sha256}"`);
+  if (range === false) {
+    res.set('Content-Range', `bytes */${size}`);
+    return res.status(416).end();
+  }
+
+  let stream;
+  try {
+    stream = await store.getFileStream(file.app_id, file.id, range);
+  } catch (err) {
+    // Row-without-object (partial restore, failed delete retry):
+    // degrade to 404 for fresh fetchers, loudly in the log.
+    log.warn('app-files', 'Object missing for metadata row', { id: file.id, err: err.message });
+    for (const header of ['Content-Type', 'Cache-Control', 'ETag', 'Content-Disposition', 'Accept-Ranges']) {
+      res.removeHeader(header);
+    }
+    return onMissing ? onMissing() : res.status(404).end();
+  }
+  if (range) {
+    res.status(206);
+    res.set({
+      'Content-Range': `bytes ${range.start}-${range.end}/${size}`,
+      'Content-Length': String(range.end - range.start + 1),
+    });
+  } else if (Number.isSafeInteger(size) && size > 0) {
+    res.set('Content-Length', String(size));
+  }
+  // pipeline, not pipe: a client that goes away (every seek abandons a
+  // range) destroys the object-store stream too, and a store error after
+  // the headers destroys the response, so the client is not left waiting
+  // for the rest of a Content-Length that will never come.
+  pipeline(stream, res, (err) => {
+    if (!err || err.code === 'ERR_STREAM_PREMATURE_CLOSE') return;
+    log.warn('app-files', 'Stream error while serving', { id: file.id, err: err.message });
+    if (!res.headersSent) res.status(404).end();
+    else res.destroy(err);
+  });
+  return undefined;
+}
+
 function appFileServeRoutes(config, deps = {}) {
   const router = Router();
   const pool = getPool(config);
@@ -57,7 +121,7 @@ function appFileServeRoutes(config, deps = {}) {
     if (!/^[a-f0-9]{32}$/.test(id)) return res.status(404).end();
     try {
       const { rows } = await pool.query(
-        'SELECT app_id, filename, content_type, visibility, staging FROM app_files WHERE id = $1',
+        'SELECT id, app_id, filename, content_type, size_bytes, visibility, staging, sha256 FROM app_files WHERE id = $1',
         [id]
       );
       if (!rows.length) return res.status(404).end();
@@ -74,39 +138,14 @@ function appFileServeRoutes(config, deps = {}) {
         return res.status(503).end();
       }
 
-      let stream;
-      try {
-        stream = await store.getFileStream(file.app_id, id);
-      } catch (err) {
-        // Row-without-object (partial restore, failed delete retry):
-        // degrade to 404 for fresh fetchers, loudly in the log.
-        log.warn('app-files', 'Object missing for metadata row', { id, err: err.message });
-        return res.status(404).end();
-      }
-
-      const safeName = String(file.filename || 'file').replace(/["\\\r\n]/g, '_');
-      const contentType = file.content_type || 'application/octet-stream';
-      // Media renders on the page; everything else (PDFs, text kinds, an
-      // unknown stored type) downloads, so nothing but media can act as a
-      // document on the platform's own origin.
-      const disposition = appFiles.isInlineType(file.content_type) ? 'inline' : 'attachment';
-      res.set('Content-Type', contentType);
-      res.set('X-Content-Type-Options', 'nosniff');
-      res.set('Content-Disposition', `${disposition}; filename="${safeName}"`);
-      // Rows are immutable (no overwrite API): a deleted id 404s for
-      // fresh fetchers, so the year-long immutable header is safe for
-      // public files. Private URLs carry the ?token= in the cache key
-      // and the token rotates hourly, so keep their TTL short.
-      res.set('Cache-Control', file.visibility === 'private'
+      const cacheControl = file.visibility === 'private'
+        // Private URLs carry the ?token= in the cache key and the token
+        // rotates hourly, so keep their TTL short.
         ? 'private, max-age=3600'
-        : 'public, max-age=31536000, immutable');
-
-      stream.on('error', (err) => {
-        log.warn('app-files', 'Stream error while serving', { id, err: err.message });
-        if (!res.headersSent) res.status(404);
-        res.end();
-      });
-      stream.pipe(res);
+        // Rows are immutable (no overwrite API): a deleted id 404s for
+        // fresh fetchers, so the year-long immutable header is safe.
+        : 'public, max-age=31536000, immutable';
+      return await sendAppFile(req, res, store, file, cacheControl);
     } catch (err) {
       log.error('app-files', 'Failed to serve app file', { id, err: err.message });
       res.status(500).end();
@@ -203,4 +242,4 @@ function appFileShellRoutes(config, deps = {}) {
   return router;
 }
 
-module.exports = { appFileServeRoutes, appFileShellRoutes };
+module.exports = { appFileServeRoutes, appFileShellRoutes, sendAppFile };

@@ -3076,20 +3076,28 @@ export function handleEvent(raw: ConversationEvent): void {
       // again (./bot-drafts.ts). The event carries no words.
       botDraftsChanged(event);
       break;
-    case 'conversation_read':
-      void loadConversations(true);
-      // The reader's OWN other tabs, and only those: the event goes to every
-      // member, and someone else reaching the end of the thread has cleared
-      // nothing of this viewer's.
+    case 'conversation_read': {
+      // The event goes to every member, and the list holds only the viewer's
+      // own cursor and unread count (services/conversations.js
+      // serializeConversation): somebody else's read moves nothing in it, so
+      // it is not read again for one (#6591; in a busy group that was a whole
+      // list read for every member each time anyone caught up). An event that
+      // names no reader is read as before.
+      const reader = api.strictId(event.userId ?? event.user_id);
+      const mine = reader === currentUser().id;
+      if (mine || !reader) void loadConversations(true);
+      // The reader's OWN other tabs, and only those: someone else reaching
+      // the end of the thread has cleared nothing of this viewer's.
       // …and not when the reader marked it UNREAD (#2387): that moved the
       // cursor back, and nothing in the bell was read by it.
-      if (api.strictId(event.userId ?? event.user_id) === currentUser().id && event.unread !== true) {
+      if (mine && event.unread !== true) {
         // A thread read clears that thread's alerts only (#2387).
         const threadRoot = api.strictId(event.threadRootId ?? event.thread_root_id);
         if (threadRoot) window.Notifications?.markConversationThreadRead?.(conversationId, threadRoot);
         else notifyConversationRead(conversationId);
       }
       break;
+    }
     case 'conversation_membership_changed':
       void loadConversations(true);
       if (state.route.conversationId === conversationId) {

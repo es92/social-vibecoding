@@ -956,12 +956,30 @@ function listsOf(needs, work, { botUsername = null } = {}) {
   // A feed card names a change by its request, as the tab does (model.ts shownNumber).
   const needNumber = (item) => (item.kind === 'ballot' ? item.ballot?.number || item.number : item.number) || null;
   const shownNumber = (item) => (item.kind === 'proposal' && item.request?.number) || needNumber(item);
+  // A thread the feed already lists, by its request or its change, kept
+  // apart as model.ts keeps them (18 Nov 2026: on GitHub, PR 6792 is not
+  // request #6792, and a vote owed on #6792's change hid PR 6792).
+  const requestKey = (slug, n) => `${slug}#${Number(n)}`;
+  const changeKey = (slug, n) => `${slug}#change:${Number(n)}`;
   const owed = new Set();
   for (const item of items) {
-    for (const n of [needNumber(item), shownNumber(item)]) if (item.app && n) owed.add(`${item.app.slug}#${n}`);
+    if (!item.app) continue;
+    const request = item.kind === 'ballot' ? item.ballot?.number
+      : item.kind === 'proposal' ? item.request?.number
+        : item.kind === 'question' ? item.number : null;
+    const change = item.kind === 'proposal' || item.kind === 'ballot' ? item.number : null;
+    if (request) owed.add(requestKey(item.app.slug, request));
+    if (change) owed.add(changeKey(item.app.slug, change));
   }
-  const isOwed = (t) => !!t.app && ((!!t.number && owed.has(`${t.app.slug}#${t.number}`))
-    || (!!t.change?.number && owed.has(`${t.app.slug}#${t.change.number}`)));
+  // A change's own thread is numbered by its change, never by a request.
+  const threadRequest = (t) => (t.kind === 'change' ? null : t.number || null);
+  const isOwed = (t) => {
+    if (!t.app) return false;
+    const request = threadRequest(t);
+    const change = t.change?.number || (t.kind === 'change' ? t.number : null);
+    return (!!request && owed.has(requestKey(t.app.slug, request)))
+      || (!!change && owed.has(changeKey(t.app.slug, change)));
+  };
   const row = (app, number, title, says) => ({
     project: app?.slug || null,
     projectName: app?.name || app?.slug || null,
@@ -977,7 +995,8 @@ function listsOf(needs, work, { botUsername = null } = {}) {
   // #6153: a private thread filed as a request whose request has a row is that row.
   const listed = new Set(owed);
   for (const t of [...(work?.needs || []), ...(work?.next || []), ...(work?.waiting || []), ...(work?.live || [])]) {
-    if (t.app && t.number) listed.add(`${t.app.slug}#${t.number}`);
+    const request = threadRequest(t);
+    if (t.app && request) listed.add(requestKey(t.app.slug, request));
   }
   const privates = unfiledPrivate(work?.private, listed);
   // #6271: a private thread marked done this week is Live this week's, under

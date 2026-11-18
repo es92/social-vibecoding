@@ -45,13 +45,14 @@ import { Switch } from '@/components/ui/switch';
 
 import { changeHref } from '../../lib/change-href';
 import { useMessages } from '../../lib/i18n/react';
+import { agoStamp } from '../../lib/timestamp';
 import { radioGroupKeys } from '../../lib/radio-group';
 import { audienceLine, reloadCommunity, useCommunity } from '../dev-board/workshop/community-card';
 import {
-  creatorGroupLine, currentValue, groupKey, groupLabel, groupNameProblem, groupPeopleKind, groupSize, matchPreset, MAX_AT_LEAST,
+  appGroupFor, creatorGroupLine, currentValue, groupKey, groupLabel, groupNameProblem, groupPeopleKind, groupSize, matchPreset, MAX_AT_LEAST,
   MAX_GROUPS, MAX_RULES, MIN_MINIMUM, minOf, presetName, presetOf, presetValue, ruleGroupChoices, rulePhrase,
-  ruleSignature, ruleToday, sameValue, valueProblem, type Group, type Kind, type PresetKey, type Rule,
-  type RulesValue,
+  ruleSignature, ruleToday, sameValue, undeclaredAppGroups, valueProblem, type AppGroup, type Group, type Kind,
+  type PresetKey, type Rule, type RulesValue,
 } from '../who-decides/model';
 import { Face, PlaysOut, PresetTiles, Picked, type Viewer } from '../who-decides/parts';
 import { proposeWhoDecides } from '../who-decides/propose';
@@ -153,6 +154,9 @@ export function WhoDecidesDialog() {
 
   const community = useCommunity(slug);
   const approval = community?.approval || null;
+  // #6811: the groups the app keeps. null from an older server, which sends
+  // none: the sheet is then exactly what it was.
+  const appGroups = approval && Array.isArray(approval.appGroups) ? approval.appGroups : null;
   const current = useMemo(() => currentValue(approval), [approval]);
   const nowPreset = presetOf(current);
   const creator = approval?.creator?.username || null;
@@ -293,9 +297,19 @@ export function WhoDecidesDialog() {
     if (!draft || !groupDraft) return;
     const problem = groupNameProblem(groupDraft.name, draft.groups, groupDraft.index != null ? groupKey(draft.groups[groupDraft.index].name) : null);
     if (problem) return;
+    const clean = groupDraft.name.replace(/\s+/g, ' ').trim();
+    // #6811: a kept group takes its size and last-sent time from the app's
+    // own row, matched by name, so a hand-typed name shows the real count and
+    // a renamed one re-matches. With no appGroups (an older server) the group
+    // keeps what it had.
+    const match = groupDraft.keptByApp ? appGroupFor(appGroups, clean) : null;
     const nextGroup: Group = groupDraft.keptByApp
-      ? { name: groupDraft.name.replace(/\s+/g, ' ').trim(), people: [], keptByApp: true, size: groupDraft.size ?? 0, reportedAt: groupDraft.reportedAt ?? null }
-      : { name: groupDraft.name.replace(/\s+/g, ' ').trim(), people: groupDraft.people };
+      ? {
+        name: clean, people: [], keptByApp: true,
+        size: match ? match.size : (appGroups ? 0 : groupDraft.size ?? 0),
+        reportedAt: match ? match.reportedAt : (appGroups ? null : groupDraft.reportedAt ?? null),
+      }
+      : { name: clean, people: groupDraft.people };
     const groups = [...draft.groups];
     let rules = draft.rules;
     if (groupDraft.index != null) {
@@ -308,6 +322,18 @@ export function WhoDecidesDialog() {
     }
     setDraft({ ...draft, groups, rules });
     setScreen('own');
+  }
+
+  // #6811: one tap adds a group the app keeps to the draft, with the app's
+  // real size, so a rule can name it at once. Proposing still writes the same
+  // `{ name, keptByApp: true }` the switch does, and nothing goes live without
+  // the usual vote.
+  function addAppGroup(g: AppGroup) {
+    if (!draft || draft.groups.length >= MAX_GROUPS) return;
+    setDraft({
+      ...draft,
+      groups: [...draft.groups, { name: g.name, people: [], keptByApp: true, size: g.size, reportedAt: g.reportedAt }],
+    });
   }
 
   function deleteGroup() {
@@ -593,6 +619,17 @@ export function WhoDecidesDialog() {
               subtitleClassName="whitespace-normal"
               trailing={g.keptByApp ? <span className="text-[13px] text-zinc-500 dark:text-zinc-400">{t('dialogs:whoDecides.group.keptByApp')}</span> : undefined} />
           ))}
+          {draft.groups.length < MAX_GROUPS ? undeclaredAppGroups(appGroups, draft.groups).map((g) => {
+            const sent = g.reportedAt ? agoStamp(g.reportedAt) : null;
+            return (
+              <ListRow key={g.key} as="button" data-who-app-group={g.key} onClick={() => addAppGroup(g)} title={g.name}
+                subtitle={sent
+                  ? <span title={sent.title}>{t('dialogs:whoDecides.group.appGroupSub', { count: g.size, when: sent.text })}</span>
+                  : t('dialogs:whoDecides.group.appGroupNotSent')}
+                subtitleClassName="whitespace-normal"
+                trailing={<span className="text-[13px] text-zinc-500 dark:text-zinc-400">{t('dialogs:whoDecides.group.keptByApp')}</span>} />
+            );
+          }) : null}
           {draft.groups.length < MAX_GROUPS ? (
             <ListRow as="button" data-who-add-group="" onClick={() => editGroup(null)}
               leading={<IconTile size="xs"><PlusIcon aria-hidden="true" /></IconTile>}
@@ -621,6 +658,12 @@ export function WhoDecidesDialog() {
     if (!draft || !groupDraft) return null;
     const editingKey = groupDraft.index != null ? groupKey(draft.groups[groupDraft.index].name) : null;
     const problem = groupDraft.name.trim() ? groupNameProblem(groupDraft.name, draft.groups, editingKey) : null;
+    // #6811: a kept group's count and last-sent time come from the app's own
+    // list, matched by name, so a typed name shows the real size and a typo is
+    // caught before the vote. With no appGroups (an older server) the group
+    // shows what it had, as today.
+    const match = groupDraft.keptByApp ? appGroupFor(appGroups, groupDraft.name) : null;
+    const known = match || (appGroups ? null : { size: groupDraft.size ?? 0, reportedAt: groupDraft.reportedAt ?? null });
     const usedBy = editingKey ? draft.rules.filter((r) => r.group === editingKey) : [];
     const pool = (everyone || (community?.members || []).map((m) => m.username)).filter((u) => !groupDraft.people.includes(u));
     const setPeople = (people: string[]) => setGroupDraft({ ...groupDraft, people });
@@ -669,12 +712,18 @@ export function WhoDecidesDialog() {
         </GroupedList>
         {groupDraft.keptByApp ? (
           <>
-            <SectionHeader className="px-1 pb-2 pt-5">{t('dialogs:whoDecides.group.people', { count: groupDraft.size ?? 0 })}</SectionHeader>
-            <p className={`mt-2 ${NOTE}`} data-who-kept-line="">
-              {groupDraft.reportedAt
-                ? t('dialogs:whoDecides.group.keptReported', { when: new Date(groupDraft.reportedAt).toLocaleString() })
-                : t('dialogs:whoDecides.group.keptNever')}
-            </p>
+            <SectionHeader className="px-1 pb-2 pt-5">{t('dialogs:whoDecides.group.people', { count: known ? known.size : 0 })}</SectionHeader>
+            {appGroups && groupDraft.name.trim() && !match ? (
+              <p className="mt-2 px-1 text-[13px] text-red-700 dark:text-red-400" data-who-kept-nomatch="" role="alert">
+                {t('dialogs:whoDecides.group.appGroupNoMatch')}
+              </p>
+            ) : (
+              <p className={`mt-2 ${NOTE}`} data-who-kept-line="">
+                {known?.reportedAt
+                  ? t('dialogs:whoDecides.group.keptReported', { when: new Date(known.reportedAt).toLocaleString() })
+                  : t('dialogs:whoDecides.group.keptNever')}
+              </p>
+            )}
           </>
         ) : (
           <>

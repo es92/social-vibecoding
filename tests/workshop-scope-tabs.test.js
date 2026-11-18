@@ -64,12 +64,19 @@ const SCREEN = read('frontend/src/features/workshop/index.tsx');
 const SCOPE = read('frontend/src/features/workshop/community-scope.ts');
 const SWITCHER = read('frontend/src/features/workshop/community-switcher.tsx');
 
-test('picking a community keeps the page you were on, and All communities goes to Home\'s (One Home, #6361)', () => {
+test('picking a community keeps the page you were on, and All communities goes to the Communities page', () => {
   const at = SCOPE.indexOf('export function goToCommunity(');
   const fn = SCOPE.slice(at, SCOPE.indexOf('\n}\n', at));
   assert.match(fn, /closeSwitcher\(\);/, 'the switcher closes either way');
-  assert.match(fn, /setScope\(null\);[\s\S]*?_forgetWorkshopView[\s\S]*?home\.showCommunities\(\{ all: true \}\);/,
-    'All communities is Home\'s Pinned communities, with its All communities open');
+  // All communities was Home's Pinned communities with its All communities
+  // open (One Home, #6361). It is the Communities tab's page now, which
+  // lists every one you are in: the door forgets the remembered Workshop
+  // view and goes to `#communities`.
+  assert.match(fn, /if \(!slug\) \{\s*setScope\(null\);\s*openCommunitiesPage\(\);\s*return;\s*\}/,
+    'All communities is the Communities page');
+  assert.doesNotMatch(fn, /showCommunities|navigateHome/, 'not Home any more');
+  const open = SCOPE.slice(SCOPE.indexOf('export function openCommunitiesPage('), at);
+  assert.match(open, /_forgetWorkshopView\?\.\(\)[\s\S]*?if \(window\.location\.hash !== '#communities'\) window\.location\.hash = '#communities';/);
   assert.match(fn, /setScope\(slug\);[\s\S]*?if \(onPage\) return;\s*landKeepingPlace\(slug\);/,
     'a community opens on the place you were on, else its hub');
   assert.match(fn, /void app\?\.navigateToApp\?\.\(slug, 'dev'\);/);
@@ -80,7 +87,7 @@ test('picking a community keeps the page you were on, and All communities goes t
   assert.match(SWITCHER, /data-switcher-start=""\s*onClick=\{\(\) => \{ closeSwitcher\(\); \(window as any\)\.App\?\.showCreateModal\?\.\(\); \}\}/);
 });
 
-test('All communities is Home\'s at every width, with nothing opened behind it (One Home, #6361)', () => {
+test('All communities is the Communities page at every width, with nothing opened behind it', () => {
   const calls = [];
   const mod = loadTsx('frontend/src/features/workshop/community-scope.ts', {
     stubs: {
@@ -92,7 +99,15 @@ test('All communities is Home\'s at every width, with nothing opened behind it (
   mod.communityScopeStore.set({ slug: null, list: ['garden', 'swap'] });
   const had = { window: global.window, document: global.document };
   let phone = true;
-  const location = { hash: '#home' };
+  // The address bar, counting each write: a press on the page itself must
+  // not push the same address again.
+  const went = [];
+  let hash = '#home';
+  const location = {
+    get hash() { return hash; },
+    set hash(next) { went.push(next); hash = next; },
+  };
+  let forgot = 0;
   const shown = [];
   global.window = {
     matchMedia: (q) => ({ matches: q.includes('768px') ? !phone : false }),
@@ -100,23 +115,32 @@ test('All communities is Home\'s at every width, with nothing opened behind it (
     Home: { showCommunities: (opts) => shown.push(opts) },
     App: {
       currentApp: null,
+      _forgetWorkshopView: () => { forgot += 1; },
       navigateToApp: (slug, tab) => { calls.push(['nav', slug, tab]); return Promise.resolve(); },
     },
   };
   global.document = { querySelector: () => null };
   try {
     mod.goToCommunity(null);
-    assert.deepEqual(shown, [{ all: true }], 'a phone: Home\'s All communities');
+    assert.deepEqual(went, ['#communities'], 'a phone: the page\'s own address');
+    assert.equal(forgot, 1, 'the Workshop view the tab would have reopened is forgotten');
     assert.deepEqual(calls, [], 'nothing opened behind it');
-    // The community the tab is on does not change that.
+    assert.deepEqual(shown, [], 'and not Home\'s section, which is gone');
+    // The community the tab was on does not change that, and it is cleared.
     mod.communityScopeStore.set({ slug: 'swap', list: ['garden', 'swap'] });
     mod.goToCommunity(null);
-    // A wide window is the sidebar's own All row: the same.
+    assert.equal(mod.communityScopeStore.get().slug, null);
+    // A wide window is the sidebar's own Communities row: the same.
     phone = false;
     mod.goToCommunity(null);
-    assert.deepEqual(shown, [{ all: true }, { all: true }, { all: true }]);
+    assert.deepEqual(went, ['#communities'], 'already there: the address is not written again');
+    assert.equal(forgot, 3);
     assert.deepEqual(calls, []);
-    assert.equal(location.hash, '#home', 'no address of its own: Home is where it lands');
+    assert.equal(location.hash, '#communities');
+    // The door on its own, as the tab's press takes it.
+    hash = '#messages';
+    mod.openCommunitiesPage();
+    assert.deepEqual(went, ['#communities', '#communities']);
   } finally {
     global.window = had.window;
     global.document = had.document;
@@ -208,7 +232,9 @@ test('#852: every class the switcher draws with has a rule, and the menu floats 
   assert.match(CSS, /\.community-switcher-scrim \{[^}]*position: fixed;/, 'the phone sheet sits over a scrim');
   assert.match(CSS, /\.community-switcher-tile \{[^}]*width: 40px; height: 40px;/, 'and a community\'s tile has a size');
   assert.match(CSS, /\.community-switcher-tile > img \{ width: 100%; height: 100%;/, 'which its icon fills rather than overflowing');
-  assert.match(CSS, /\.platform-tab-tile > img \{ width: 100%; height: 100%;/, 'as the tab\'s tile does');
+  // The tab drew a community's tile too, in a ring, until it became a plain
+  // door to its page: the people glyph, and no tile to size.
+  assert.doesNotMatch(CSS, /\.platform-tab-tile\b/, 'the tab\'s own tile is gone with its ring');
 });
 
 test('All items, the plus and the tabs are gone, and so is the list (#3051; One Home, #6361)', () => {

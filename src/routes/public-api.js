@@ -74,6 +74,12 @@ const OVERVIEW_CACHE_MAX = 500;
 // The public directory (GET /api/public/apps), kept as long: one answer for
 // everybody, from the heaviest query a page load makes.
 const DIRECTORY_TTL_MS = 30 * 1000;
+// #6796: past that, the copy still answers while ONE read refreshes it, so
+// the first visitor after a quiet half minute does not wait the 1.5 to 2
+// seconds the query takes. Bounded: a copy older than this is never
+// served, so a project that left the directory (made private, suspended)
+// leaves the list within this long at the latest.
+const DIRECTORY_STALE_MS = 2 * 60 * 1000;
 const { loadMobileAppUrls } = require('../services/mobile-store-links');
 
 // The ONE body POST /api/public/waitlist/resend ever returns. Frozen and
@@ -152,8 +158,30 @@ function publicApiRoutes(config) {
   function readDirectory(includeWallets) {
     const key = includeWallets ? 'wallets' : 'plain';
     const hit = directoryCache.get(key);
-    if (hit && (hit.pending || hit.expiresAt > Date.now())) return hit.read;
-    const entry = { pending: true, expiresAt: 0, read: null };
+    const now = Date.now();
+    if (hit && (hit.pending || hit.expiresAt > now)) return hit.read;
+    // A copy that just expired answers this request, and whoever arrives
+    // while the refresh runs; the refresh replaces it when it lands.
+    if (hit && hit.value && now - hit.readAt < DIRECTORY_STALE_MS) {
+      if (!hit.refreshing) {
+        hit.refreshing = true;
+        const fresh = loadDirectory(key, includeWallets);
+        fresh.read.then(() => { directoryCache.set(key, fresh); }, (err) => {
+          hit.refreshing = false;
+          log.warn('public-api', 'directory refresh failed; the kept copy still answers', { message: err.message });
+        });
+      }
+      return Promise.resolve(hit.value);
+    }
+    const entry = loadDirectory(key, includeWallets);
+    directoryCache.set(key, entry);
+    return entry.read;
+  }
+  // One read of the directory. The entry is stored by the caller: at once
+  // for a first read (so requests that arrive meanwhile share it), and only
+  // when it lands for a refresh behind a kept copy.
+  function loadDirectory(key, includeWallets) {
+    const entry = { pending: true, expiresAt: 0, readAt: 0, value: null, refreshing: false, read: null };
     entry.read = Promise.all([
       listPublicApps(pool, { includeWallets }),
       // The landing's "This month" figures, read with the list so they are
@@ -165,14 +193,15 @@ function publicApiRoutes(config) {
       }),
     ]).then(([apps, month]) => {
       entry.pending = false;
-      entry.expiresAt = Date.now() + DIRECTORY_TTL_MS;
-      return { apps, month };
+      entry.readAt = Date.now();
+      entry.expiresAt = entry.readAt + DIRECTORY_TTL_MS;
+      entry.value = { apps, month };
+      return entry.value;
     }, (err) => {
       if (directoryCache.get(key) === entry) directoryCache.delete(key);
       throw err;
     });
-    directoryCache.set(key, entry);
-    return entry.read;
+    return entry;
   }
 
   router.get('/api/public/apps', async (req, res) => {

@@ -62,6 +62,7 @@ test('Kubernetes platform image builds and contains the generated shell assets',
   };
   const bundle = order('node frontend/scripts/build-shell.mjs --keep-prerender');
   const css = order('node scripts/build-tailwind.js');
+  const minify = order('node scripts/minify-legacy-assets.js');
   const commitArg = order('ARG GIT_SHA=dev');
   const commitEnv = order('ENV GIT_SHA=$GIT_SHA');
   const document = order('node frontend/scripts/build-shell.mjs --document');
@@ -69,6 +70,11 @@ test('Kubernetes platform image builds and contains the generated shell assets',
   const precompress = order('RUN node scripts/precompress-static-assets.js');
   assert.ok(bundle < css && css < commitArg,
     'the Vite passes and Tailwind run before GIT_SHA is declared, so a commit that left their inputs alone can reuse them');
+  // #6798: the legacy scripts and app.css are minified for the image alone.
+  // After Tailwind (which scans public/js as written), before the commit id
+  // (which it does not read), and so before the release file and the
+  // precompressed copies, which must describe the files actually served.
+  assert.ok(css < minify && minify < commitArg && minify < release && minify < precompress);
   assert.ok(commitArg < commitEnv && commitEnv < document,
     'the document this build serves is written with the commit id');
   assert.ok(document < release && release < precompress,
@@ -339,6 +345,26 @@ test('Kubernetes workflow retains queued releases, publishes the tip, and never 
   for (const step of ['Log in to GHCR for Helm', 'Publish OCI Helm release', 'Record atomic release']) {
     assert.match(release, new RegExp(`- name: ${step}\\n        if: steps\\.current_head\\.outputs\\.publish == 'true'`));
   }
+});
+
+test('Kubernetes workflow retries the chart push before it fails a release (#6657)', () => {
+  // GHCR sometimes answers a push it has just stored with `failed to perform
+  // "Tag" on destination: sha256:…: not found` (3 of about 200 releases on
+  // 13 and 15 Nov 2026). Each one left the stalled-release banner up, because
+  // services/release-watch.js reads this run's conclusion. The same chart
+  // version pushed again is idempotent, so the step tries again first.
+  const workflow = read('.github/workflows/build-kubernetes-images.yml');
+  const release = workflow.slice(workflow.indexOf('\n  release:\n'));
+  const start = release.indexOf('- name: Publish OCI Helm release');
+  assert.ok(start > 0, 'the release job publishes the chart');
+  const step = release.slice(start, release.indexOf('\n      - name: ', start + 1));
+  assert.match(step, /attempts=4\n\s+for attempt in \$\(seq 1 "\$attempts"\); do\n\s+if helm push "\$chart" "\$destination"; then\n\s+exit 0/,
+    'each try is a full push, and the first one that succeeds ends the step');
+  assert.match(step, /if \[ "\$attempt" -eq "\$attempts" \]; then\n\s+echo "::error::[^"]*"\n\s+exit 1/,
+    'the last failed try still fails the release: a chart that never arrived is a stalled release');
+  assert.match(step, /delay=\$\(\( attempt \* 15 \)\)/, 'tries are 15, 30 and 45 seconds apart');
+  assert.match(step, /echo "::warning::helm push failed/, 'every retried push is visible on the run');
+  assert.equal((step.match(/helm push "/g) || []).length, 1, 'one push command, inside the loop');
 });
 
 test('Kubernetes workflow asks Argo CD to refresh on publish, and can never fail the release doing so', () => {

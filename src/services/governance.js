@@ -668,18 +668,42 @@ function explicitApprovalRowFields(row, gate) {
   };
 }
 
+// #6811: every group the app has sent, with how many people are in it and
+// when it last sent its list. The same read GET /api/app-groups makes: the
+// Who can see & change it sheet lists the ones no rule names yet and matches
+// a hand-typed name against them. Counts only, never who is in the group.
+// Not cached: the sheet is opened rarely and the count must be live.
+async function listAppGroups(pool, appId) {
+  const { rows } = await pool.query(
+    `SELECT g.key, g.name, g.reported_at,
+            COUNT(m.user_id)::int AS size
+       FROM app_groups g
+       LEFT JOIN app_group_members m ON m.group_id = g.id
+      WHERE g.app_id = $1
+      GROUP BY g.id
+      ORDER BY g.name`,
+    [appId]
+  );
+  return rows.map((r) => ({ name: r.name, key: r.key, size: r.size, reportedAt: r.reported_at }));
+}
+
 // #4666: the rule as the project's page says it (GET /api/apps/:slug/community
 // `approval`): which preset it is, each rule with how many people its group
 // has and what an unopposed change needs from it today, and the named
 // groups. A project on the old two columns reads as Group vote when it has
 // the default rule, and as its own (`preset` null) otherwise.
 async function describeApproval(pool, appId, gov) {
+  // #6811: the app's own groups ride along, declared ones included so the
+  // sheet can match a hand-typed name. A failed read fails the description,
+  // as any other read here does; the route already answers without one.
+  const appGroups = await listAppGroups(pool, appId);
   if (!gov.rules) {
     return {
       mode: 'columns',
       preset: gov.approverPolicy === 'anyone' && gov.approvalsRequired == null ? 'group_vote' : null,
       rules: null,
       groups: [],
+      appGroups,
       creatorId: null,
     };
   }
@@ -701,6 +725,7 @@ async function describeApproval(pool, appId, gov) {
         reportedAt: facts.keptReported?.get(g.key) || null,
       }
       : { name: g.name, key: g.key, people: g.people, keptByApp: false })),
+    appGroups,
     creatorId: facts.creatorId,
     required: gate.required,
   };
@@ -783,6 +808,7 @@ module.exports = {
   proposalAuthorId,
   explicitApprovalRowFields,
   ruleRowFields,
+  listAppGroups,
   describeApproval,
   getElectorate,
   viewerDecides,

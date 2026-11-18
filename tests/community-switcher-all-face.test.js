@@ -1,23 +1,24 @@
 'use strict';
 
 // #3663 — "All communities" in "Your communities" wears the Communities tab's
-// own face, not a dark tile.
+// own glyph, not a dark tile.
 //
-// The switcher behind the header's community name (and the lit tab) leads
-// with All communities. Its tile was filled near-black with a white people
-// glyph, and the same list holds Homeroom's own community, whose icon is a
-// cream H on near-black: two dark squares in one list, the first reading as
-// a second Homeroom. The tab already drew All communities differently, as the
-// people glyph in a square ring (`.platform-tab-ring-all`), and the owner
-// asked for that one in the switcher too.
+// The switcher behind the header's community name leads with All
+// communities. Its tile was filled near-black with a white people glyph, and
+// the same list holds Homeroom's own community, whose icon is a cream H on
+// near-black: two dark squares in one list, the first reading as a second
+// Homeroom. The owner asked for the tab's people glyph in a square ring
+// there instead. The tab itself wore that ring too until it became a plain
+// door to its page (18 Nov 2026): it draws the glyph alone now, as every tab
+// draws its own, and the ring is the switcher's.
 //
 // Pinned, each a way the two can drift apart again:
 //
-//   1. THE SAME GLYPH. The switcher's All tile draws the very icon the tab
-//      draws for All communities, path for path.
-//   2. THE SAME RING, NOT A FILL. The tile is transparent with the tab's 2px
-//      inset ring in the ink it sits in; no colour of its own, so it follows
-//      the theme the way the tab does, and no dark fill in either theme.
+//   1. THE SAME GLYPH. The switcher's All tile draws the very icon the
+//      Communities tab draws, path for path.
+//   2. A RING, NOT A FILL. The tile is transparent with a 2px inset ring in
+//      the ink it sits in; no colour of its own, so it follows the theme,
+//      and no dark fill in either theme.
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -49,12 +50,15 @@ function switcherAllTile() {
   return tile[1];
 }
 
-function tabAllFace() {
+function tabGlyph() {
   const ui = loadTsx('tests/fixtures/tab-bar-api.ts');
   const html = renderToHtml(createElement(ui.PlatformTabs, {}));
-  const face = html.match(/<span class="platform-tab-ring platform-tab-ring-all" aria-hidden="true">([\s\S]*?)<\/span>/);
-  assert.ok(face, 'the tab draws All communities as its ring (the prerender)');
-  return face[1];
+  const at = html.indexOf('id="platform-tab-workshop"');
+  assert.ok(at > 0, 'the Communities tab renders (the prerender)');
+  const tab = html.slice(at, html.indexOf('</a>', at));
+  const glyph = tab.match(/<span class="platform-tab-mark">(<svg[\s\S]*?<\/svg>)/);
+  assert.ok(glyph, 'with its glyph first in its mark');
+  return glyph[1];
 }
 
 const pathsOf = (svg) => [...svg.matchAll(/ d="([^"]+)"/g)].map((m) => m[1]);
@@ -66,26 +70,25 @@ const ruleFor = (selector) => {
 
 // ── 1. The same glyph ─────────────────────────────────────────────────
 
-test('the switcher\'s All communities tile draws the tab\'s All communities glyph', () => {
+test('the switcher\'s All communities tile draws the Communities tab\'s glyph', () => {
   const tile = switcherAllTile();
-  const face = tabAllFace();
+  const glyph = tabGlyph();
   assert.ok(pathsOf(tile).length > 0, 'the tile holds a drawn glyph');
-  assert.deepEqual(pathsOf(tile), pathsOf(face), 'path for path the people glyph the tab draws');
-  assert.doesNotMatch(tile, /class="/, 'sized by app.css with the tile, as the tab sizes its own, not by a utility');
+  assert.deepEqual(pathsOf(tile), pathsOf(glyph), 'path for path the people glyph the tab draws');
+  assert.doesNotMatch(tile, /class="/, 'sized by app.css with the tile, not by a utility');
 });
 
-// ── 2. The same ring, not a fill ──────────────────────────────────────
+// ── 2. A ring, not a fill ─────────────────────────────────────────────
 
-test('the tile is the tab\'s ring in the row\'s own ink, with no dark fill in either theme', () => {
+test('the tile is a ring in the row\'s own ink, with no dark fill in either theme', () => {
   const tile = ruleFor('.community-switcher-tile-all');
   assert.match(tile, /background: transparent;/, 'no fill of its own');
   assert.match(tile, /color: inherit;/, 'the row\'s ink, which follows the theme');
   assert.match(tile, /box-shadow: inset 0 0 0 2px currentColor;/, 'a 2px ring in that ink');
-  assert.match(ruleFor('.platform-tab-ring'), /box-shadow: inset 0 0 0 2px var\(--ring, currentColor\);/,
-    'the same ring the tab draws (which takes a community\'s colour when it has one)');
+  assert.doesNotMatch(CSS, /\.platform-tab-ring\b/, 'the tab\'s own ring is gone: it draws the glyph alone');
   assert.doesNotMatch(tile, /#[0-9a-f]{3,8}\b|rgba?\(/i, 'no fixed colour, so no near-black tile');
   assert.doesNotMatch(CSS, /\.dark \.community-switcher-tile-all/, 'and no dark-theme twin to keep in step');
-  // The glyph keeps the tab's proportion (18px in a 28px ring) at both sizes.
+  // The glyph keeps the proportion the tab's ring had (18px in 28px) at both sizes.
   assert.match(CSS, /\n\.community-switcher-tile-all > svg \{ width: 26px; height: 26px; stroke-width: 1\.8; \}/,
     '26px in the sheet\'s 40px tile, with the tab glyph\'s stroke');
   assert.match(CSS, /\n\.community-switcher-menu \.community-switcher-tile-all > svg \{ width: 22px; height: 22px; \}/,

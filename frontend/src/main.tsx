@@ -157,6 +157,7 @@ import './lib/keyboard-open';
 // group chat, a classic script, reaches the hold as a global (Messages
 // imports it).
 import './lib/keyboard-hold';
+import './lib/use-auto-grow';
 // …and a sheet, dialog or menu opened over a dark app takes the app's tone
 // rather than the viewer's light mode (#2803).
 import './lib/surface-tone';

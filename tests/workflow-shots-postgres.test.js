@@ -1054,4 +1054,72 @@ test('shots machine against the full PostgreSQL schema', { timeout: 180000 }, as
     assert.deepEqual([i.state, i.data.head], ['published', SHA('b')]);
     assert.deepEqual([(await row(s)).shots_state, (await runs(s))[0].state], ['verified', 'verified']);
   });
+  // 18 Nov 2026: a head move hid the shots the card showed at once. The
+  // published run it leaves is kept on the slot as the previous version's
+  // (shots_detail.previous) until the new head's publish; a clean merge of
+  // main carries published shots onto the merged head (tests/shots-previous-version.test.js).
+  await t.test('S34 a new head keeps the last published shots as the previous version\'s until its own publish', async () => {
+    defaults();
+    const view = require('../src/services/shots-view');
+    const s = await proposal({ ready: true });
+    await declare(s);
+    await settle();
+    const [first] = await runs(s);
+    assert.equal(first.state, 'verified');
+    await send(s, 'HeadMoved', { head: SHA('b') });
+    await settle();
+    await asTransition((c) => c.query('UPDATE chat_sessions SET reviewed_head_sha = $2 WHERE id = $1', [s.id, SHA('b')]));
+    let r = await row(s);
+    assert.deepEqual([r.shots_state, r.shots_detail.headSha], ['planned', SHA('b')]);
+    assert.deepEqual(r.shots_detail.previous, { runId: first.id, headSha: SHA('a') });
+    let shown = await view.getForSession(pool, { ...r, app_slug: s.app.slug }, s.app.slug);
+    assert.equal(shown.state, 'planned');
+    assert.equal(shown.previous.headSha, SHA('a'));
+    assert.equal(shown.previous.artifacts.length, 2, 'the previous version\'s pictures');
+    // The new head's run carries them while it works, then replaces them.
+    let during = null;
+    work.answer.set(WORK.agent, async (input) => {
+      during = (await row(s)).shots_detail.previous;
+      await saved(input.runId, 'base');
+      await saved(input.runId, 'head');
+      return passed(input);
+    });
+    await send(s, 'HeadReady', { head: SHA('b') }, fromPreview);
+    await settle();
+    assert.deepEqual(during, { runId: first.id, headSha: SHA('a') }, 'kept while this version\'s are taken');
+    r = await row(s);
+    assert.equal(r.shots_state, 'verified');
+    assert.equal(r.shots_detail.previous, undefined, 'this version\'s published: the previous version\'s go');
+    shown = await view.getForSession(pool, { ...r, app_slug: s.app.slug }, s.app.slug);
+    assert.equal(shown.previous, null);
+  });
+
+  await t.test('S35 a clean merge of main carries published shots onto the merged head: nothing is taken again', async () => {
+    defaults();
+    const view = require('../src/services/shots-view');
+    const s = await proposal({ ready: true });
+    await declare(s);
+    await settle();
+    const [run] = await runs(s);
+    await send(s, 'HeadMoved', { head: SHA('b'), reason: 'mechanical' });
+    await settle();
+    const i = await instance(s);
+    assert.deepEqual([i.state, i.data.head], ['published', SHA('b')]);
+    await asTransition((c) => c.query('UPDATE chat_sessions SET reviewed_head_sha = $2 WHERE id = $1', [s.id, SHA('b')]));
+    const r = await row(s);
+    assert.deepEqual([r.shots_state, r.shots_run_id, r.shots_detail.headSha, r.shots_detail.carriedFrom],
+      ['verified', run.id, SHA('b'), SHA('a')]);
+    assert.equal((await runs(s))[0].state, 'verified', 'the run stands');
+    const revisions = calls(WORK.revision).length;
+    await send(s, 'HeadReady', { head: SHA('b') }, fromPreview);
+    await settle();
+    assert.equal(calls(WORK.revision).length, revisions, 'its preview being ready takes nothing again');
+    assert.equal(calls(WORK.copies).filter((c) => c.input.runId !== run.id).length, 0, 'no run is taken again');
+    const shown = await view.getForSession(pool, { ...r, app_slug: s.app.slug }, s.app.slug);
+    assert.deepEqual([shown.state, shown.headSha, shown.artifacts.length], ['verified', SHA('a'), 2]);
+    // New code after it is shot again, and the carried shots are its previous version's.
+    await send(s, 'HeadMoved', { head: SHA('c'), reason: 'authored' });
+    await settle();
+    assert.deepEqual((await row(s)).shots_detail.previous, { runId: run.id, headSha: SHA('a') });
+  });
 });

@@ -74,10 +74,12 @@ test('the places: the column\'s own list, with no topic rows and no fold', () =>
   assert.match(rail, /owed=\{here \? place\.owed : needs\}/);
 });
 
-test('the markup: Messages has nothing nested under it, and Recents follows it (7 Nov 2026)', () => {
+test('the markup: Messages has nothing nested under it, and Communities, then Recents, follow it (7 Nov 2026)', () => {
   const html = renderComponent('frontend/src/features/nav/tab-bar.tsx', 'PlatformTabs', {});
-  assert.match(html, /<span class="platform-tab-label">Messages<\/span><\/a><div id="platform-rail-pinned"/,
-    'Messages, then Recents (#6019; One Home #6361 put AI above Messages)');
+  assert.match(html, /<span class="platform-tab-label">Messages<\/span><\/a><a id="platform-tab-workshop"/,
+    'Messages, then the Communities row (#6019; One Home #6361 put AI above Messages)');
+  assert.match(html, /<span class="platform-tab-label">Communities<\/span><\/a><div id="platform-rail-pinned"/,
+    'and Recents under it');
   assert.ok(html.indexOf('id="platform-tab-ai"') < html.indexOf('id="platform-tab-messages"'), 'AI above Messages');
   assert.doesNotMatch(html, /platform-rail-nest|platform-rail-conversations/);
   // The sidebar nests under a community's row alone: the conversations it
@@ -101,7 +103,7 @@ test('the motion: one clock for both parts, on the content\'s own height', () =>
   assert.match(css, /\.platform-rail-communities > \.platform-rail-nest \{\n    margin-top: -1px;\n  \}/, 'the section\'s gap does not arrive with it');
 });
 
-test('the pages: the inbox\'s list beside a conversation, the list as the page with none open, and the All row goes to All communities', () => {
+test('the pages: the inbox\'s list beside a conversation, the list as the page with none open, and the lit Communities row goes to its page', () => {
   const inbox = read('frontend/src/features/messages/index.tsx');
   // 7 Nov 2026: with the sidebar's nest under Messages gone, an open
   // conversation has the list beside it again; with none open the list is
@@ -125,7 +127,7 @@ test('the pages: the inbox\'s list beside a conversation, the list as the page w
   // hides the list for it. One Home (#6361): that list is Home's now.
   assert.doesNotMatch(all, /data-workshop-results/, 'no second list for a search');
   const bar = read('frontend/src/features/nav/tab-bar.tsx');
-  assert.match(bar, /if \(key === 'workshop' && sidebarRows\) \{\s*event\.preventDefault\(\);\s*if \(screen === 'workshop-screen'\) pressLitTab\(screen\);\s*else goToCommunity\(null\);/);
+  assert.match(bar, /if \(key === 'workshop' && sidebarRows && lit === 'workshop'\) \{\s*event\.preventDefault\(\);\s*if \(screen === 'communities-screen'\) pressLitTab\(screen\);\s*else goToCommunity\(null\);/);
   // The bar draws no places button of its own (#6671), so there is none to
   // hide beside the docked sidebar.
   assert.doesNotMatch(css, /body:has\(#platform-tabs:not\(\.hidden\):not\(\.platform-tabs-peek\):not\(\.platform-tabs-folded\)\) \.dev-ws-places-btn \{\n    display: none;\n  \}/);

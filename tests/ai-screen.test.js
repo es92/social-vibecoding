@@ -390,6 +390,45 @@ test('#6672: Needs you orders its projects by their newest activity', () => {
 // viewer last looked, so Live folds after its first few whatever is new: its
 // rows put the new ones first, and the fold says how many of them it holds.
 // Needs you and Waiting & in progress keep the never-fold rule.
+// 18 Nov 2026: PR 6792 was shared (In progress, being made), then promoted
+// with the tab open. Three changes of its author's had just merged, so In
+// progress was three Going live rows and PR 6792, now Waiting while its
+// checks ran, was Homeroom's fourth row: folded behind Show more until its
+// checks failed and it went to Needs you. A row that moves while the page is
+// up is not folded away; the page's first read moves nothing.
+test('a row that moves while the page is up is not folded away (PR 6792)', () => {
+  const { groupRows, movedSince, standingsOf, GROUP_FIRST } = loadTsx(MODEL);
+  const next = (id, stage) => thread(id, id, stage, { group: 'next' });
+  const wait = (id, stage, extra = {}) => thread(id, id, stage, { group: 'waiting', ...extra });
+  // 12:02, the first read: two going live, PR 6792 being made, two waiting.
+  const before = { progress: [next(6786, 'going_live'), next(6785, 'going_live'), next(6792, 'building')],
+    waiting: [wait(6791, 'vote'), wait(6699, 'vote')] };
+  assert.equal(movedSince(null, before.progress), before.progress, 'nothing has moved on the first read');
+  const seen = standingsOf([...before.progress, ...before.waiting]);
+  assert.equal(seen.get(6792), 'next:building');
+  // 12:06: #6791 merged and is going live; PR 6792 is promoted and checking.
+  const progress = movedSince(seen, [next(6786, 'going_live'), next(6785, 'going_live'), next(6791, 'going_live')]);
+  const waiting = movedSince(seen, [wait(6792, 'checking', { work: { line: { code: 'checks_running', minutes: 3 } } }), wait(6699, 'vote')]);
+  assert.deepEqual([...progress, ...waiting].map((t) => [t.threadId, !!t.moved]),
+    [[6786, false], [6785, false], [6791, true], [6792, true], [6699, false]]);
+  // The card draws a project's In progress, then its Waiting (./lines.ts).
+  const lines = [...progress, ...waiting].map((t) => ({ key: String(t.threadId), moved: t.moved }));
+  const folded = groupRows(lines, GROUP_FIRST.busy, false);
+  assert.deepEqual(folded.items.slice(0, folded.shown).map((l) => l.key), ['6786', '6785', '6791', '6792'],
+    'PR 6792 stays in sight; only #6699, which did not move, is folded');
+  assert.equal(folded.hidden, 1);
+  assert.equal(groupRows(lines.map((l) => ({ key: l.key })), GROUP_FIRST.busy, false).hidden, 2, 'it was folded before');
+  // A new second line is not a move, and a row that went nowhere is the same row.
+  const ticking = [wait(6792, 'checking', { work: { line: { code: 'checks_running', minutes: 1 } } })];
+  assert.equal(movedSince(standingsOf(waiting), ticking), ticking);
+  assert.equal(movedSince(standingsOf([]), ticking)[0].moved, true, 'a row new to the card has moved into it');
+  // The page takes what it first had on each showing and hands both faces the marked rows.
+  const index = read('frontend/src/features/ai/index.tsx');
+  assert.match(index, /setSeen\(\(had\) => \(had && had\.showing === showings \? had : \{ showing: showings, at: standingsOf\(\[\.\.\.progress, \.\.\.waiting\]\) \}\)\);/);
+  assert.equal((index.match(/progress=\{progressDrawn\}\s+waiting=\{waitingDrawn\}/g) || []).length, 2, 'the standard list and the looks');
+  assert.match(read('frontend/src/features/ai/lines.ts'), /fresh: \(th\.unread \|\| 0\) > 0,\s+moved: th\.moved === true,/);
+});
+
 test('#6408: Live this week folds after its first few rows whatever is new', () => {
   const { groupRows, GROUP_FIRST } = loadTsx(MODEL);
   // Eight rows, six of them new. Folded to Live's first three, five fold.
@@ -406,6 +445,8 @@ test('#6408: Live this week folds after its first few rows whatever is new', () 
   // away, which is what Needs you and Waiting & in progress draw.
   const held = groupRows(many, GROUP_FIRST.live, false);
   assert.deepEqual([held.shown, held.hidden], [6, 2], 'a fresh row is lifted by default');
+  const movedRows = many.map((r) => ({ ...r, fresh: false, moved: r.key === 'r8' }));
+  assert.deepEqual([groupRows(movedRows, GROUP_FIRST.live, false, false).shown], [3], 'Live folds a moved row too');
 
   const lists = read('frontend/src/features/ai/lists.tsx');
   assert.match(lists, /const freshHidden = foldFresh \? items\.slice\(shown\)\.filter\(\(line\) => line\.fresh\)\.length : 0;/,
@@ -661,7 +702,8 @@ test('In progress and Waiting each leave out a thread the feed lists, by its req
   const work = {
     private: [],
     next: [thread(1, 6036, 'fixing', { group: 'next', change: { id: 9, number: 6025 } }), thread(2, 6040, 'building', { group: 'next', by: 'bot' })],
-    waiting: [thread(3, 6025, 'vote'), thread(4, 6038, 'held', { heldBy: 'approvals' })],
+    // Its own thread: a change for no request is numbered by the change.
+    waiting: [thread(3, 6025, 'vote', { kind: 'change', change: { id: 10, number: 6025 } }), thread(4, 6038, 'held', { heldBy: 'approvals' })],
     live: [],
   };
   assert.deepEqual(inProgress(needs, work).map((t) => t.threadId), [2], 'its change #6025 is owed: once, in Needs you');
@@ -680,7 +722,8 @@ test('a vote on a change for a request names the request\'s number, and opens on
   const [row] = needsYou(needs, null);
   assert.equal(words(row.sub), 'Garden club · #6038');
   assert.equal(row.href, '#app/garden/dev/issues/6038');
-  assert.deepEqual([...owedKeys(needs)].sort(), ['garden#6032', 'garden#6038']);
+  // 18 Nov 2026: by the request's number and, apart, the change's (tests/thread-shared-number.test.js).
+  assert.deepEqual([...owedKeys(needs)].sort(), ['garden#6038', 'garden#change:6032']);
   const work = { private: [], next: [], waiting: [thread(3, 6038, 'vote', { change: { id: 9, number: 6032 } })], live: [] };
   assert.deepEqual(upNext(needs, work), [], 'once, in Needs you');
   const [plain] = needsYou([{ kind: 'proposal', id: 2, number: 6050, title: 'No request', app }], null);
@@ -2028,12 +2071,14 @@ test('a plan opened from a request in the side panel is a third column, not a sh
 test('the tab says Homeroom bot: a wide seat on a phone, two lines in the Duo column', () => {
   assert.equal(message('core:tabs.ai'), 'Homeroom bot');
   const css = read('public/css/app.css');
-  // One Home (#6361): four seats, Home · Homeroom bot · Messages · You. The
-  // bot's holds the longest word, so it is the widest; Messages next, so a
-  // lit Messages pill still clears the bot's name (overnight audit M01).
-  assert.match(css, /#platform-tabs \{ grid-template-columns: 1fr 1\.4fr 1\.15fr 1fr; \}/,
-    'Homeroom bot, second, takes the wide seat');
-  assert.match(css, /#platform-tabs \{ grid-template-columns: 1fr 1\.35fr 1\.15fr 1fr; \}/, 'a little less on the smallest phones');
+  // Five seats, Home · Communities · Homeroom bot · Messages · You (the
+  // Communities tab is back; One Home, #6361, had drawn four). The bot's
+  // holds the longest word, so it is the widest; Communities next, then
+  // Messages, so a lit Messages pill still clears the bot's name (overnight
+  // audit M01).
+  assert.match(css, /#platform-tabs \{ grid-template-columns: 1fr 1\.25fr 1\.4fr 1\.15fr 1fr; \}/,
+    'Homeroom bot, third, takes the wide seat');
+  assert.match(css, /#platform-tabs \{ grid-template-columns: 1fr 1\.2fr 1\.35fr 1\.15fr 1fr; \}/, 'a little less on the smallest phones');
   assert.match(css, /:is\(#platform-tab-workshop, #platform-tab-ai\) \.platform-tab-label \{\s+letter-spacing: -\.02em;\s+overflow: visible;\s+text-overflow: clip;\s+\}/,
     'tightened and let out of the cell rather than cut');
   // The Duo column draws icons only (18 Nov 2026), so the bot's name is not

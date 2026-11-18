@@ -281,6 +281,11 @@ async function migrate(config) {
   await seedStagingBotAllowanceWarning(pool);
   await seedStagingYourApps(pool, config);
   await require('../services/staging-apps').seedCatalog(pool, config);
+  // #6811's shots: a group the project's app keeps, listed on the Who can
+  // see & change it sheet with its size and when it was sent. After the
+  // catalog, whose fake people fill it. Obviously fake, staging only, and
+  // only if the project is there.
+  await seedStagingAppGroups(pool);
   // A platform preview that can make projects (services/preview-projects-client.js):
   // one ready to open for each starter this proposal changed. Nothing
   // anywhere else; never throws.
@@ -468,6 +473,35 @@ async function markChangesWithoutWorkState(pool) {
 // somebody other than the issuer. Headless work is sponsored rather than
 // issued by its user_id, and maintenance proposals belong to the platform,
 // so neither is assigned by this human-work backfill.
+// #6811: the Who can see & change it sheet lists the groups an app keeps,
+// so the shots need one the app has sent. Gym Tracker sends "15-minute
+// finishers"; a fresh staging copy has no such list, so this writes it with
+// obviously fake people. Idempotent, staging only, and a missing project is
+// simply nothing to seed.
+async function seedStagingAppGroups(pool) {
+  if (process.env.USERNODE_ENV !== 'staging') return;
+  try {
+    const app = (await pool.query(
+      "SELECT id FROM apps WHERE lower(name) = 'gym tracker' AND NOT self_hosted ORDER BY id LIMIT 1")).rows[0];
+    if (!app) return;
+    await pool.query(
+      `INSERT INTO app_groups (app_id, key, name, reported_at)
+       SELECT $1, '15-minute finishers', '15-minute finishers', NOW()
+        WHERE NOT EXISTS (SELECT 1 FROM app_groups WHERE app_id = $1 AND key = '15-minute finishers')`, [app.id]);
+    const group = (await pool.query(
+      "SELECT id FROM app_groups WHERE app_id = $1 AND key = '15-minute finishers'", [app.id])).rows[0];
+    if (!group) return;
+    await pool.query(
+      `INSERT INTO app_group_members (group_id, user_id)
+       SELECT $1, id FROM users
+        WHERE username IN ('usernode-capture', 'usernode-capture-admin', 'staging-demo-catalog-1',
+                           'staging-demo-catalog-2', 'staging-demo-catalog-3')
+       ON CONFLICT DO NOTHING`, [group.id]);
+  } catch (err) {
+    log.warn('db', 'Staging app groups seed failed', { message: err.message });
+  }
+}
+
 // #6544: a closed request with a merged change still awaiting release.
 // Obviously fake data for the shots member; no production writes.
 async function seedStagingClosedGoingLive(pool) {
@@ -14045,6 +14079,37 @@ async function seedStagingArchiveProposalFixtures(pool, config) {
           NOW() - INTERVAL '1 day')`,
       [appId, owner.id, archivedBranch]
     );
+  }
+
+  // #6100: the shots' own member (usernode-capture) made a change the vote
+  // set aside, so a fresh staging copy can show why a change was closed, on
+  // its page and in its author's bell. Obviously fake and written only here:
+  // the row is the state a real close leaves (the proposal machine did not
+  // run). Idempotent on the branch name.
+  const whyBranch = 'staging-fixture/change-closed-reason';
+  const { rows: [member] } = await pool.query(
+    "SELECT id FROM users WHERE username = 'usernode-capture'"
+  );
+  if (member) {
+    const { rows: [whyClosed] } = await pool.query(
+      `INSERT INTO chat_sessions
+         (app_id, user_id, branch_name, pr_number, pr_title, status, close_reason,
+          created_at, promoted_at, archived_at)
+       SELECT $1::int, $2::int, $3::varchar, 9302,
+              '[Mock] Closed change, with why it closed',
+              'archived', 'auto-rejected',
+              NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day'
+        WHERE NOT EXISTS (SELECT 1 FROM chat_sessions WHERE app_id = $1 AND branch_name = $3)
+       RETURNING id`,
+      [appId, member.id, whyBranch]
+    );
+    if (whyClosed) {
+      await pool.query(
+        `INSERT INTO notifications (user_id, app_id, session_id, kind, detail)
+         VALUES ($1, $2, $3, 'change_closed', 'event:staging-fixture')`,
+        [member.id, appId, whyClosed.id]
+      );
+    }
   }
 
   // Active, non-promoted session — surfaces as a chip in the viewer's

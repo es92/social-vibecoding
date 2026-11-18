@@ -131,8 +131,8 @@ import { AiDrawer, ThreadPane, usePhone } from './phone-drawer';
 import { closeDetail, detailLayout, openDetail, useDetail, THREE_COLUMNS } from './detail';
 import { DetailPane } from '../detail/detail-pane';
 import {
-  applyWorkState, freshCount, heroWords, inProgress, isTopicHref, liveThisWeek, needsYou, owedCount, rankProjects, upNext,
-  type AiApp, type AiThread, type AiWork, type NeedItem, type WorkRow,
+  applyWorkState, freshCount, heroWords, inProgress, isTopicHref, liveThisWeek, movedSince, needsYou, owedCount, rankProjects,
+  standingsOf, upNext, type AiApp, type AiThread, type AiWork, type NeedItem, type WorkRow,
 } from './model';
 import type { WorkStatePush } from '../../lib/work-state';
 
@@ -638,6 +638,19 @@ export function AiScreen(): ReactNode {
   // projects picked or its kind change.
   const [showings, setShowings] = useState(0);
   useEffect(() => { if (visible) setShowings((n) => n + 1); }, [visible, session]);
+  // 18 Nov 2026 (PR 6792): In progress and Waiting as this showing of the
+  // page first had them, so a row that moves while the page is up is never
+  // folded behind Show more (./model.ts movedSince, groupRows). Taken again
+  // on every showing: what moved while the page was hidden is lifted when it
+  // is seen, and nothing stays lifted from one showing to the next.
+  const [seen, setSeen] = useState<{ showing: number; at: Map<number, string> } | null>(null);
+  useEffect(() => {
+    if (!visible || !work || !needs) return;
+    setSeen((had) => (had && had.showing === showings ? had : { showing: showings, at: standingsOf([...progress, ...waiting]) }));
+  }, [visible, showings, work, needs]); // eslint-disable-line react-hooks/exhaustive-deps
+  const seenAt = seen && seen.showing === showings ? seen.at : null;
+  const progressDrawn = useMemo(() => movedSince(seenAt, progress), [seenAt, progress]);
+  const waitingDrawn = useMemo(() => movedSince(seenAt, waiting), [seenAt, waiting]);
   const history = useHistory({
     showing: showings,
     signedIn: mounted && typeof window !== 'undefined' && !!(window as any).App?.user,
@@ -992,8 +1005,8 @@ export function AiScreen(): ReactNode {
           onRetry={() => setMoved((n) => n + 1)}
           rows={rows}
           owed={owed}
-          progress={progress}
-          waiting={waiting}
+          progress={progressDrawn}
+          waiting={waitingDrawn}
           live={live}
           openRow={openRow}
           openThread={openThread}
@@ -1021,8 +1034,8 @@ export function AiScreen(): ReactNode {
           onRetry={() => setMoved((n) => n + 1)}
           rows={rows}
           owed={owed}
-          progress={progress}
-          waiting={waiting}
+          progress={progressDrawn}
+          waiting={waitingDrawn}
           live={live}
           openRow={openRow}
           openThread={openThread}

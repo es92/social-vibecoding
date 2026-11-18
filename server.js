@@ -224,6 +224,12 @@ app.use(publicApiCors());
 // included, so no route can be added outside it.
 app.use(require('./src/middleware/same-site-browser').sameOriginCookieWrites);
 
+// Every successful /api/ response says what it cost in a Server-Timing
+// header: its database time and query count, and its total
+// (src/middleware/server-timing.js, #6792). After the guard above, which
+// reads nothing, and ahead of every router.
+app.use(require('./src/middleware/server-timing').serverTiming());
+
 // OS domain verification is anonymous and must never reach login redirects
 // or the SPA/static fallback (which does not serve dot directories).
 app.use(mobileAppLinkRoutes());
@@ -390,6 +396,8 @@ app.use((req, res, next) => {
   express.json()(req, res, next);
 });
 app.use(cookieParser());
+// A body parser reads outside the request's async context: enter it again.
+app.use(require('./src/middleware/server-timing').resumeServerTiming);
 app.use(require('./src/services/browser-api-cache').browserApiCachePolicy);
 
 app.get('/health', (_req, res) => {

@@ -22,6 +22,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const { failingResultsOnly, forListing, wantsFailingResults } = require('../src/services/list-test-results');
+const listResults = require('../src/services/list-test-results');
 
 const read = (rel) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
 
@@ -58,8 +59,8 @@ test('it is opt-in by ?results=failing and nothing else', () => {
 
 test('every Workshop list route passes its rows through it', () => {
   const votes = read('src/routes/votes.js');
-  assert.match(votes, /promoted: listTestResults\.forListing\(req, rows\)/);
-  assert.match(votes, /merged: listTestResults\.forListing\(req, rows\)/);
+  assert.match(votes, /promoted: listTestResults\.forListing\(req, rows, \{ slim: true \}\)/);
+  assert.match(votes, /merged: listTestResults\.forListing\(req, rows, \{ slim: true \}\)/);
   const sessions = read('src/routes/sessions.js');
   assert.match(sessions, /sessions: listTestResults\.forListing\(req, sessions\),\s*totals, externalTasks/,
     '/api/me/active-sessions: the imported rows kept their raw results by contract');
@@ -164,4 +165,113 @@ test('#3978: a list row drops the excerpts, the item row keeps them', () => {
   // the item page's verdict fold renders them.
   const item = failingResultsOnly(row).test_results.find((r) => r.index === -3);
   assert.equal(item.failureDetails.length, 1);
+});
+
+// ── #6793: the list form is made in the database ───────────────────────
+
+const LISTING = { query: { results: 'failing' } };
+const UNIT_PASS = { index: -3, name: 'Repo unit suite (npm test) passes', path: 'package.json', status: 'pass' };
+
+test('#6793: a list selects the list form only when asked; everyone else reads the stored column', () => {
+  assert.equal(listResults.resultsSelect({ query: {} }, 'cs'), 'cs.test_results');
+  const sql = listResults.resultsSelect(LISTING, 'cs');
+  assert.match(sql, /AS test_results_listed/);
+  assert.match(sql, /jsonb_array_elements\(cs\.test_results\) WITH ORDINALITY/, 'one pass, in the stored order');
+  assert.match(sql, /- 'failureDetails' - 'failureDetailsTruncated'/, 'a list row carries no excerpts');
+  assert.match(sql, /ELSE cs\.test_results END AS test_results$/, 'a column that is not an array reads as it did');
+});
+
+test('#6793: the routes ask Postgres for the list form and unpack it', () => {
+  const votes = read('src/routes/votes.js');
+  const has = (text, why) => assert.ok(votes.includes(text), why || text);
+  has("cs.check_state, ${listTestResults.resultsSelect(req, 'cs')}, cs.checks_checked_at", '/promoted');
+  has("mergedRowSelect({ results: listTestResults.pagedResultsSelect(req, 'cs') })", '/merged: a paged list');
+  has('await listTestResults.attachListed(pool, req, prRows);', '/merged reads the list form for its page alone');
+  has('listTestResults.unpackListed(rows);');
+  assert.ok(votes.includes('`${mergedRowSelect()}'), 'one proposal\'s own read keeps the stored column');
+  has('...listTestResults.listedRowForServer(row),', 'the merge requirements still see the unit suite');
+  const sessions = read('src/routes/sessions.js');
+  assert.equal((sessions.match(/results: listTestResults\.resultsSelect\(req, 'cs'\)/g) || []).length, 2,
+    'active sessions and shared sessions: the imported rows are trimmed in the database too');
+});
+
+test('#6793: unpacking gives the fields the JavaScript filter gave', () => {
+  const stored = [pass(0), pass(1), { name: 'Feed renders', status: 'fail' },
+    { ...pass(2), passedOnRetry: true }];
+  const want = forListing(LISTING, [{ id: 1, test_results: stored }])[0];
+  const [row] = listResults.unpackListed([{ id: 1, test_results: null, test_results_listed: {
+    kept: [{ name: 'Feed renders', status: 'fail' }], omitted: 3, noted: [{ ...pass(2), passedOnRetry: true }], unit: null,
+  } }]);
+  assert.deepEqual(row, want);
+  const [none] = listResults.unpackListed([{ id: 2, test_results: null, test_results_listed: { kept: [], omitted: 0, noted: null, unit: null } }]);
+  assert.deepEqual(none, { id: 2, test_results: [] }, 'nothing passed: no count, as before');
+  const odd = { id: 3, test_results: { odd: true }, test_results_listed: null };
+  assert.deepEqual(listResults.unpackListed([odd])[0], { id: 3, test_results: { odd: true } });
+  const untouched = { id: 4, test_results: stored };
+  assert.equal(listResults.unpackListed([untouched])[0].test_results, stored, 'a row read without the fragment is left alone');
+});
+
+test('#6793: a passing unit suite still counts for the merge requirements, and is never sent', () => {
+  const { passedIn } = require('../src/services/unit-suite');
+  const [row] = listResults.unpackListed([{ id: 1, check_state: 'passing', test_results: null,
+    test_results_listed: { kept: [], omitted: 800, noted: null, unit: UNIT_PASS } }]);
+  assert.equal(passedIn(row.test_results), false, 'the list form leaves the passing row out');
+  assert.equal(passedIn(listResults.listedRowForServer(row).test_results), true, 'the server reads it back');
+  const sent = forListing(LISTING, [row], { slim: true })[0];
+  assert.equal('test_results_unit_row' in sent, false);
+  assert.deepEqual(sent.test_results, []);
+  assert.equal(sent.test_results_omitted, 800);
+  const failed = { id: 2, test_results: [{ ...UNIT_PASS, status: 'fail' }], test_results_unit_row: { ...UNIT_PASS, status: 'fail' } };
+  assert.equal(listResults.listedRowForServer(failed), failed, 'a failing suite is already in the kept rows');
+});
+
+test('#6793: a slim list row keeps the one shots fact a card reads and drops the merge record', () => {
+  const row = { id: 1, pr_body: 'kept: search and the description panel read it',
+    shots_detail: { headSha: 'abc', intent: { version: 1, impact: 'none', rationale: 'long', stories: [1, 2] }, shotResults: [1] },
+    integration_merged_tree: 'tree', merge_requirements: { steps: [1] }, mergeRequirements: { steps: [2] },
+    integration: { state: 'clean' }, test_results: [] };
+  const [sent] = forListing(LISTING, [row], { slim: true });
+  assert.deepEqual(sent.shots_detail, { intent: { impact: 'none' } });
+  assert.equal('integration_merged_tree' in sent, false);
+  assert.equal('merge_requirements' in sent, false);
+  assert.deepEqual(sent.mergeRequirements, { steps: [2] }, 'what the card draws from is derived before, and stays');
+  assert.deepEqual(sent.integration, { state: 'clean' });
+  assert.equal(sent.pr_body, row.pr_body);
+  assert.equal(forListing(LISTING, [{ id: 2, shots_detail: { intent: {} } }], { slim: true })[0].shots_detail, null);
+  assert.equal(forListing({ query: {} }, [row], { slim: true })[0], row, 'without the flag nothing is trimmed');
+  assert.equal(forListing(LISTING, [row])[0].shots_detail, row.shots_detail, 'only the board\'s own lists are slimmed');
+});
+
+// ── A paged list reads the list form for its page alone ────────────────
+
+test('a paged list never asks Postgres for the list form of rows it will not send', async () => {
+  assert.equal(listResults.pagedResultsSelect({ query: {} }, 'cs'), 'cs.test_results', 'without the flag, the stored column');
+  assert.equal(listResults.pagedResultsSelect(LISTING, 'cs'), 'NULL::jsonb AS test_results');
+  assert.doesNotMatch(listResults.pagedResultsSelect(LISTING, 'cs'), /jsonb_array_elements/,
+    'in a query with ORDER BY and LIMIT, a select-list subquery runs for every matching row');
+
+  const asked = [];
+  const pool = { query: async (sql, params) => {
+    asked.push({ sql: String(sql), params });
+    return { rows: [
+      { id: 2, test_results: null, test_results_listed: { kept: [{ name: 'Feed renders', status: 'fail' }], omitted: 41, noted: null, unit: UNIT_PASS } },
+      { id: 1, test_results: null, test_results_listed: { kept: [], omitted: 0, noted: null, unit: null } },
+    ] };
+  } };
+  const page = [{ id: 1, test_results: null }, { id: 2, test_results: null }, { id: 3, test_results: null }];
+  const out = await listResults.attachListed(pool, LISTING, page);
+  assert.equal(asked.length, 1, 'one read for the whole page');
+  assert.match(asked[0].sql, /FROM chat_sessions cs WHERE cs\.id = ANY\(\$1::int\[\]\)$/);
+  assert.deepEqual(asked[0].params, [[1, 2, 3]], 'by id: only the rows that came back');
+  assert.deepEqual(out[0], { id: 1, test_results: [] });
+  assert.deepEqual(out[1].test_results, [{ name: 'Feed renders', status: 'fail' }]);
+  assert.equal(out[1].test_results_omitted, 41);
+  assert.equal(out[1].test_results_unit_row.status, 'pass', 'kept for the server, dropped when the list is sent');
+  assert.deepEqual(out[2], { id: 3, test_results: [] }, 'a row gone between the two reads has no results, not a null');
+
+  asked.length = 0;
+  const full = [{ id: 9, test_results: [pass(0)] }];
+  assert.equal(await listResults.attachListed(pool, { query: {} }, full), full);
+  assert.deepEqual(await listResults.attachListed(pool, LISTING, []), []);
+  assert.equal(asked.length, 0, 'no read without the flag, or for an empty page');
 });

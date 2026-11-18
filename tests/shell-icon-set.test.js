@@ -214,6 +214,13 @@ test('the glyphs that do NOT prerender are the ones that render behind state', (
   // count glyphs are the same pair the app's own Workshop tab uses, which is
   // the point: the number on a row and the pane it counts wear one mark.
   const expected = [
+    // ── The Communities tab is a row of its own again (18 Nov 2026) ─────
+    //
+    // The sidebar's "All communities" row drew Squares2X2Icon in the static
+    // document, beside the tab's own glyph. The row is the Communities tab
+    // now, with the people glyph alone; the grid still draws behind state
+    // (the header's switcher, the frame's sidebar).
+    'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z',
     // ── The project card's preview loop (11 Nov 2026) ───────────────────
     //
     // PauseIcon is drawn only once a loop plays, after the island mounts

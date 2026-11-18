@@ -151,7 +151,7 @@ export function VoteCard({ msg }: { msg: TranscriptMessage }): ReactNode {
             size="sm"
             ink="neutral"
             data-vote-preview=""
-            onClick={() => (window as any).AppView?.swapToStagingForSession?.(sessionId, preview)}
+            onClick={() => (window as any).AppView?.swapToStagingForSession?.(sessionId, preview, { title: vote?.title ?? null, number: number ?? null })}
           >
             {t('chat:group.voteCard.preview')}
           </Button>

@@ -100,7 +100,7 @@ test('GitHub: the commits of a pull request, every page, in lowercase', async ()
 
 test('the change page reads the carrying change, and undo refuses', () => {
   const src = read('src/routes/votes.js');
-  const select = src.slice(src.indexOf('function mergedRowSelect()'), src.indexOf('function voteRoutes(config)'));
+  const select = src.slice(src.indexOf('function mergedRowSelect('), src.indexOf('function voteRoutes(config)'));
   assert.match(select, /cs\.included_in_session_id,\s+inc\.pr_number AS included_in_pr_number,\s+inc\.pr_title  AS included_in_pr_title,/);
   assert.match(select, /LEFT JOIN chat_sessions inc ON inc\.id = cs\.included_in_session_id`;/);
   const undo = src.slice(src.indexOf("router.post('/api/sessions/:id/undo'"), src.indexOf("router.post('/api/sessions/:id/admin-merge'"));

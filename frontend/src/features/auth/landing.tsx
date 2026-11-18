@@ -1026,7 +1026,7 @@ export function LandingScreen() {
   // interior's first commit identical to the empty root the prerender ships
   // (a hydration mismatch is a console error, and a console error on any
   // route fails the proposal checks).
-  const waitlistPayload = useWaitlistOptions();
+  const waitlistPayload = useWaitlistOptions(mounted);
   // Whether a new account waits (#6633): the waitlist's words until the
   // options arrive, and after that unless an admin switched it off.
   const accountsWait = newAccountsWait(waitlistPayload);

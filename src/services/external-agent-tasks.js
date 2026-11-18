@@ -84,6 +84,7 @@ const patchUploads = require('./external-agent-patch-upload');
 const proposalUpdate = require('./proposal-update');
 const { EXTERNAL_TASK_SUBMIT_LOCK } = require('./advisory-locks');
 const { appWebPath, changeWebPath, changeLink } = require('./change-destination');
+const { copyLimitsLines } = require('./shots-copy-limits');
 
 const GITHUB_API = 'https://api.github.com';
 const BRANCH_PREFIX = 'usernode';
@@ -1467,6 +1468,8 @@ function buildWorkOrder({
       '   change: the seed reaches the after copy, the side a new state needs. One',
       '   that can be neither reached nor seeded is a blocker to report, not a',
       '   reason to call a visible change non-visual.',
+      ...copyLimitsLines({ width: 78, indent: '   ', rule: false }),
+      '   Check each state you declare against that list first.',
       '   For an error state reached only by a failed',
       '   request, declare the exact GET /api/ path as',
       '   intent.controlledFailurePath and make the first intent.steps entry',
@@ -1708,7 +1711,9 @@ function buildWorkOrder({
       '   the conventions): the seed reaches the after copy, the side a new state',
       '   needs. If a state can be neither reached nor seeded,',
       '   report that blocker; do not label a visible change "none" because it',
-      '   is hard to reach. For an error',
+      '   is hard to reach.',
+      ...copyLimitsLines({ width: 78, indent: '   ', rule: false }),
+      '   Check each state you declare against that list first. For an error',
       '   state that needs a failed request, declare its exact GET /api/ path',
       '   as intent.controlledFailurePath and make the first intent.steps entry',
       '   exactly "Controlled test: deliberately block the declared API GET on',

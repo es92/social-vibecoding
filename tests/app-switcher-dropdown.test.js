@@ -192,6 +192,15 @@ test('closed is opacity + visibility, because there is no edge to hide behind', 
     'the open rule applies it immediately, or the fade-in is invisible');
 });
 
+test('#6813: the adopted sheets leave the keyboard out of their height', () => {
+  // The kit stands every sheet on the keyboard (`bottom: var(--un-kb-inset)`),
+  // so a sheet as tall as the screen had its top that far above it.
+  assert.match(rule('.platform-sheet-adopted#apps-switcher-sheet'),
+    /max-height:[^;]*var\(--un-kb-inset, 0px\)/);
+  assert.match(rule('.platform-sheet-adopted#messages-sheet'),
+    /max-height:[^;]*var\(--un-kb-inset, 0px\)/);
+});
+
 test('a kit-adopted sheet is never left invisible by the dropdown state', () => {
   // THE TABLET TRAP. `.platform-sheet-adopted` resets position, inset,
   // transform, transition, border, radius, shadow and background — every

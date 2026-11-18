@@ -251,7 +251,7 @@ test('#5064: going live until production runs it, then live', () => {
 
   // The server hands the status to both rows, read with them.
   const service = fs.readFileSync(path.join(__dirname, '../src/services/notifications.js'), 'utf8');
-  assert.match(service, /SESSION_STATUS_KINDS = new Set\(\['change_ready', 'pr_merged', 'voted_change_merged'\]\)/);
+  assert.match(service, /SESSION_STATUS_KINDS = new Set\(\['change_ready', 'pr_merged', 'voted_change_merged', 'change_closed'\]\)/);
   assert.match(service, /cs\.status = 'merged' AND \(cs\.live_at IS NULL OR \$\{RELEASE_PENDING_SQL\}\)/);
 });
 

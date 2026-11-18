@@ -574,20 +574,30 @@ html.un-android .un-switch:checked:active::before {
    in, 1:1 drag, momentum dismiss) — no CSS transition on transform, on
    purpose. `bottom` carries the keyboard inset (see the tracker in
    native.js): the box position rides above the keyboard while the
-   transform keeps its spring/drag semantics untouched. */
+   transform keeps its spring/drag semantics untouched.
+
+   #6813: the box rides on the keyboard, so its HEIGHT has to leave the
+   keyboard out. Without a cap a sheet as tall as the screen stood on the
+   keys with its top that far above the top edge — the notifications
+   sheet's title, tabs, search and close were all off screen on a phone.
+   The cap is the space above the keys, less a top gap (the status bar, or
+   12px on a device whose status bar is elsewhere). Adopted sheets in the
+   platform shell override it with their own tighter `!important` caps. */
 
 .un-sheet {
   position: fixed;
   left: 0;
   right: 0;
   bottom: var(--un-kb-inset, 0px);
+  max-height: calc(100dvh - var(--un-kb-inset, 0px)
+    - max(var(--un-safe-inset-top, env(safe-area-inset-top, 0px)), 12px));
   z-index: 9991;
   background: var(--un-sheet-bg);
   border-radius: 14px 14px 0 0;
   box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.22);
   padding-bottom: var(--un-safe-inset-bottom, env(safe-area-inset-bottom, 0px));
   transform: translateY(100%);
-  transition: bottom 250ms ease-out;
+  transition: bottom 250ms ease-out, max-height 250ms ease-out;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;

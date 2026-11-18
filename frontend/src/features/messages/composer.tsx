@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type RefObject } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { ChatComposerBar } from '@/components/ui/chat';
@@ -104,7 +104,7 @@ function ComposerDropTarget({ scope, onFiles }: { scope: ComposerScope; onFiles:
  * conversation's own composer takes shared items: a card shared into
  * Messages lands in the conversation, never inside a thread.
  */
-export function MessageComposer({ threadRootId = null }: { threadRootId?: number | null } = {}) {
+export function MessageComposer({ threadRootId = null, scroller }: { threadRootId?: number | null; scroller?: RefObject<HTMLElement | null> } = {}) {
   const t = useMessages('messages');
   const snap = useMessagesSnapshot();
   const conversationId = snap.route.conversationId || 0;
@@ -154,7 +154,9 @@ export function MessageComposer({ threadRootId = null }: { threadRootId?: number
   // app-grid.tsx documents), so only a pointer that is not touch opens ours.
   const lastPointer = useRef('');
   // #1408: grow with the message, up to the max-height already in app.css.
-  useAutoGrow(inputRef, value);
+  // #6810: and, after a deletion collapses the box, keep the transcript above
+  // it at its newest line when that is where it was.
+  useAutoGrow(inputRef, value, scroller);
   // Plain Enter sends on this device (lib/enter-sends.ts): what the hint
   // under the box and the send button's tooltip say. False on the first
   // render, so the prerender and the hydration draw neither.

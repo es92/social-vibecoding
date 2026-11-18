@@ -46,9 +46,9 @@ const IDS = Object.freeze({
   proposalChallenge: 990865,
   memberRemix: 990866,
   botConversation: 990867,
-  // A request number on the platform app, not a row id: its GitHub issues
-  // are nowhere near it, so the bot's records on it are the fixture's alone.
-  botRequest: 990868,
+  // 990868 and 990876 were the bot run card's request and the deciders
+  // state's project, retired on 18 Nov 2026 (the chat with the bot draws
+  // neither any more); they are not given out again.
   awaitingProposal: 990869,
   firstVersionApp: 990870,
   accessApp: 990871,
@@ -57,10 +57,17 @@ const IDS = Object.freeze({
   // A request number on the platform app, as botRequest is.
   botBuiltRequest: 990874,
   checksProposal: 990875,
-  decidersApp: 990876,
-  // Request numbers on the platform app, as botRequest is: the three the
-  // bot's rings in the member's bell are about.
+  // Request numbers on the platform app, not row ids: its requests are
+  // nowhere near them, so the bot's records on them are the fixture's alone.
+  // The three the bot's rings in the member's bell are about.
   botRingRequests: Object.freeze([990877, 990878, 990879]),
+  // A request of the member's whose build waits its turn (a number, as the
+  // rings' are).
+  queuedRequest: 990880,
+  // A project of somebody else's the member is in, whose rule is one yes,
+  // and the member's change on it whose vote is in while its checks run.
+  approvedApp: 990881,
+  approvedProposal: 990882,
 });
 const RESERVED_RANGE = Object.freeze([990840, 990895]);
 
@@ -129,11 +136,18 @@ const DRAFT_PICTURE = Buffer.from(
 const ROOM_TO_MAKE = 5;
 // A project somebody else runs, which the member belongs to: its maker is
 // the staging seeds' #general demo account (the friend request's sender),
-// so the Homeroom bot's hand-off on the member's request there names them.
-const DECIDERS_APP_SLUG = 'shots-demo-garden-club';
-const DECIDERS_APP_NAME = '[shots fixture] Garden club';
-const DECIDERS_APP_MAKER = 'staging-demo-general-lin';
-const DECIDERS_REQUEST = Object.freeze({ number: 2, title: 'Take the plant swap page down' });
+// a fake person whose yes counts as anyone's does.
+const APPROVED_APP_SLUG = 'shots-demo-choir';
+const APPROVED_APP_NAME = '[shots fixture] Choir';
+const APPROVED_APP_MAKER = 'staging-demo-general-lin';
+// The staging mock request nothing else marks with a change, a claim or a
+// run (src/routes/issues.js stagingMockIssues; the staging seeds' change
+// that closes ten requests names 900001-900010), so it opens on the copies
+// as a request nobody has picked up. Its title is the mock's own, so its
+// row and its page say the same.
+const NOT_MOVING_REQUEST = Object.freeze({
+  number: 900013, title: '[Mock] Bare issue — no priority, no category, nobody assigned',
+});
 // The full admin's weekly allowance, set as an admin sets one, and what is
 // left of it: under 15%, so the credits pill beside Send is red.
 const LOW_ALLOWANCE = Object.freeze({ limitCents: 5000, leftCents: 400 });
@@ -213,22 +227,53 @@ async function insertWeeklyChallenge(client, {
   );
 }
 
-// Whether the member's chat with the Homeroom bot can be the fixture's: the
-// bot's account, when the copy has one, is a platform account with no chat
-// with the member yet. The bot run card's state asks the same.
+// The member's chat with the Homeroom bot that the copy already holds. A
+// real copy has one before any state is written: its staging seeds open it
+// at boot (src/db/migrate.js seedStagingMainChatLastVisit and the private
+// thread seeds), with an id of the sequence's. Until 18 Nov 2026 a state
+// asked for no chat at all, so on every real copy the chat states were left
+// out of the run (the first version's Building it among them). Resolves its
+// id; null when the two have none; false when their pair names a chat that
+// is not a direct chat with both of them in it, which no state writes into.
+async function existingBotChat(client, memberId, botId) {
+  const { rows: [pair] = [] } = await client.query(
+    `SELECT p.conversation_id,
+            (c.kind = 'direct'
+             AND (SELECT COUNT(*) FROM conversation_members m
+                   WHERE m.conversation_id = p.conversation_id AND m.user_id IN ($1::int, $2::int)
+                     AND m.status = 'member') = 2) AS usable
+       FROM conversation_direct_pairs p JOIN conversations c ON c.id = p.conversation_id
+      WHERE p.user_low_id = LEAST($1::int, $2::int) AND p.user_high_id = GREATEST($1::int, $2::int)`,
+    [memberId, botId]
+  );
+  if (!pair) return null;
+  return pair.usable === true ? Number(pair.conversation_id) : false;
+}
+
+// Whether the member's chat with the Homeroom bot can hold the fixture's
+// threads: the bot's account, when the copy has one, is a platform account
+// and none of the personas, and its chat with the member is either the one
+// the copy already holds (existingBotChat) or one the fixture opens.
 async function botChatFree(client, ctx) {
   const bot = (await client.query(
     'SELECT id, is_synthetic FROM users WHERE username = $1', [BOT_USERNAME])).rows[0];
   if (bot) {
     if (!bot.is_synthetic || Number(bot.id) === Number(ctx.member.id)) return false;
-    const pair = await client.query(
-      `SELECT 1 FROM conversation_direct_pairs
-        WHERE user_low_id = LEAST($1::int, $2::int) AND user_high_id = GREATEST($1::int, $2::int)`,
-      [ctx.member.id, bot.id]
-    );
-    if (pair.rowCount) return false;
+    const chat = await existingBotChat(client, ctx.member.id, bot.id);
+    if (chat === false) return false;
+    if (chat) return true;
   }
   return idsFree(client, 'conversations', [IDS.botConversation]);
+}
+
+// Whether none of a state's own messages is in a chat yet, by the fixture's
+// idempotency keys. With the copy's own chat shared (existingBotChat), a chat
+// being there no longer says a state was written, so each chat state asks
+// for its own rows: a second install finds nothing to add.
+async function messagesFree(client, keys) {
+  const { rows } = await client.query(
+    'SELECT 1 FROM conversation_messages WHERE idempotency_key = ANY($1::text[]) LIMIT 1', [keys]);
+  return rows.length === 0;
 }
 
 // Whether a state can write as the Homeroom bot: its account, when the copy
@@ -254,23 +299,17 @@ async function botAccount(client) {
   return bot.id;
 }
 
-// The member's chat with the Homeroom bot: the one the bot run card's state
-// opened in this run, or opened here the same way, so either state can be
-// written without the other. Resolves { botId, conversationId }.
+// The member's chat with the Homeroom bot: the one the copy already holds
+// (existingBotChat), or one opened here as openAdmittedDirect opens it, so
+// each chat state can be written with or without the others. Its threads
+// are the state's own rows; whatever else the chat holds is left as it is.
+// Resolves { botId, conversationId }.
 async function memberBotChat(client, ctx) {
   const bot = { id: await botAccount(client) };
   const conversationId = IDS.botConversation;
-  const pair = await client.query(
-    `SELECT conversation_id FROM conversation_direct_pairs
-      WHERE user_low_id = LEAST($1::int, $2::int) AND user_high_id = GREATEST($1::int, $2::int)`,
-    [ctx.member.id, bot.id]
-  );
-  if (pair.rowCount) {
-    if (Number(pair.rows[0].conversation_id) !== conversationId) {
-      throw new Error('The member already has a chat with the Homeroom bot.');
-    }
-    return { botId: bot.id, conversationId };
-  }
+  const existing = await existingBotChat(client, ctx.member.id, bot.id);
+  if (existing === false) throw new Error('The member\'s chat with the Homeroom bot is not one a state can write into.');
+  if (existing) return { botId: bot.id, conversationId: existing };
   // As openAdmittedDirect opens it (conversations.js): both already in.
   await client.query(
     `INSERT INTO conversations (id, kind, created_by, status, created_at, updated_at)
@@ -763,136 +802,6 @@ const STATES = [
     },
   },
   {
-    // The member's chat with the Homeroom bot, holding two activity cards on
-    // one request of theirs: the first look found it ready to build and its
-    // build is waiting its turn, so that card is working; a second look began
-    // since, with a card of its own below. A card's state is read from the
-    // bot's records (homeroom-bot-activity.js cardsFor), so these are the
-    // records: the request, the live run between the cards, and the cards.
-    // Both cards are read, so no Unread badge rides on every screen, and
-    // nothing is written to the bell.
-    id: 'shots-demo-member-bot-run-card-v1',
-    persona: 'member',
-    needs: {
-      users: ['id', 'username', 'password', 'is_synthetic', 'display_name', 'created_at'],
-      conversations: ['id', 'kind', 'created_by', 'status', 'created_at', 'updated_at'],
-      conversation_direct_pairs: ['conversation_id', 'user_low_id', 'user_high_id'],
-      conversation_members: ['conversation_id', 'user_id', 'role', 'status', 'invited_by', 'responded_at',
-        'joined_at', 'last_read_message_id'],
-      conversation_messages: ['id', 'conversation_id', 'sender_id', 'content', 'idempotency_key', 'metadata',
-        'created_at'],
-      homeroom_bot_dm_messages: ['message_id', 'user_id', 'conversation_id', 'app_id', 'issue_number', 'kind',
-        'created_at'],
-      homeroom_bot_requesters: ['app_id', 'issue_number', 'user_id', 'issue_title', 'created_at'],
-      homeroom_bot_runs: ['app_id', 'issue_number', 'mode', 'verdict', 'determined', 'build_note', 'duration_ms',
-        'created_at', 'build_ok', 'proposal_session_id', 'cap_suppressed', 'live_build_waiting_at'],
-    },
-    free: async (client, ctx) => {
-      // The bot's account, when the copy has one, is a platform account with
-      // no chat with the member yet.
-      const bot = (await client.query(
-        'SELECT id, is_synthetic FROM users WHERE username = $1', [BOT_USERNAME])).rows[0];
-      if (bot) {
-        if (!bot.is_synthetic || Number(bot.id) === Number(ctx.member.id)) return false;
-        const pair = await client.query(
-          `SELECT 1 FROM conversation_direct_pairs
-            WHERE user_low_id = LEAST($1::int, $2::int) AND user_high_id = GREATEST($1::int, $2::int)`,
-          [ctx.member.id, bot.id]
-        );
-        if (pair.rowCount) return false;
-      }
-      const request = await client.query(
-        `SELECT EXISTS (SELECT 1 FROM homeroom_bot_requesters WHERE app_id = $1 AND issue_number = $2)
-             OR EXISTS (SELECT 1 FROM homeroom_bot_runs WHERE app_id = $1 AND issue_number = $2)
-             OR EXISTS (SELECT 1 FROM homeroom_bot_dm_messages WHERE app_id = $1 AND issue_number = $2) AS taken`,
-        [ctx.appId, IDS.botRequest]
-      );
-      return !request.rows[0].taken && idsFree(client, 'conversations', [IDS.botConversation]);
-    },
-    async install(client, ctx) {
-      // A production clone has the bot's account; elsewhere it is made the
-      // way the staging Messages fixture makes it (staging-messages.js).
-      await client.query(
-        `INSERT INTO users (username, password, is_synthetic, display_name, created_at)
-         VALUES ($1, 'staging-demo-not-a-login', TRUE, 'Homeroom bot', NOW())
-         ON CONFLICT DO NOTHING`,
-        [BOT_USERNAME]
-      );
-      const bot = (await client.query(
-        'SELECT id FROM users WHERE username = $1 AND is_synthetic = TRUE', [BOT_USERNAME])).rows[0];
-      const app = (await client.query('SELECT name FROM apps WHERE id = $1', [ctx.appId])).rows[0];
-      if (!bot || !app) throw new Error('The Homeroom bot fixture lost its account or the platform app.');
-      const conversationId = IDS.botConversation;
-      // As openAdmittedDirect opens it (conversations.js): both already in.
-      await client.query(
-        `INSERT INTO conversations (id, kind, created_by, status, created_at, updated_at)
-         VALUES ($1, 'direct', $2, 'active', NOW() - INTERVAL '30 minutes', NOW() - INTERVAL '10 minutes')`,
-        [conversationId, bot.id]
-      );
-      await client.query(
-        `INSERT INTO conversation_direct_pairs (conversation_id, user_low_id, user_high_id)
-         VALUES ($1, LEAST($2::int, $3::int), GREATEST($2::int, $3::int))`,
-        [conversationId, bot.id, ctx.member.id]
-      );
-      await client.query(
-        `INSERT INTO conversation_members
-           (conversation_id, user_id, role, status, invited_by, responded_at, joined_at)
-         VALUES ($1, $2, 'member', 'member', $2, NOW() - INTERVAL '30 minutes', NOW() - INTERVAL '30 minutes'),
-                ($1, $3, 'member', 'member', $2, NOW() - INTERVAL '30 minutes', NOW() - INTERVAL '30 minutes')`,
-        [conversationId, bot.id, ctx.member.id]
-      );
-      const issueTitle = '[shots fixture] Show vote counts on the request list';
-      await client.query(
-        `INSERT INTO homeroom_bot_requesters (app_id, issue_number, user_id, issue_title, created_at)
-         VALUES ($1, $2, $3, $4, NOW() - INTERVAL '31 minutes')`,
-        [ctx.appId, IDS.botRequest, ctx.member.id, issueTitle]
-      );
-      // The first look's verdict, between the two cards. Nothing in a copy
-      // builds it, so it waits its turn for the life of the pair.
-      await client.query(
-        `INSERT INTO homeroom_bot_runs
-           (app_id, issue_number, mode, verdict, determined, build_note, duration_ms, created_at, live_build_waiting_at)
-         VALUES ($1, $2, 'live', 'ready', TRUE, '[shots fixture] Specific enough to build: one number on each row.',
-                 41000, NOW() - INTERVAL '20 minutes', NOW() - INTERVAL '20 minutes')`,
-        [ctx.appId, IDS.botRequest]
-      );
-      const metadata = JSON.stringify({
-        homeroomBot: {
-          kind: 'activity', appSlug: ctx.selfAppSlug, appName: app.name, issueNumber: IDS.botRequest, issueTitle,
-        },
-      });
-      const content = `**${app.name}** · request #${IDS.botRequest}: ${issueTitle}\n\n`
-        + 'I\'m working on this now. This card updates as I go.';
-      const cards = [['shots-fixture-hrbot-activity-first', 30], ['shots-fixture-hrbot-activity-second', 10]];
-      let newest = null;
-      for (const [key, minutesAgo] of cards) {
-        const sent = await client.query(
-          `INSERT INTO conversation_messages (conversation_id, sender_id, content, idempotency_key, metadata, created_at)
-           VALUES ($1, $2, $3, $4, $5::jsonb, NOW() - make_interval(mins => $6))
-           RETURNING id`,
-          [conversationId, bot.id, content, key, metadata, minutesAgo]
-        );
-        newest = sent.rows[0].id;
-        // A card's work begins when its record was written (cardRows).
-        await client.query(
-          `INSERT INTO homeroom_bot_dm_messages (message_id, user_id, conversation_id, app_id, issue_number, kind, created_at)
-           VALUES ($1, $2, $3, $4, $5, 'activity', NOW() - make_interval(mins => $6))`,
-          [newest, ctx.member.id, conversationId, ctx.appId, IDS.botRequest, minutesAgo]
-        );
-      }
-      await client.query(
-        'UPDATE conversation_members SET last_read_message_id = $3 WHERE conversation_id = $1 AND user_id = $2',
-        [conversationId, ctx.member.id, newest]
-      );
-      return {
-        shows: [{
-          state: 'Your chat with Homeroom bot: an activity card on a request of yours whose build is ready and waiting its turn (working), and a newer card on the same request below it. Nothing in it is unread.',
-          path: `/#messages/${IDS.botConversation}`,
-        }],
-      };
-    },
-  },
-  {
     // A request whose change waits for approval (#4446): a change of the
     // member's up for a vote that names request #900017 as one it addresses
     // (`linked_issues`, where a change's addressed requests are stored), so the
@@ -1069,95 +978,6 @@ const STATES = [
     },
   },
   {
-    // The Homeroom bot's hand-off on a request of the member's that needs a
-    // person to decide, on a project somebody else runs (#4763): it names
-    // who decides there and offers no Go ahead, since the member's go-ahead
-    // would only be read to the same answer. A verdict needs the bot's
-    // model, which no copy has, so the shots of that change found no such
-    // card (PR 4763, 2026-10-11). The records are the real flow's
-    // (homeroom-bot-dm.js relayIssuePost): the project, both of them in it,
-    // the request recorded for the member, and the message with its words
-    // (dmText) and its record. Who decides is its maker, as whoDecides reads
-    // a project with no admins of its own. No run: one would add the request
-    // to the bot's tray on every shot of the chat. No request card under it:
-    // the project has no repository, so the card would read unavailable. It
-    // shares the chat the bot run card's state opens, after that state's
-    // cards and before the first version's plan.
-    id: 'shots-demo-member-bot-deciders-v1',
-    persona: 'member',
-    needs: {
-      users: ['id', 'username', 'password', 'is_synthetic', 'display_name'],
-      apps: ['id', 'name', 'slug', 'status', 'created_by', 'collab_visibility', 'view_visibility', 'icon_emoji',
-        'community_id', 'created_at'],
-      app_collaborators: ['app_id', 'user_id', 'status', 'accepted_at'],
-      community_members: ['community_id', 'user_id'],
-      conversations: ['id', 'kind', 'created_by', 'status', 'created_at', 'updated_at'],
-      conversation_direct_pairs: ['conversation_id', 'user_low_id', 'user_high_id'],
-      conversation_members: ['conversation_id', 'user_id', 'role', 'status', 'invited_by', 'responded_at',
-        'joined_at', 'last_read_message_id'],
-      conversation_messages: ['id', 'conversation_id', 'sender_id', 'content', 'idempotency_key', 'metadata',
-        'created_at'],
-      homeroom_bot_requesters: ['app_id', 'issue_number', 'user_id', 'issue_title', 'created_at'],
-      homeroom_bot_dm_messages: ['message_id', 'user_id', 'conversation_id', 'app_id', 'issue_number', 'kind',
-        'run_id', 'created_at'],
-    },
-    free: async (client, ctx) => {
-      const maker = await client.query('SELECT 1 FROM users WHERE username = $1', [DECIDERS_APP_MAKER]);
-      const taken = await client.query('SELECT 1 FROM apps WHERE slug = $1', [DECIDERS_APP_SLUG]);
-      return maker.rowCount === 1 && taken.rowCount === 0 && await idsFree(client, 'apps', [IDS.decidersApp])
-        && botChatFree(client, ctx);
-    },
-    async install(client, ctx) {
-      const dm = require('./homeroom-bot-dm');
-      const chat = await memberBotChat(client, ctx);
-      const appId = IDS.decidersApp;
-      const name = DECIDERS_APP_NAME;
-      const { number, title } = DECIDERS_REQUEST;
-      const maker = (await client.query('SELECT id, username FROM users WHERE username = $1',
-        [DECIDERS_APP_MAKER])).rows[0];
-      // As the create route makes a project, with the member invited and in:
-      // a private community of two.
-      await client.query(
-        `INSERT INTO apps (id, name, slug, status, created_by, collab_visibility, view_visibility, icon_emoji, created_at)
-         VALUES ($1, $2, $3, 'running', $4, 'private', 'private', $5, NOW() - INTERVAL '6 days')`,
-        [appId, name, DECIDERS_APP_SLUG, maker.id, '🌱']
-      );
-      await client.query(
-        `INSERT INTO app_collaborators (app_id, user_id, status, accepted_at)
-         VALUES ($1, $2, 'member', NOW() - INTERVAL '6 days'), ($1, $3, 'member', NOW() - INTERVAL '5 days')`,
-        [appId, maker.id, ctx.member.id]
-      );
-      await client.query(
-        `INSERT INTO homeroom_bot_requesters (app_id, issue_number, user_id, issue_title, created_at)
-         VALUES ($1, $2, $3, $4, NOW() - INTERVAL '12 minutes')`,
-        [appId, number, ctx.member.id, title]
-      );
-      const context = { appName: name, issueNumber: number, issueTitle: title };
-      const reason = 'Taking a page down changes what the club offers its members, so the people who run '
-        + 'the project should decide it.';
-      const message = await insertBotDm(client, ctx, chat, {
-        appId, issueNumber: number, kind: 'person', minutesAgo: 9, key: 'shots-fixture-hrbot-person',
-        content: dm.dmText('person', { reason, deciders: [maker.username] }, context),
-        // As relayIssuePost writes a hand-off that names who decides: a
-        // reply to it is posted on the request, and it has no buttons.
-        metadata: { kind: 'person', appSlug: DECIDERS_APP_SLUG, ...context, mirrors: true },
-      });
-      await client.query('UPDATE conversations SET updated_at = GREATEST(updated_at, NOW() - INTERVAL \'9 minutes\') WHERE id = $1',
-        [chat.conversationId]);
-      await client.query(
-        `UPDATE conversation_members SET last_read_message_id = GREATEST(COALESCE(last_read_message_id, 0), $3)
-          WHERE conversation_id = $1 AND user_id = $2`,
-        [chat.conversationId, ctx.member.id, message]
-      );
-      return {
-        shows: [{
-          state: `Your chat with Homeroom bot, under its activity cards: its message about your request #${number} on ${name}, a project ${maker.username} made that you are in. It needs a person to decide, so nothing was built; it says that on ${name}, @${maker.username} decides things like this, and it has no Go ahead button. Nothing in it is unread.`,
-          path: `/#messages/${IDS.botConversation}`,
-        }],
-      };
-    },
-  },
-  {
     // The member's chat with the Homeroom bot after they answered the plan
     // for a new project's first version (#4392): the plan, built, and under
     // it the bot's thanks for answering over the project's card and its
@@ -1169,8 +989,9 @@ const STATES = [
     // (homeroom-bot-activity.js cardUnderPlan). Not the project's first-
     // version record: with it, the member's Home tile would draw a turning
     // build line on every screen they are shot on. Nothing builds it in a
-    // copy, so it reads Building it for the life of the pair. It shares the
-    // chat the bot run card's state opens, after that state's cards.
+    // copy, so it reads Building it for the life of the pair. It is a thread
+    // of the member's chat with the bot (memberBotChat): the copy's own,
+    // which its staging seeds open, or one opened here.
     id: 'shots-demo-member-first-version-thanks-v1',
     persona: 'member',
     needs: {
@@ -1196,7 +1017,8 @@ const STATES = [
     },
     free: async (client, ctx) => {
       const taken = await client.query('SELECT 1 FROM apps WHERE slug = $1', [FIRST_VERSION_SLUG]);
-      return taken.rowCount === 0 && await idsFree(client, 'apps', [IDS.firstVersionApp]) && botChatFree(client, ctx);
+      return taken.rowCount === 0 && await idsFree(client, 'apps', [IDS.firstVersionApp])
+        && await messagesFree(client, ['shots-fixture-hrbot-first-version']) && botChatFree(client, ctx);
     },
     async install(client, ctx) {
       const botSvc = require('./homeroom-bot');
@@ -1281,10 +1103,11 @@ const STATES = [
           thanks: true, appEmoji: '📚',
         },
       });
-      await client.query('UPDATE conversations SET updated_at = NOW() - INTERVAL \'5 minutes\' WHERE id = $1',
+      await client.query('UPDATE conversations SET updated_at = GREATEST(updated_at, NOW() - INTERVAL \'5 minutes\') WHERE id = $1',
         [chat.conversationId]);
       await client.query(
-        'UPDATE conversation_members SET last_read_message_id = $3 WHERE conversation_id = $1 AND user_id = $2',
+        `UPDATE conversation_members SET last_read_message_id = GREATEST(COALESCE(last_read_message_id, 0), $3)
+          WHERE conversation_id = $1 AND user_id = $2`,
         [chat.conversationId, ctx.member.id, thanks]
       );
       const path = await listThread(client, ctx, chat, { rootId: opener.id, kind: 'first_version', appId, readTo: thanks });
@@ -1307,8 +1130,8 @@ const STATES = [
     // buttons name, and the offer quoting their message. No request card
     // under it: the request is a staging mock GitHub does not have, so the
     // card would read unavailable, and a tap on Propose to close cannot open
-    // the vote here either. It shares the chat the bot run card's state
-    // opens, after every other state's messages: the bot's newest message.
+    // the vote here either. It is a thread of the member's chat with the bot
+    // (memberBotChat), written after the first version's.
     id: 'shots-demo-member-bot-close-offer-v1',
     persona: 'member',
     needs: {
@@ -1323,7 +1146,8 @@ const STATES = [
       bot_cards: ['id', 'user_id', 'conversation_id', 'message_id', 'app_id', 'kind', 'title',
         'details', 'status', 'source_issue_number', 'created_at'],
     },
-    free: botChatFree,
+    free: async (client, ctx) => await messagesFree(client,
+      ['shots-fixture-hrbot-close-ask', 'shots-fixture-hrbot-close-offer']) && botChatFree(client, ctx),
     async install(client, ctx) {
       const mayor = require('./homeroom-bot-mayor');
       const chat = await memberBotChat(client, ctx);
@@ -1356,10 +1180,11 @@ const STATES = [
           JSON.stringify({ homeroomBot: metadata })]
       );
       await client.query('UPDATE bot_cards SET message_id = $2 WHERE id = $1', [action.id, offer.id]);
-      await client.query('UPDATE conversations SET updated_at = NOW() - INTERVAL \'2 minutes\' WHERE id = $1',
+      await client.query('UPDATE conversations SET updated_at = GREATEST(updated_at, NOW() - INTERVAL \'2 minutes\') WHERE id = $1',
         [chat.conversationId]);
       await client.query(
-        'UPDATE conversation_members SET last_read_message_id = $3 WHERE conversation_id = $1 AND user_id = $2',
+        `UPDATE conversation_members SET last_read_message_id = GREATEST(COALESCE(last_read_message_id, 0), $3)
+          WHERE conversation_id = $1 AND user_id = $2`,
         [chat.conversationId, ctx.member.id, offer.id]
       );
       // Their message is its own thread's first, and the offer its reply.
@@ -1382,8 +1207,8 @@ const STATES = [
     // message, the open file_request action the buttons name, and the reply
     // quoting their message. A tap on File it cannot file on these copies
     // (a filing is a staging mock GitHub does not have): the bot answers
-    // that it couldn't file it just now. It shares the chat the bot run
-    // card's state opens, after every other state's messages.
+    // that it couldn't file it just now. It is a thread of the member's chat
+    // with the bot (memberBotChat), written after the close offer's.
     id: 'shots-demo-member-bot-file-offer-v1',
     persona: 'member',
     needs: {
@@ -1400,7 +1225,8 @@ const STATES = [
       conversation_message_attachments: ['id', 'conversation_id', 'message_id', 'user_id', 'kind', 'filename',
         'content_type', 'size_bytes', 'meta', 'data'],
     },
-    free: botChatFree,
+    free: async (client, ctx) => await messagesFree(client,
+      ['shots-fixture-hrbot-file-ask', 'shots-fixture-hrbot-file-offer']) && botChatFree(client, ctx),
     async install(client, ctx) {
       const mayor = require('./homeroom-bot-mayor');
       const chat = await memberBotChat(client, ctx);
@@ -1475,10 +1301,11 @@ const STATES = [
          ON CONFLICT DO NOTHING`,
         [DRAFT_PICTURE_COPY_ID, chat.conversationId, offer.id, chat.botId, DRAFT_PICTURE.length, DRAFT_PICTURE]
       );
-      await client.query('UPDATE conversations SET updated_at = NOW() - INTERVAL \'2 minutes\' WHERE id = $1',
+      await client.query('UPDATE conversations SET updated_at = GREATEST(updated_at, NOW() - INTERVAL \'2 minutes\') WHERE id = $1',
         [chat.conversationId]);
       await client.query(
-        'UPDATE conversation_members SET last_read_message_id = $3 WHERE conversation_id = $1 AND user_id = $2',
+        `UPDATE conversation_members SET last_read_message_id = GREATEST(COALESCE(last_read_message_id, 0), $3)
+          WHERE conversation_id = $1 AND user_id = $2`,
         [chat.conversationId, ctx.member.id, offer.id]
       );
       // Their message is its own thread's first, and the draft its reply.
@@ -1818,7 +1645,15 @@ const STATES = [
     free: async (client, ctx) => {
       const known = await client.query(
         `SELECT 1 FROM mobile_push_kind_categories WHERE kind = 'build_needs_you'`);
-      return known.rowCount === 1 && await botAccountFree(client, ctx) && botChatFree(client, ctx);
+      if (known.rowCount !== 1 || !await botAccountFree(client, ctx)) return false;
+      // Its own rings, by the requests they are about: with the copy's own
+      // chat shared, a chat being there no longer says they were written.
+      const notifyCopy = require('./homeroom-bot-notify-copy');
+      const { rows } = await client.query(
+        `SELECT detail FROM notifications WHERE user_id = $1 AND kind = 'build_needs_you'`, [ctx.member.id]);
+      const ours = new Set(IDS.botRingRequests.map(Number));
+      if (rows.some((row) => ours.has(Number(notifyCopy.parseBotDetail(row.detail)?.issueNumber)))) return false;
+      return botChatFree(client, ctx);
     },
     async install(client, ctx) {
       const notifyCopy = require('./homeroom-bot-notify-copy');
@@ -1849,6 +1684,214 @@ const STATES = [
           state: `Your bell's All tab: three rings from Homeroom bot at the top, each needing you on a request on ${appName}: a question on "[shots fixture] A weekly dinner rota" (6 minutes ago), a decision on request #${decide}, whose title the bot never kept (14 minutes ago), and one on "[shots fixture] Add a search box" that needs more detail (25 minutes ago). They are read, so the bell's count is as it was (on the Unread tab they are under "See older notifications"). Tapping one opens your chat with the bot.`,
           path: '/',
         }],
+      };
+    },
+  },
+  {
+    // A request of the member's on Homeroom that Homeroom bot read, found
+    // ready to build, and whose build waits its turn (#5323: "Number N in
+    // line"). Since 14 Nov 2026 a request's news is on its page, never in
+    // the chat with the bot, and the bot's tab lists the request under
+    // Waiting & in progress (services/ai-work.js), from its stored work
+    // state (work-state.js derive). These are the records that put it
+    // there: the request as the member filed it (its thread comes with it,
+    // requests_attach_thread), the bot's record of who asked, and the look
+    // that found it ready. Nothing in a copy builds, so it waits its turn for
+    // the life of the pair. Its number is no staging mock's, so its own page
+    // does not open on a copy: the row is the state.
+    id: 'shots-demo-member-request-queued-v1',
+    persona: 'member',
+    needs: {
+      requests: ['app_id', 'number', 'title', 'body', 'created_by', 'created_at', 'updated_at', 'thread_id'],
+      threads: ['id', 'app_id', 'number'],
+      homeroom_bot_requesters: ['app_id', 'issue_number', 'user_id', 'issue_title', 'created_at'],
+      homeroom_bot_runs: ['app_id', 'issue_number', 'mode', 'verdict', 'determined', 'build_note', 'duration_ms',
+        'created_at', 'live_build_waiting_at'],
+      work_states: ['app_id', 'item_kind', 'item_ref', 'stage'],
+    },
+    free: async (client, ctx) => {
+      const taken = await client.query(
+        `SELECT EXISTS (SELECT 1 FROM requests WHERE app_id = $1 AND number = $2)
+             OR EXISTS (SELECT 1 FROM threads WHERE app_id = $1 AND number = $2)
+             OR EXISTS (SELECT 1 FROM homeroom_bot_requesters WHERE app_id = $1 AND issue_number = $2)
+             OR EXISTS (SELECT 1 FROM homeroom_bot_runs WHERE app_id = $1 AND issue_number = $2)
+             OR EXISTS (SELECT 1 FROM work_states
+                         WHERE app_id = $1 AND item_kind = 'request' AND item_ref = $2) AS taken`,
+        [ctx.appId, IDS.queuedRequest]
+      );
+      return !taken.rows[0].taken;
+    },
+    async install(client, ctx) {
+      const number = IDS.queuedRequest;
+      const title = '[shots fixture] Show who is online on the members page';
+      await client.query(
+        `INSERT INTO requests (app_id, number, title, body, created_by, created_at, updated_at)
+         VALUES ($1, $2, $3, 'A demo request: obviously fake.', $4,
+                 NOW() - INTERVAL '50 minutes', NOW() - INTERVAL '50 minutes')`,
+        [ctx.appId, number, title, ctx.member.id]
+      );
+      await client.query(
+        `INSERT INTO homeroom_bot_requesters (app_id, issue_number, user_id, issue_title, created_at)
+         VALUES ($1, $2, $3, $4, NOW() - INTERVAL '50 minutes')`,
+        [ctx.appId, number, ctx.member.id, title]
+      );
+      // The look's verdict: ready to build, and waiting for a free builder.
+      await client.query(
+        `INSERT INTO homeroom_bot_runs
+           (app_id, issue_number, mode, verdict, determined, build_note, duration_ms, created_at, live_build_waiting_at)
+         VALUES ($1, $2, 'live', 'ready', TRUE, '[shots fixture] Specific enough to build: a dot beside each name.',
+                 39000, NOW() - INTERVAL '40 minutes', NOW() - INTERVAL '40 minutes')`,
+        [ctx.appId, number]
+      );
+      return {
+        shows: [{
+          state: `Homeroom bot's tab, its main view: under "Waiting & in progress", a row for your request #${number} on Homeroom ("${title}"), which the bot read and found ready to build, and whose build is waiting its turn ("Ready to build", with its place in line). This is where a request waiting its turn is listed now: a request's news is on its page, not in the chat with the bot. The row's own page does not open on these copies.`,
+          path: '/#homeroom-bot',
+        }],
+      };
+    },
+  },
+  {
+    // A request of the member's that nobody has picked up (#6158): Homeroom
+    // bot has not read it and no person has claimed it or made a change for
+    // it, so its stored work state is a request waiting to be read
+    // (work-state.js derive's last line), and the bot's tab folds it under
+    // "Not moving" at the foot of Waiting & in progress (ai-work.js stillOf;
+    // frontend/src/features/ai/model.ts notMoving). It is the staging mock
+    // nothing else marks (NOT_MOVING_REQUEST), so its row opens its page in
+    // the column beside the lists on a copy, which lights the row. The one
+    // record is the request, as the member filed it (its thread comes with
+    // it, requests_attach_thread).
+    id: 'shots-demo-member-request-not-moving-v1',
+    persona: 'member',
+    needs: {
+      requests: ['app_id', 'number', 'title', 'body', 'created_by', 'created_at', 'updated_at', 'thread_id'],
+      threads: ['id', 'app_id', 'number'],
+      homeroom_bot_requesters: ['app_id', 'issue_number'],
+      homeroom_bot_runs: ['app_id', 'issue_number'],
+      issue_claims: ['app_id', 'github_issue_number'],
+      chat_sessions: ['app_id', 'linked_issues', 'created_from_issue_number'],
+      work_states: ['app_id', 'item_kind', 'item_ref', 'stage'],
+    },
+    free: async (client, ctx) => {
+      const { number } = NOT_MOVING_REQUEST;
+      const taken = await client.query(
+        `SELECT EXISTS (SELECT 1 FROM requests WHERE app_id = $1 AND number = $2)
+             OR EXISTS (SELECT 1 FROM threads WHERE app_id = $1 AND number = $2)
+             OR EXISTS (SELECT 1 FROM homeroom_bot_requesters WHERE app_id = $1 AND issue_number = $2)
+             OR EXISTS (SELECT 1 FROM homeroom_bot_runs WHERE app_id = $1 AND issue_number = $2)
+             OR EXISTS (SELECT 1 FROM issue_claims WHERE app_id = $1 AND github_issue_number = $2)
+             OR EXISTS (SELECT 1 FROM chat_sessions
+                         WHERE app_id = $1 AND ($2 = ANY(linked_issues) OR created_from_issue_number = $2))
+             OR EXISTS (SELECT 1 FROM work_states
+                         WHERE app_id = $1 AND item_kind = 'request' AND item_ref = $2) AS taken`,
+        [ctx.appId, number]
+      );
+      return !taken.rows[0].taken;
+    },
+    async install(client, ctx) {
+      const { number, title } = NOT_MOVING_REQUEST;
+      await client.query(
+        `INSERT INTO requests (app_id, number, title, body, created_by, created_at, updated_at)
+         VALUES ($1, $2, $3, 'A demo request: obviously fake.', $4,
+                 NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days')`,
+        [ctx.appId, number, title, ctx.member.id]
+      );
+      return {
+        shows: [
+          { state: `Homeroom bot's tab, its main view: at the foot of "Waiting & in progress", the folded "Not moving" head, which opens to a row for your request #${number} on Homeroom ("${title}"): nobody has picked it up and the bot has not read it.`,
+            path: '/#homeroom-bot' },
+          { state: `The same request open in the column beside the lists, as its row opens it: its row is the one lit, under Not moving.`,
+            path: `/#homeroom-bot/request/${ctx.selfAppSlug}/${number}` },
+        ],
+      };
+    },
+  },
+  {
+    // A change whose votes are in while its checks still run (#6594): its
+    // project's rule is one yes (apps.approvals_required, "at least N",
+    // governance.js governedGate) and that yes is in, so the change waits
+    // only on its checks, which read part-way through. Homeroom's own rule
+    // counts its active members, which a copy cannot be made to meet, so it
+    // is a project of somebody else's that the member is in: its maker is
+    // the staging seeds' #general demo account, whose yes counts as anyone's
+    // does. The change is the member's, so it is theirs on Homeroom bot's
+    // tab too. Checks never finish on a copy, so nothing merges it.
+    id: 'shots-demo-member-approved-checks-running-v1',
+    persona: 'member',
+    needs: {
+      users: ['id', 'username'],
+      apps: ['id', 'name', 'slug', 'status', 'created_by', 'collab_visibility', 'view_visibility', 'icon_emoji',
+        'approver_policy', 'approvals_required', 'governance_rules', 'created_at'],
+      app_collaborators: ['app_id', 'user_id', 'status', 'accepted_at'],
+      chat_sessions: ['id', 'app_id', 'user_id', 'branch_name', 'pr_number', 'pr_title', 'pr_summary_md',
+        'status', 'promoted_at', 'staging_url', 'check_state', 'check_phase', 'checks_progress',
+        'checks_checked_at', 'created_at', 'last_activity_at'],
+      pr_votes: ['session_id', 'user_id', 'vote', 'created_at'],
+    },
+    free: async (client) => {
+      const maker = await client.query('SELECT 1 FROM users WHERE username = $1', [APPROVED_APP_MAKER]);
+      const taken = await client.query('SELECT 1 FROM apps WHERE slug = $1', [APPROVED_APP_SLUG]);
+      return maker.rowCount === 1 && taken.rowCount === 0
+        && await idsFree(client, 'apps', [IDS.approvedApp])
+        && idsFree(client, 'chat_sessions', [IDS.approvedProposal]);
+    },
+    async install(client, ctx) {
+      const { ran, expected, unit } = CHECKS_PART_WAY;
+      const appId = IDS.approvedApp;
+      const maker = (await client.query('SELECT id, username FROM users WHERE username = $1',
+        [APPROVED_APP_MAKER])).rows[0];
+      // As the create route makes a project, with the member invited and in:
+      // a private community of two, whose rule is one yes from anyone in it.
+      await client.query(
+        `INSERT INTO apps (id, name, slug, status, created_by, collab_visibility, view_visibility, icon_emoji,
+                           approver_policy, approvals_required, governance_rules, created_at)
+         VALUES ($1, $2, $3, 'running', $4, 'private', 'private', $5, 'anyone', 1, NULL, NOW() - INTERVAL '8 days')`,
+        [appId, APPROVED_APP_NAME, APPROVED_APP_SLUG, maker.id, '🎶']
+      );
+      await client.query(
+        `INSERT INTO app_collaborators (app_id, user_id, status, accepted_at)
+         VALUES ($1, $2, 'member', NOW() - INTERVAL '8 days'), ($1, $3, 'member', NOW() - INTERVAL '7 days')`,
+        [appId, maker.id, ctx.member.id]
+      );
+      const progress = {
+        ran, passed: ran, failed: 0, expected,
+        updatedAt: new Date(Date.parse(ctx.at) - 60 * 1000).toISOString(),
+        unit: { ran: unit, passed: unit, failed: 0, skipped: 0, expected: unit, done: true, exitOk: true },
+        build: {
+          step: 'done',
+          steps: [
+            { key: 'source_fetch', ms: 3000 }, { key: 'image_build', ms: 62000 }, { key: 'clone', ms: 3000 },
+            { key: 'health', ms: 12000 }, { key: 'prepare_checks', ms: 800 },
+          ],
+          totalMs: 80000,
+        },
+      };
+      await client.query(
+        `INSERT INTO chat_sessions
+           (id, app_id, user_id, branch_name, pr_number, pr_title, pr_summary_md, status, promoted_at,
+            staging_url, check_state, check_phase, checks_progress, checks_checked_at, created_at, last_activity_at)
+         VALUES ($1, $2, $3, 'shots-fixture/approved-checks-running', 1,
+                 '[shots fixture] A rota for who brings the music',
+                 'A demo proposal of yours: its one vote is in and its checks are still running.',
+                 'promoted', NOW() - INTERVAL '30 minutes', $4, 'pending', 'testing', $5::jsonb,
+                 NOW() - INTERVAL '25 minutes', NOW() - INTERVAL '2 hours', NOW() - INTERVAL '1 minute')`,
+        [IDS.approvedProposal, appId, ctx.member.id, PREVIEW_URL, JSON.stringify(progress)]
+      );
+      // Its yes, on the version up for the vote (left NULL, the vote's
+      // epoch is stamped as the change's current one).
+      await client.query(
+        `INSERT INTO pr_votes (session_id, user_id, vote, created_at)
+         VALUES ($1, $2, 'yes', NOW() - INTERVAL '10 minutes')`,
+        [IDS.approvedProposal, maker.id]
+      );
+      return {
+        shows: [
+          { state: `A change of yours on ${APPROVED_APP_NAME}, a project ${maker.username} runs that you are in, whose rule is one yes: ${maker.username}'s yes is in, so its votes are all in while its checks still run (${ran} of ${expected} declared checks done). Its Votes card is complete and its Testing card shows the bar; it waits only on its checks.`,
+            path: `/#app/${APPROVED_APP_SLUG}/dev/proposals/${IDS.approvedProposal}` },
+          { state: 'The same change on Homeroom bot\'s tab, under "Waiting & in progress": approved, and waiting on its checks.',
+            path: '/#homeroom-bot' },
+        ],
       };
     },
   },

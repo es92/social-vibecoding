@@ -633,3 +633,102 @@ test('a ready change publishes its close-ups beside its stills; they are never w
   const without = new Map([...dense.saved].filter(([, f]) => f.variant !== 'closeup'));
   assert.notEqual(shotsFiles.summarize(dense.intent, without).manifestHash, ready.manifestHash, 'the manifest names it');
 });
+
+// #6787: the card shows a dark shot in its light one's frame. One scrolled
+// to another part of the page is refused while the agent can retake it, and
+// one that came out the same as its light one (switched where it stands on
+// a page that does not follow the system's mode) answers sameAsLight.
+test('a dark shot framed unlike its light one is refused, and one that looks the same answers sameAsLight', () => {
+  const run = control();
+  const slot = { change: 'invite-suggestions', screen: 'desktop', side: 'after' };
+  run.saveShot(slot, fixtures.png({ shade: 5 }));
+  assert.throws(() => run.saveShot({ ...slot, theme: 'dark' }, fixtures.png({ shade: 9 }),
+    { check: { kind: 'dark', same: false, reason: 'scrolled', shift: -420, unchanged: false } }),
+  (error) => error.code === 'dark_not_framed_like_light' && error.status === 400
+    && /scrolled to another part of the page/.test(error.message));
+  assert.throws(() => run.saveShot({ ...slot, theme: 'dark' }, fixtures.png({ shade: 9 }),
+    { check: { kind: 'dark', same: false, reason: 'size', shift: 0, unchanged: false } }),
+  /not the size of its light one/);
+  assert.equal(run.saved.size, 1, 'neither was kept');
+  const same = run.saveShot({ ...slot, theme: 'dark' }, fixtures.png({ shade: 9 }),
+    { check: { kind: 'dark', same: true, reason: 'aligned', shift: 0, unchanged: true } });
+  assert.equal(same.sameAsLight, true);
+  assert.equal(same.saved, false);
+  // A check that could not tell, or none at all, keeps it as before.
+  assert.equal(run.saveShot({ ...slot, theme: 'dark' }, fixtures.png({ shade: 9 }),
+    { check: { kind: 'dark', same: null, reason: 'plain', shift: 0, unchanged: false } }).saved, true);
+  assert.equal(run.saved.size, 2);
+});
+
+test('retaking a light screen in another state drops its dark shot, which shows the old one', () => {
+  const run = control();
+  const slot = { change: 'invite-suggestions', screen: 'desktop', side: 'after' };
+  run.saveShot(slot, fixtures.png({ shade: 5 }));
+  run.saveShot({ ...slot, theme: 'dark' }, fixtures.png({ shade: 9 }));
+  run.dirty.clear();
+  // The same picture again changes nothing.
+  assert.equal(Object.hasOwn(run.saveShot(slot, fixtures.png({ shade: 5 })), 'darkDropped'), false);
+  assert.equal(run.saved.size, 2);
+  const retake = run.saveShot(slot, fixtures.png({ shade: 6 }));
+  assert.equal(retake.darkDropped, true);
+  assert.equal(run.saved.size, 1);
+  assert.deepEqual([...run.dropped], ['invite-suggestions/desktop/head/context/dark']);
+  // Saving the dark shot again takes it off the list to remove.
+  run.saveShot({ ...slot, theme: 'dark' }, fixtures.png({ shade: 10 }));
+  assert.deepEqual([...run.dropped], []);
+});
+
+test('an element shot not inside its screen shot is saved with a warning to retake both', () => {
+  const run = control();
+  const slot = { change: 'invite-suggestions', screen: 'desktop', side: 'after' };
+  run.saveShot(slot, fixtures.png({ width: 1280, height: 800 }));
+  const missing = run.saveShot({ ...slot, kind: 'element' }, fixtures.png({ width: 200, height: 40 }),
+    { check: { kind: 'element', found: false, decided: true } });
+  assert.equal(missing.saved, true);
+  assert.equal(missing.elementNotInScreen, true);
+  assert.match(missing.elementWarning, /not part of this change's screen shot/);
+  for (const check of [{ kind: 'element', found: true, decided: true }, { kind: 'element', found: false, decided: false }, null]) {
+    const fine = run.saveShot({ ...slot, kind: 'element' }, fixtures.png({ width: 200, height: 40, shade: 3 }), { check });
+    assert.equal(Object.hasOwn(fine, 'elementNotInScreen'), false, JSON.stringify(check));
+  }
+});
+
+// The checks run off the request's thread, on the partner still the run
+// already holds, and are left out when they cannot run.
+test('saveChecksFor checks a dark screen against its light one and an element against its screen', async () => {
+  const run = control();
+  const slot = { change: 'invite-suggestions', screen: 'desktop', side: 'after' };
+  const stored = { light: fixtures.png({ shade: 5 }) };
+  const db = { query: async (sql, [, slots]) => ({ rows: slots.map((name) => ({
+    slot: name, story_id: 'invite-suggestions', viewport: 'desktop', side: 'head', variant: name.includes('/focus') ? 'focus' : 'context',
+    media: 'png', theme: 'light', content_type: 'image/png', width: 1, height: 1, bytes: 1, sha256: 'x', density: 1,
+    object_key: null, data: stored.light,
+  })) }) };
+  const jobs = [];
+  const checker = async (job) => { jobs.push(job); return { kind: job.kind, same: true }; };
+  // Nothing to compare with yet.
+  assert.equal(await controlPlane.saveChecksFor(db, run, { ...slot, theme: 'dark' }, fixtures.png({ shade: 9 }), { checker }), null);
+  run.saveShot(slot, stored.light);
+  const media = require('../src/services/media-store');
+  const original = media.bytes;
+  media.bytes = async (_store, row) => row.data;
+  try {
+    const dark = fixtures.png({ shade: 9 });
+    assert.deepEqual(await controlPlane.saveChecksFor(db, run, { ...slot, theme: 'dark' }, dark, { checker }), { kind: 'dark', same: true });
+    assert.deepEqual(jobs.at(-1), { kind: 'dark', light: stored.light, lightDensity: 1, dark, darkDensity: 1 });
+    const element = fixtures.png({ width: 200, height: 40 });
+    await controlPlane.saveChecksFor(db, run, { ...slot, kind: 'element' }, element, { checker });
+    assert.deepEqual(jobs.at(-1), { kind: 'element', screen: stored.light, screenDensity: 1, element, elementDensity: 1 });
+    // A screen shot is not checked against an element shot saved before it:
+    // that may be of the state the screen replaces.
+    run.saveShot({ ...slot, kind: 'element' }, element);
+    const count = jobs.length;
+    assert.equal(await controlPlane.saveChecksFor(db, run, slot, fixtures.png({ shade: 7 }), { checker }), null);
+    assert.equal(jobs.length, count);
+    // A checker that fails leaves the still unchecked.
+    assert.equal(await controlPlane.saveChecksFor(db, run, { ...slot, theme: 'dark' }, dark,
+      { checker: async () => { throw Object.assign(new Error('busy'), { code: 'shots_diff_busy' }); } }), null);
+  } finally {
+    media.bytes = original;
+  }
+});

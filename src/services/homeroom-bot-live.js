@@ -74,6 +74,7 @@ const {
 } = require('./prompts');
 const specHtml = require('./spec-html');
 const specVisibleChanges = require('./spec-visible-changes');
+const { copyLimitsLines } = require('./shots-copy-limits');
 const stageCosts = require('./stage-costs');
 const { IN_LOOP_BROWSER_GUIDANCE } = require('./in-loop-browser');
 const buildContract = require('./build-contract');
@@ -2921,7 +2922,11 @@ function withPlanLine(description, fromPlan) {
 // (shots-ready-states.js). Most states the copies lacked were new in the
 // change itself (22 failed runs and 13 skipped changes, 2026-10-09 to 10-12),
 // so the build seeds a new state in the same change: the after copy, where
-// that seed lands, is the side a new state needs.
+// that seed lands, is the side a new state needs. What the copies cannot do
+// at all (the bot is switched off there, a new project never sets up, a
+// controlled failure is one GET, no phone bridge, no races) is said from
+// shots-copy-limits.js, as the work order says it (18 Nov 2026: 31% of the
+// platform's own shots runs failed, most on one of those).
 function buildVisibleChangesLines(locale = null) {
   return [
   '',
@@ -2936,16 +2941,18 @@ function buildVisibleChangesLines(locale = null) {
   'When the change is a rename, a changed flow, a data or settings change, or a measured improvement, also call',
   'declare_diagram once with that kind (rename, flow, changes or numbers), in plain words; Homeroom draws it on the',
   'change\'s card when it has no before and after shots. Mermaid is only for a change you declared with impact "none".',
-  'The before and after copies have no model key, so nothing on them answers with a model: Homeroom bot only says',
-  'it cannot reach its model there, and an app\'s own AI features get no answer. Never make a step ask Homeroom bot',
-  '(or any AI feature) for something and wait for its reply. Start from a state that already holds the reply: a',
-  'ready-made state the tool\'s answer lists, or a message the app\'s staging seed writes.',
+  'If you declared impact "none", always call declare_diagram: it is the only picture voters get.',
+  'The before and after copies have no model key, so nothing on them answers with a model: Homeroom bot is switched',
+  'off there, and an app\'s own AI features get no answer. Never make a step ask Homeroom bot (or any AI feature)',
+  'for something and wait for its reply. Start from a state that already holds the reply: a ready-made state the',
+  'tool\'s answer lists, or a message the app\'s staging seed writes.',
   'When a fresh staging copy lacks the state a change shows, add an idempotent, obviously fake staging seed for it in',
   'this same change: it reaches the after copy, which is the side a new state needs. Seed rows for the shots\' own',
   'accounts (usernode-capture is the member) and fake people, never a signal your code reads to decide something,',
   'and a reply as the stored message, never asked for. A change to a state that already existed needs it on both',
   'copies, which a seed in this change cannot give: make it with hints.setup steps, or say in your summary that its',
   'seed must merge first, in its own change.',
+  ...copyLimitsLines(),
   ];
 }
 

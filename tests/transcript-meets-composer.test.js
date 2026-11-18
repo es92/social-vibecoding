@@ -45,7 +45,9 @@ test('an empty status line takes no room, and stays in the page', () => {
   // Still a sibling of the scroller rather than a row inside it, so a name
   // shows whether or not the reader is at the bottom.
   const screen = read('frontend/src/features/messages/index.tsx');
-  assert.match(screen, /<\/TranscriptOverlay>\n\s*<ChatStatusLine className="messages-typing">\{typingLine\(t, typing\)\}<\/ChatStatusLine>\n\s*<MessageComposer \/>/);
+  // The composer is handed the scroller it sits under (#6810), so a collapse
+  // it forces keeps a followed conversation at its newest line.
+  assert.match(screen, /<\/TranscriptOverlay>\n\s*<ChatStatusLine className="messages-typing">\{typingLine\(t, typing\)\}<\/ChatStatusLine>\n\s*<MessageComposer scroller=\{scroller\} \/>/);
 });
 
 test('the composer bar has no padding over its card', () => {

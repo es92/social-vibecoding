@@ -45,7 +45,7 @@
   },
   "tabs.communities": {
     "text": "Communities",
-    "description": "Tab in the main navigation: opens the communities the person belongs to. A community is a group that owns projects."
+    "description": "Tab in the main navigation: opens the Communities page, which lists the communities the person pinned and the others they belong to. A community is a group that owns projects."
   },
   "tabs.me": {
     "text": "You",
@@ -55,25 +55,13 @@
     "text": "You, {{username}}",
     "description": "Accessible name of the profile tab when signed in. The tab shows only the word for You; this adds whose account it is. {{username}} is the person's username. Keep the word for You first."
   },
-  "tabs.communitiesOn": {
-    "text": "Communities, on {{community}}",
-    "description": "Accessible name of the Communities tab while it is showing one community. {{community}} is that community's name. Keep the word for Communities first."
-  },
   "tabs.communitiesVotes_one": {
     "text": "Communities, {{count}} vote waiting on you",
-    "description": "Accessible name of the Communities tab on All communities while votes are waiting: the tab's word, then what its blue number counts. Keep the word for Communities first."
+    "description": "Accessible name of the Communities tab while votes are waiting: the tab's word, then what its blue number counts. Keep the word for Communities first."
   },
   "tabs.communitiesVotes_other": {
     "text": "Communities, {{count}} votes waiting on you",
-    "description": "Accessible name of the Communities tab on All communities while votes are waiting: the tab's word, then what its blue number counts. Keep the word for Communities first."
-  },
-  "tabs.communitiesOnVotes_one": {
-    "text": "Communities, on {{community}}, {{count}} vote waiting on you",
-    "description": "Accessible name of the Communities tab while it is showing one community and votes are waiting there. {{community}} is that community's name; the count is its blue number. Keep the word for Communities first."
-  },
-  "tabs.communitiesOnVotes_other": {
-    "text": "Communities, on {{community}}, {{count}} votes waiting on you",
-    "description": "Accessible name of the Communities tab while it is showing one community and votes are waiting there. {{community}} is that community's name; the count is its blue number. Keep the word for Communities first."
+    "description": "Accessible name of the Communities tab while votes are waiting: the tab's word, then what its blue number counts. Keep the word for Communities first."
   },
   "tabs.votesWaiting_one": {
     "text": "{{count}} vote waiting on you",
@@ -111,17 +99,9 @@
     "text": "Search your communities",
     "description": "Accessible name and tooltip of the small search button beside the Communities heading in the desktop sidebar: opens the list of all the person's communities with its search box ready to type in."
   },
-  "rail.all_one": {
-    "text": "All {{count}} community",
-    "description": "Row under the person's communities in the desktop sidebar, opening the list of every community they are in, shown only when they are in more than the five the sidebar lists. {{count}} is how many there are (here 1)."
-  },
-  "rail.all_other": {
-    "text": "All {{count}} communities",
-    "description": "Row under the person's communities in the desktop sidebar, opening the list of every community they are in, shown only when they are in more than the five the sidebar lists. {{count}} is how many there are."
-  },
   "rail.allPlain": {
     "text": "All communities",
-    "description": "Row under the person's communities in the desktop sidebar, before their communities have loaded or when the sidebar already lists every one of them: opens the list of every community they are in."
+    "description": "Row under the person's communities in the sidebar of a look of the frame: opens the list of every community they are in."
   },
   "rail.hideSidebar": {
     "text": "Hide sidebar",
@@ -902,5 +882,77 @@
   "frame.navigation": {
     "text": "Homeroom",
     "description": "Accessible name of the sidebar and of the phone's tab bar as navigation landmarks, when the interface is drawn in one of the frame's looks (an admin's preview). The product's name."
+  },
+  "change.closedWhy.autoRejected": {
+    "text": "It was set aside for now: more No than Yes, and not enough support to carry it.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. \"Set aside\" means closed by the vote: more people voted No than Yes."
+  },
+  "change.closedWhy.adminNo": {
+    "text": "It was set aside: an admin voted No and nobody voted Yes within a week.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. An admin is a platform administrator."
+  },
+  "change.closedWhy.adminDeclined": {
+    "text": "It was held for an admin's approval, and an admin voted No.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. The change was waiting for a platform administrator's approval before it could go live."
+  },
+  "change.closedWhy.approverNo": {
+    "text": "It was set aside: an approver voted No and nobody voted Yes in time.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. An approver is a person the project names to approve changes."
+  },
+  "change.closedWhy.replaced": {
+    "text": "It was replaced by a new one.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. \"A new one\" is a newer change by the same author."
+  },
+  "change.closedWhy.superseded": {
+    "text": "It was withdrawn: another change for the same request covers it.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. A request is something a member asked for."
+  },
+  "change.closedWhy.alreadyOnMain": {
+    "text": "Everything in it is already on main, so there was nothing left to merge.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. \"Main\" is the project's main line of code."
+  },
+  "change.closedWhy.requestClosed": {
+    "text": "It was withdrawn: the request it was built for is closed.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. A request is something a member asked for."
+  },
+  "change.closedWhy.redChecks": {
+    "text": "It was withdrawn: its checks failed and nobody changed it for a few days.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. Checks are the automated tests run on a change."
+  },
+  "change.closedWhy.stale": {
+    "text": "It went quiet and was set aside.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. Nobody voted on it or changed it for a long time."
+  },
+  "change.closedWhy.campaignRefused": {
+    "text": "It could not be put up for a vote. The maintenance campaign can make it again.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. A maintenance campaign is an automatic series of upkeep changes."
+  },
+  "change.closedWhy.prClosed": {
+    "text": "It was closed on GitHub, so it is closed here too.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. GitHub is the code hosting site."
+  },
+  "change.closedWhy.prMerged": {
+    "text": "It was merged on GitHub before it went up for a vote.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. GitHub is the code hosting site."
+  },
+  "change.closedWhy.updateSkipped": {
+    "text": "It was skipped. Its original won't offer these changes again.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. The change was an update offered from the project this one was copied from (its original); the group skipped it."
+  },
+  "change.closedWhy.updateReplaced": {
+    "text": "The original changed again, and the newer update needs fitting to this version.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. The change was an update offered from the project this one was copied from (its original)."
+  },
+  "change.closedWhy.updateRefused": {
+    "text": "It could not be put up for a vote. It will be offered again when the original changes.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. The change was an update offered from the project this one was copied from (its original)."
+  },
+  "change.closedWhy.mergedElsewhere": {
+    "text": "It was merged on GitHub into another branch, not into main.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. GitHub is the code hosting site; \"main\" is the project's main line of code."
+  },
+  "change.closedWhy.withdrawn": {
+    "text": "It was withdrawn.",
+    "description": "One whole sentence saying why a change (a proposed edit to a project) was closed without going live. It follows \"This change was closed without going live.\" on the Votes card of the change's page, and the change's title on a notification row, so the change's name is not repeated. Somebody took it back without a vote deciding it."
   }
 }

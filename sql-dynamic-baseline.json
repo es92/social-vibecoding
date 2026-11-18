@@ -187,16 +187,16 @@
     {
       "source": "src/routes/apps.js",
       "kind": "structural-template",
-      "fingerprint": "029f6b293ad32baa4104",
+      "fingerprint": "3ebf0a6fda28d39ecee9",
       "count": 1,
-      "preview": "` SELECT ${appAccess.nonSecretAppColumnList('a')}, COALESCE(msg_counts.cnt, 0) AS message_count, COALESCE(activity.total_seconds, 0) AS total_seconds, COALESCE("
+      "preview": "`SELECT ${appAccess.ACCESS_COLUMNS} FROM apps WHERE slug = $1 AND (NOT self_hosted OR $2::boolean)`"
     },
     {
       "source": "src/routes/apps.js",
       "kind": "structural-template",
-      "fingerprint": "3ebf0a6fda28d39ecee9",
+      "fingerprint": "4848ee7c9c4a5b91ede7",
       "count": 1,
-      "preview": "`SELECT ${appAccess.ACCESS_COLUMNS} FROM apps WHERE slug = $1 AND (NOT self_hosted OR $2::boolean)`"
+      "preview": "` SELECT ${appAccess.appListColumnList('a')}, COALESCE(msg_counts.cnt, 0) AS message_count, COALESCE(activity.total_seconds, 0) AS total_seconds, COALESCE(au.cn"
     },
     {
       "source": "src/routes/apps.js",
@@ -579,6 +579,13 @@
     {
       "source": "src/routes/sessions.js",
       "kind": "structural-template",
+      "fingerprint": "01ea67c0264cf9373942",
+      "count": 1,
+      "preview": "`SELECT cs.id, cs.app_id, cs.pr_number, cs.pr_url, cs.pr_title, cs.pr_title_fallback, cs.pr_summary_md, cs.pr_summary_stale, cs.pr_body, cs.branch_name, cs.stag"
+    },
+    {
+      "source": "src/routes/sessions.js",
+      "kind": "structural-template",
       "fingerprint": "1c821d7ef624ede242e9",
       "count": 1,
       "preview": "`SELECT version, built_at, commit_sha, pr_number, shared_to_group_at, LENGTH(content) AS char_count, content, content_html FROM chat_session_specs s WHERE s.ses"
@@ -589,13 +596,6 @@
       "fingerprint": "2bde029ab4c2dc90ff7a",
       "count": 1,
       "preview": "`SELECT cs.id, cs.session_title, cs.pr_title, cs.pr_number, cs.pr_url, cs.branch_name, cs.status, cs.staging_url, -- #2069, as above: a shared draft has neither"
-    },
-    {
-      "source": "src/routes/sessions.js",
-      "kind": "structural-template",
-      "fingerprint": "2ed058156ad3706d17f7",
-      "count": 1,
-      "preview": "`SELECT cs.id, cs.user_id, cs.branch_name, cs.pr_number, cs.pr_url, cs.pr_title, cs.session_title, cs.proposed_pr_title, cs.status, cs.linked_issues, cs.shared_"
     },
     {
       "source": "src/routes/sessions.js",
@@ -621,9 +621,23 @@
     {
       "source": "src/routes/sessions.js",
       "kind": "structural-template",
+      "fingerprint": "b34b87a74ed74ad996e0",
+      "count": 1,
+      "preview": "`SELECT cs.id, cs.user_id, cs.branch_name, cs.pr_number, cs.pr_url, cs.pr_title, cs.session_title, cs.proposed_pr_title, cs.status, cs.linked_issues, cs.shared_"
+    },
+    {
+      "source": "src/routes/sessions.js",
+      "kind": "structural-template",
       "fingerprint": "ba8110c429c6037d85c2",
       "count": 1,
       "preview": "`SELECT s.version, s.built_at FROM chat_session_specs s WHERE s.session_id = $1 AND ($2::int = $3::int OR ${specVersionSharedVisibilitySql('s', '$3')}) ORDER BY"
+    },
+    {
+      "source": "src/routes/shots.js",
+      "kind": "structural-template",
+      "fingerprint": "5c6ea493e39956c8a307",
+      "count": 1,
+      "preview": "`SELECT ${columns} FROM chat_sessions cs WHERE cs.id = $1 AND cs.app_id = $2`"
     },
     {
       "source": "src/routes/status.js",
@@ -908,13 +922,6 @@
     {
       "source": "src/routes/votes.js",
       "kind": "structural-template",
-      "fingerprint": "06cdc1594753c76a99bd",
-      "count": 1,
-      "preview": "`${mergedRowSelect()} WHERE cs.app_id = $1 AND cs.status = 'merged' ${noNewerMergedTwin()} ${prCursorSql} ORDER BY COALESCE(cs.merged_at, cs.created_at) DESC, c"
-    },
-    {
-      "source": "src/routes/votes.js",
-      "kind": "structural-template",
       "fingerprint": "3474bc02c4800e84c12b",
       "count": 1,
       "preview": "`SELECT pv.vote, pv.reason, u.username, pv.user_id, ${currentVotePredicateSql('pv', 'cs')} AS current FROM pr_votes pv JOIN users u ON pv.user_id = u.id JOIN ch"
@@ -929,16 +936,16 @@
     {
       "source": "src/routes/votes.js",
       "kind": "structural-template",
-      "fingerprint": "7465ad937edb1a34afe0",
+      "fingerprint": "6680d598eeaa15786ba8",
       "count": 1,
-      "preview": "`WITH current_session AS ( SELECT id, approval_epoch FROM chat_sessions WHERE id = $1 AND status IN ('promoted', 'merging') FOR UPDATE ), v AS ( INSERT INTO pr_"
+      "preview": "`SELECT cs.id, cs.pr_number, cs.pr_url, cs.pr_title, cs.pr_title_fallback, cs.pr_summary_md, cs.pr_summary_stale, cs.pr_body, cs.staging_url, cs.testing_md, cs."
     },
     {
       "source": "src/routes/votes.js",
       "kind": "structural-template",
-      "fingerprint": "7fd330324b2641e1a416",
+      "fingerprint": "7465ad937edb1a34afe0",
       "count": 1,
-      "preview": "`SELECT cs.id, cs.pr_number, cs.pr_url, cs.pr_title, cs.pr_title_fallback, cs.pr_summary_md, cs.pr_summary_stale, cs.pr_body, cs.staging_url, cs.testing_md, cs."
+      "preview": "`WITH current_session AS ( SELECT id, approval_epoch FROM chat_sessions WHERE id = $1 AND status IN ('promoted', 'merging') FOR UPDATE ), v AS ( INSERT INTO pr_"
     },
     {
       "source": "src/routes/votes.js",
@@ -967,6 +974,13 @@
       "fingerprint": "d4cf0cf4e15e7f7d6ad5",
       "count": 1,
       "preview": "`SELECT cs.id, cs.pr_number, cs.pr_url, cs.pr_title, cs.pr_title_fallback, cs.status, cs.created_at, cs.promoted_at, cs.merge_conflict_state, cs.behind_main, cs"
+    },
+    {
+      "source": "src/routes/votes.js",
+      "kind": "structural-template",
+      "fingerprint": "e1864a32683459f7b329",
+      "count": 1,
+      "preview": "`${mergedRowSelect({ results: listTestResults.pagedResultsSelect(req, 'cs') })} WHERE cs.app_id = $1 AND cs.status = 'merged' ${noNewerMergedTwin()} ${prCursorS"
     },
     {
       "source": "src/routes/votes.js",
@@ -1611,6 +1625,13 @@
       "fingerprint": "ff80b45cc83b1ab2f7af",
       "count": 1,
       "preview": "`INSERT INTO llm_usage (user_id, date, ${column}) VALUES ($1, CURRENT_DATE, $2) ON CONFLICT (user_id, date) DO UPDATE SET ${column} = llm_usage.${column} + EXCL"
+    },
+    {
+      "source": "src/services/list-test-results.js",
+      "kind": "structural-template",
+      "fingerprint": "d91cd4dde374c0e7a8d5",
+      "count": 1,
+      "preview": "`SELECT cs.id, ${listedResultsSql('cs')} FROM chat_sessions cs WHERE cs.id = ANY($1::int[])`"
     },
     {
       "source": "src/services/llm-telemetry.js",

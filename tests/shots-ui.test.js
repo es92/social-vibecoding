@@ -576,6 +576,33 @@ test('pending or failed shots show the declared changes and status but no media 
   assert.equal(AppView._workshopVisuals({ after: { png: id('a') } }, shots({ state: 'failed' })), null);
 });
 
+test('after a new commit the card keeps the previous version\'s shots, labelled, under this version\'s state', () => {
+  // shots-view.js `previous`: the published run a head move left, until this
+  // version's shots publish (tests/shots-previous-version.test.js).
+  const previous = shots();
+  for (const state of ['exploring', 'failed']) {
+    const html = AppView.shotsHtml(shots({ state, artifacts: [], failureReason: state === 'failed' ? 'No row.' : null,
+      repairAvailable: state === 'failed', previous }), { sessionId: 42 });
+    assert.ok(html.startsWith(`<section data-shots="1" data-shots-state="${state}"`), `${state}: this version's state leads`);
+    const kept = /<div class="mt-3" data-shots-previous="1">([\s\S]*)<\/div>$/.exec(html)?.[1] || '';
+    assert.match(kept, /^<section data-shots="1" data-shots-state="previous" aria-label="Before &amp; after"/);
+    assert.match(kept, /data-shots-previous-badge="1">Previous version</);
+    assert.match(kept, /Taken on the previous version of this proposal\. Screenshots of this version replace them once they are taken\./);
+    assert.match(kept, /<img src="\/api\/apps\/demo\/proposals\/42\/shots\//);
+    assert.doesNotMatch(kept, /Screenshots ready|data-shots-retake/, 'not this version\'s, and not this version\'s to take again');
+  }
+  // This version's published: the previous version's are not drawn.
+  assert.doesNotMatch(AppView.shotsHtml(shots({ previous }), { sessionId: 42 }), /data-shots-previous|Previous version/);
+  // A previous version with no pictures, or none at all, draws nothing more.
+  assert.doesNotMatch(AppView.shotsHtml(shots({ state: 'exploring', artifacts: [], previous: { ...previous, artifacts: [] } }), { sessionId: 42 }), /data-shots-previous/);
+  assert.equal(AppView._shotsPrevious(shots({ state: 'exploring', previous: null })), null);
+  // The change page's card draws them itself (_changeShotsView); its
+  // readings of a version with none of its own draw nothing here.
+  assert.equal(AppView.shotsHtml(shots({ state: 'exploring', previous }), { sessionId: 42, thread: true }), '');
+  // The board's small picture stays this version's own.
+  assert.equal(AppView._workshopVisuals(null, shots({ state: 'exploring', previous })), null);
+});
+
 test('the workshop summary uses protected element shots only after verification', () => {
   const summary = AppView._workshopVisuals(null, shots());
   assert.equal(summary.protected, true);

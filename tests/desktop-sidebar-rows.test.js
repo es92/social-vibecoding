@@ -52,33 +52,37 @@ test('which five: this device\'s order, then the most recently active of yours',
   assert.equal(noteOpened(['a', 'b'], null, list), null);
 });
 
-test('the markup: the section sits between Home and the Communities tab, its heading and search prerendered', () => {
+test('the markup: the section follows the Communities row and comes before you, its heading and search prerendered', () => {
   const html = renderComponent('frontend/src/features/nav/tab-bar.tsx', 'PlatformTabs', {});
   const at = (id) => html.indexOf(`id="${id}"`);
-  // #6019: Communities is the second tab now, so its rows follow Home.
-  assert.ok(at('platform-tab-home') < at('platform-rail-pinned'), 'the pinned ones first');
+  // The Communities row, then Recents under it: the pinned ones first.
+  assert.ok(at('platform-tab-messages') < at('platform-tab-workshop'), 'Communities is under Messages');
+  assert.ok(at('platform-tab-workshop') < at('platform-rail-pinned'), 'then the pinned ones');
   assert.ok(at('platform-rail-pinned') < at('platform-rail-communities'));
-  assert.ok(at('platform-rail-communities') < at('platform-tab-workshop'));
+  assert.ok(at('platform-rail-communities') < at('platform-tab-me'));
   assert.match(html, /<div id="platform-rail-communities" class="platform-rail-communities" role="group" aria-labelledby="platform-rail-communities-label">/);
   assert.match(html, new RegExp(`<span id="platform-rail-communities-label" class="platform-rail-head-label">${message('core:rail.communities')}</span>`));
   // One Home (#6361): the search is Home's, so the link names Home.
   assert.match(html, new RegExp(`<a id="platform-rail-search" class="platform-rail-search" href="/" aria-label="${message('core:rail.search')}"`));
   assert.doesNotMatch(html, /data-rail-community=/, 'no rows before the community list is read');
-  // The All row's face rides in the Communities tab, for app.css to show.
+  // The Communities row is a row like the others: its glyph and its word.
+  // It was the section's "All 13 communities" row, under the list.
   const tab = html.slice(at('platform-tab-workshop'), html.indexOf('</a>', at('platform-tab-workshop')));
-  assert.match(tab, /class="platform-tab-glyph platform-tab-all-glyph"/);
-  assert.match(tab, new RegExp(`<span class="platform-tab-all-label">${message('core:rail.allPlain')}</span>`), 'before the count is known');
-  assert.doesNotMatch(tab, /platform-tab-all-votes/, 'a zero says nothing');
-  // The tab keeps no label of its own on All communities, as before.
+  assert.match(tab, new RegExp(`<span class="platform-tab-label">${message('core:tabs.communities')}</span>`));
+  assert.doesNotMatch(tab, /platform-tab-all-glyph|platform-tab-all-label|platform-tab-all-votes/);
+  assert.doesNotMatch(tab, /platform-tab-votes/, 'a zero says nothing');
+  // Its text is its name.
   assert.doesNotMatch(tab.slice(0, tab.indexOf('>')), /aria-label=/);
 });
 
-test('audit Y04: the All row counts only when there are more than the rows above', () => {
+test('the Communities row says Communities, with no count of how many you are in', () => {
+  // It was the section's All row ("All 13 communities", audit Y04); its page
+  // lists them, so the row is the tab's own word at every width.
   const tab = read('frontend/src/features/nav/tab-bar.tsx');
-  assert.match(tab, /allCount > RAIL_COMMUNITIES \? t\('core:rail\.all', \{ count: allCount \}\) : t\('core:rail\.allPlain'\)/,
-    '"All 2 communities" under the same two rows says nothing; it is "All communities"');
-  assert.equal(message('core:rail.allPlain'), 'All communities');
-  assert.equal(message('core:rail.all', { count: 13 }), 'All 13 communities');
+  assert.doesNotMatch(tab, /core:rail\.all|allCount|RAIL_COMMUNITIES/);
+  assert.equal(message('core:tabs.communities'), 'Communities');
+  const core = JSON.parse(read('frontend/locales/en/core.json'));
+  assert.ok(!('rail.all_other' in core) && !('rail.all_one' in core), 'the counted words left the catalog with the row');
 });
 
 test('the presses: a row switches in place, the lit one climbs to its Hub and stops', () => {
@@ -141,7 +145,7 @@ test('the width: one block on every desktop window, from 768px; the phone\'s bar
   // where the sidebar holding the same things is 212px.
   assert.equal(SIDEBAR_ROWS_QUERY, '(min-width: 768px)');
   const css = read('public/css/app.css');
-  assert.match(css, /\.platform-rail-communities,\n\.platform-tab-all-glyph,\n\.platform-tab-all-label,\n\.platform-tab-all-votes,\n\.platform-rail-pinned \{\n  display: none;\n\}/,
+  assert.match(css, /\.platform-rail-communities,\n\.platform-rail-pinned \{\n  display: none;\n\}/,
     'nothing of it is drawn outside the block');
   const at = css.indexOf('@media (min-width: 768px) {\n  /* THE ONE NUMBER THE REST FOLLOWS.');
   assert.ok(at > 0, 'the block');
@@ -149,18 +153,18 @@ test('the width: one block on every desktop window, from 768px; the phone\'s bar
   assert.ok(at > css.indexOf('@media (min-width: 768px) {\n  /* THE BAND AT THE FOOT GOES AWAY ENTIRELY.'), 'after the rail\'s block');
   const block = css.slice(at, css.indexOf('\n}\n', at));
   assert.match(block, /body \{\n    --platform-rail-full: 212px;\n  \}/, 'the token everything placed by the strip reads');
-  assert.match(block, /\.platform-rail-communities:hover \.platform-rail-search,\n  \.platform-rail-communities:has\(\+ #platform-tab-workshop:hover\) \.platform-rail-search,\n  \.platform-rail-search:focus-visible \{\n    opacity: 1;/,
-    'the search shows over the section and All');
+  assert.match(block, /\.platform-rail-communities:hover \.platform-rail-search,\n  \.platform-rail-search:focus-visible \{\n    opacity: 1;/,
+    'the search shows over the section');
   assert.match(block, /@media \(hover: none\) \{\n    \.platform-rail-search \{ opacity: 1; \}/, 'and stays where there is no hover');
   assert.match(block, /\.platform-tabs:has\(\.platform-rail-community\[aria-current="page"\]\) #platform-tab-workshop\[aria-current="page"\] \{/,
-    'a community\'s own row is lit on its page, not All');
+    'a community\'s own row is lit on its page, not Communities');
   // The header's name: the switcher on a phone, a name beside the sidebar.
   const header = read('frontend/src/features/header/header-title.tsx');
   assert.match(header, /const appSwitch = communityPage && !sidebarRows;/);
   assert.doesNotMatch(header, /allAppsSwitcher/, 'the Communities screen\'s switcher left with its list (One Home, #6361)');
-  // The tab's own name follows what it shows.
+  // The tab's own name is its word, plus the votes waiting, at every width.
   const bar = read('frontend/src/features/nav/tab-bar.tsx');
-  assert.match(bar, /\? \(sidebarRows \? undefined : communitiesAriaLabel\(scoped, votes\)\)/);
+  assert.match(bar, /\? communitiesAriaLabel\(votes\)/);
   // v3: there is no section column beside the sidebar, which nests the
   // places; since the strip went, there is none at all.
   assert.ok(!fs.existsSync(path.join(ROOT, 'frontend/src/features/nav/section-column.tsx')), 'the column is gone');

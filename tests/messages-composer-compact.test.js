@@ -144,7 +144,9 @@ test('the field still grows with the text, up to the ceiling it had', () => {
   assert.equal(phone.height, undefined, 'the phone block sets no fixed height on the field');
   assert.equal(phone['max-height'], undefined, 'nor a different ceiling');
   // useAutoGrow is what writes the height as the text grows.
-  assert.match(COMPOSER, /useAutoGrow\(inputRef, value\);/);
+  // #6810: it names the transcript above it, so a collapse it forces puts a
+  // scroller that was at its bottom back there.
+  assert.match(COMPOSER, /useAutoGrow\(inputRef, value, scroller\);/);
   assert.match(COMPOSER, /rows=\{1\}/);
 });
 

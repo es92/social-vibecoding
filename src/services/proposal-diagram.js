@@ -39,6 +39,26 @@ async function store(pool, sessionId, record, source = 'author') {
 }
 
 /**
+ * Whether the change already has a stored diagram (its author's, or kept from
+ * an earlier update). Resolves false on a bad id, and true when the lookup
+ * fails: a reminder that could not check is never sent (#6815).
+ */
+async function hasStored(pool, sessionId) {
+  const id = Number(sessionId);
+  if (!pool || !Number.isInteger(id) || id <= 0) return false;
+  try {
+    const { rows } = await pool.query(
+      'SELECT pr_diagram IS NOT NULL AS has FROM chat_sessions WHERE id = $1',
+      [id]
+    );
+    return rows[0]?.has === true;
+  } catch (err) {
+    log.warn('proposal-diagram', 'Could not read the stored diagram', { sessionId: id, err: err.message });
+    return true;
+  }
+}
+
+/**
  * A hosted build's declared diagram: the row, and in the same transaction the
  * proposal machine's DiagramStored, which owes the pull request's body its
  * block (`pr.diagram`, syncPrBlock). Written after the commit instead, a
@@ -107,4 +127,4 @@ async function syncPrBlock(pool, sessionId, deps = {}) {
   return { updated: true };
 }
 
-module.exports = { store, storeDeclared, syncPrBlock, SOURCES };
+module.exports = { store, storeDeclared, syncPrBlock, hasStored, SOURCES };

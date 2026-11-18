@@ -8,7 +8,7 @@
  * (../first-session/make.tsx, SEARCH_IDEA_LINE).
  *
  * Home's one search covers three lists, each drawn by its own owner: the
- * apps grid (./home.js), Pinned communities and Communities to join. This
+ * apps grid (./home.js), your own communities and Communities to join. This
  * reads the same three and speaks only when all of them have answered and
  * none has a match, under the grid's own "None of your apps match" line. A
  * directory still loading, or one that could not be read, is not "nothing

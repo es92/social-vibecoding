@@ -153,6 +153,17 @@ external agent (`visible_changes` on the CLI's `proposal_submit_build`). The sha
   `BUILD_VISIBLE_CHANGES_LINES`). The bot's offer to close a request
   (PR 4536) was declared as asking the bot, and its shots ended on "I can't
   reach my model".
+- Some states the copies cannot reach at all, and the author is told which
+  while building (`shots-copy-limits.js`, read by the bot's build lines,
+  the work order and the connector charter; the conventions' "Who the
+  before & after shots see" says the same): Homeroom bot is switched off
+  there, a new project never finishes setting up, a controlled failure is
+  one API GET, there is no native phone app, and two requests cannot be
+  made to race. The bot is told to seed such a state in the same change or
+  declare impact `none` with the reason; the work order keeps AGENTS.md's
+  rule (a blocker to report). In the week to 18 Nov 2026, 31% of
+  Homeroom's own settled runs failed, most of them on one of these (PRs
+  6785, 6784, 6690, 6682, 6676, 6662, 6725, 6716, 6724, 6773, 6727).
 - On an app built on Homeroom, no persona is the app's creator or one of
   its admins (see "Roles in an app built on Homeroom" below). The same
   response warns about a change declared there for `read_only_admin` or

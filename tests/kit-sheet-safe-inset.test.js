@@ -142,3 +142,25 @@ test('outside an adopted surface both classes still reserve it', () => {
     /calc\(1\.25rem \+ var\(--platform-safe-bottom\)\)/,
     '.platform-safe-sheet still reserves its larger base gap plus the inset');
 });
+
+// ── #6813: every kit sheet fits above the keyboard ─────────────────────
+//
+// `.un-sheet` stands on the keyboard (`bottom: var(--un-kb-inset)`), so its
+// height has to leave the keyboard out: without a cap, a sheet as tall as the
+// screen rose with the keys and its top went off the top edge. The cap is in
+// the centrally hosted kit, so every app gets it without a change of its own.
+test('the kit sheet rides on the keyboard and is capped to the space above it', () => {
+  const NATIVE = read('public/usernode-native/v1/native.css');
+  const at = NATIVE.indexOf('\n.un-sheet {');
+  assert.ok(at > 0, 'the kit sheet rule must exist');
+  const body = NATIVE.slice(at, NATIVE.indexOf('\n}', at));
+
+  assert.match(body, /bottom:\s*var\(--un-kb-inset, 0px\)/,
+    'the sheet still stands on the keyboard');
+  const cap = body.match(/max-height:\s*calc\(([^;]+)\);/);
+  assert.ok(cap, '.un-sheet caps its height');
+  assert.match(cap[1], /100dvh - var\(--un-kb-inset, 0px\)/,
+    'the keyboard\'s height comes out of the cap');
+  assert.match(cap[1], /max\(var\(--un-safe-inset-top, env\(safe-area-inset-top, 0px\)\), 12px\)/,
+    'and a top gap stays, 12px at least where there is no status bar to leave');
+});

@@ -83,6 +83,38 @@ export async function createPrMergedNotification(
   return created;
 }
 
+// #6100: the author's "your change was closed". Why is not stored here: the
+// row reads the reason the close recorded (chat_sessions.close_reason) and
+// the bell words it from its catalog. System-generated like pr_merged, so
+// source_user_id stays null. Nobody is told about a close they made
+// themselves (`byOwner`), and a synthetic account (Homeroom bot's own
+// changes) gets nothing.
+// A retried event is stopped by the NOT EXISTS on (user, session, kind,
+// detail), its detail naming the event; a change reopened and closed again
+// is a new event, and a new row.
+export async function createChangeClosedNotification(
+  pool: Queryable,
+  { userId, appId, sessionId, eventId, byOwner = false }:
+    { userId: number | null; appId: number; sessionId: number; eventId: number | string; byOwner?: boolean },
+  allows: (db: Queryable, q: { userId: number | null; appId?: number | null; kind: string }) => Promise<boolean> = kindAllowed,
+): Promise<any[]> {
+  if (!userId || byOwner || !sessionId) return [];
+  if (!await allows(pool, { userId, appId, kind: 'change_closed' })) return [];
+  const detail = `event:${eventId}`;
+  const { rows } = await pool.query(
+    `INSERT INTO notifications (user_id, app_id, session_id, source_user_id, kind, detail)
+     SELECT $1::int, $2::int, $3::int, NULL, 'change_closed', $4::varchar
+      WHERE NOT EXISTS (SELECT 1 FROM users u WHERE u.id = $1::int AND u.is_synthetic = TRUE)
+        AND NOT EXISTS (
+          SELECT 1 FROM notifications n
+          WHERE n.user_id = $1::int AND n.session_id = $3::int AND n.kind = 'change_closed' AND n.detail = $4::varchar
+        )
+     RETURNING id, user_id, app_id, session_id, source_user_id, kind, detail, created_at`,
+    [userId, appId, sessionId, detail]
+  );
+  return rows;
+}
+
 // #4787: the change a person voted on went live. Until this, only its author
 // heard a merge; everybody who had a say had to stumble on the news.
 //

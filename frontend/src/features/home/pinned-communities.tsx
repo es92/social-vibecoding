@@ -1,57 +1,57 @@
 /**
- * PINNED COMMUNITIES (One Home, #6361): Home's second section, under Pinned
- * apps. A community's tile opens its hub; an app's tile (Pinned apps, above)
- * opens the app.
+ * A COMMUNITY'S TILE, and Home's one use left of it.
  *
- * The tile is the Communities tab's own phone tile (features/workshop
- * CommunityTile: 62px, 18px corners, the blue votes-waiting number), in a
- * ring of the community's colour (lib/community-color.ts) so it never reads
- * as an app. After the pins, two tiles of the section's own:
+ * The tiles here are what the Communities tab's page draws
+ * (../communities/index.tsx, `#communities`): the communities you pinned
+ * and the others you are in. They were Home's Pinned communities section
+ * (One Home, #6361) until the tab came back (18 Nov 2026); Home no longer
+ * lists your communities.
  *
- *   All communities  the communities you are in but have not pinned (an
- *                    automatic membership, or one you unpinned), shown faded
- *                    in the grid with a + to pin each; pressed again, hidden.
- *   New community    the create flow, which Pinned apps' grid also ends on a
- *                    tile for again (#6522): present for every signed-in
- *                    account but a private member, locked (muted, and its
- *                    name says how to see the quota) without the quota to
- *                    make one, as that tile is. It keeps the tile's
- *                    `data-panel-slot="create"` hook.
+ * The tile is 62px with 18px corners and the blue votes-waiting number, in
+ * a ring of the community's colour (lib/community-color.ts) so it never
+ * reads as an app. A community's tile opens its hub; an app's tile (Home's
+ * Pinned apps) opens the app. Beside the tiles, the page's own:
+ *
+ *   New community    the create flow: present for every signed-in account
+ *                    but a private member, locked (muted, and its name says
+ *                    how to see the quota) without the quota to make one. It
+ *                    keeps the `data-panel-slot="create"` hook.
  *
  *   Needs you        while any vote waits on you, the way to Needs you
  *                    (#needs), every decision owed across your projects,
  *                    with the one count of votes waiting (community-scope
  *                    `badgeNeeds`, the number a vote cast or skipped lowers
  *                    at once). A zero says nothing, so the tile is not drawn
- *                    on a quiet day. It is what is left of the Communities
- *                    screen's Needs you row; the list under it is All
- *                    communities, here.
+ *                    on a quiet day.
  *
- * Edit, as on Pinned apps: the tiles wiggle and each takes a − to unpin it.
- * Unpinning keeps the membership; leaving is the hub's.
+ * WHAT HOME KEEPS (`HomeCommunityMatches`, `#home-communities-section`):
+ * Home's search still finds your communities. While something is typed in
+ * Home's field the section lists the ones that match, pinned or joined,
+ * each a tile that opens its hub, so a search for a community you are in is
+ * never answered with an offer to make it. With nothing typed it is hidden.
+ * It is also where the account's pins are read and kept fresh
+ * (./home-pins-store.ts `wireHomePins`), since Home is always mounted.
  *
  * Signed in only. Signed out, the guest Home draws its device's pins with
  * the same tile (features/guest).
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import { PlusIcon, SpeechCheckIcon, Squares2X2Icon, UserGroupIcon } from '@/components/ui/icons';
+import { PlusIcon, SpeechCheckIcon, UserGroupIcon } from '@/components/ui/icons';
 
 import { useCommunityColor } from '../../lib/community-color';
 import { useMessages } from '../../lib/i18n/react';
-import { useSkin } from '../../lib/skin';
 import { useStoreState } from '../../lib/use-store-state';
 import { AppIconContent, appIconKind } from '../apps/app-card-view';
 import { swatchFor } from '../messages/format';
 import { SectionHeading } from './panels/ui';
-import { communityScopeStore } from '../workshop/community-scope';
 import {
-  homePinsActivityStore, homePinsStore, importDevicePins, loadHomePins, loadHomePinsActivity, loadHomePinsForSession,
-  setHomePin, wireHomePins, type HomePin, type PinActivity,
+  homePinsStore, importDevicePins, loadHomePins, loadHomePinsForSession,
+  wireHomePins, type HomePin, type PinActivity,
 } from './home-pins-store';
 import { matchesQuery, useSettledHomeQuery } from './use-home-query';
 
-const HEAD_ACTION = 'shrink-0 flex items-center text-[14px] font-semibold text-[color:var(--accent)] hover:underline whitespace-nowrap un-touch-target';
+export const HEAD_ACTION = 'shrink-0 flex items-center text-[14px] font-semibold text-[color:var(--accent)] hover:underline whitespace-nowrap un-touch-target';
 const TILE = 'flex min-w-0 flex-col items-center gap-1.5 rounded-2xl py-1 text-center no-underline un-touch-target';
 const FACE = 'app-icon-tile w-14 h-14 shrink-0 rounded-[16px] overflow-hidden flex items-center justify-center font-bold text-2xl';
 const RING = 'rounded-[21px] p-[3px] shadow-[inset_0_0_0_2px_var(--ring)]';
@@ -94,7 +94,7 @@ export function CommunityTileFace({ slug, name, iconUrl, iconEmoji, iconColor }:
   );
 }
 
-function PinTile({ pin, votes, editing, faded = false, detail, onUnpin, onPin }: {
+export function PinTile({ pin, votes, editing, faded = false, detail, onUnpin, onPin }: {
   pin: Omit<HomePin, 'member'>;
   votes: number;
   editing: boolean;
@@ -153,14 +153,14 @@ function PinTile({ pin, votes, editing, faded = false, detail, onUnpin, onPin }:
 const CARD_FACES = 3;
 
 /**
- * WHAT IS GOING ON THERE (Drea's review of #6699): under a pinned
- * community's name on its card, how many members, what went live this week
+ * WHAT IS GOING ON THERE (Drea's review of #6699): under a community's
+ * name on its card, how many members, what went live this week
  * (one pill, the only one on the card) and the faces of a few of the people
  * who were there this week, beside how many there were. A zero says nothing:
  * each line is drawn only when it has something to say. The cards are the
- * default look's, from 1280px (app.css, "PINNED COMMUNITIES AS PEOPLE
- * PLACES"); everywhere else this stays hidden and the tile is the icon and
- * name it always was.
+ * brand look's, from 1280px, on the Communities page (app.css, "COMMUNITIES
+ * AS PEOPLE PLACES"); everywhere else this stays hidden and the tile is the
+ * icon and name it always was.
  */
 function CommunityDetail({ detail }: { detail: PinActivity }) {
   const t = useMessages('home');
@@ -197,7 +197,7 @@ function CommunityDetail({ detail }: { detail: PinActivity }) {
 }
 
 /** True on a window at least 1280px wide, where the cards are drawn; false in the prerender. */
-function useWide(): boolean {
+export function useWide(): boolean {
   const [wide, setWide] = useState(false);
   useEffect(() => {
     let query: MediaQueryList | null = null;
@@ -214,12 +214,12 @@ function useWide(): boolean {
  * Needs you's tile: a link to the page (`#needs`), so a modified click opens
  * it in a new tab, wearing the votes-waiting number a community's tile wears.
  */
-function NeedsTile({ count }: { count: number }) {
+export function NeedsTile({ count }: { count: number }) {
   const t = useMessages('home');
   return (
     <a
       href="#needs"
-      id="home-needs-tile"
+      id="communities-needs-tile"
       className={TILE}
       data-home-needs={String(count)}
       aria-label={t('home:communities.needsNamed', { count })}
@@ -235,7 +235,7 @@ function NeedsTile({ count }: { count: number }) {
   );
 }
 
-function ActionTile({ label, icon, onClick, dashed = false, muted = false, pressed, id, attrs }: {
+export function ActionTile({ label, icon, onClick, dashed = false, muted = false, pressed, id, attrs }: {
   label: string; icon: ReactNode; onClick: () => void; dashed?: boolean; muted?: boolean; pressed?: boolean; id?: string;
   attrs?: Record<string, string | undefined>;
 }) {
@@ -254,32 +254,16 @@ function ActionTile({ label, icon, onClick, dashed = false, muted = false, press
   );
 }
 
-export function PinnedCommunities() {
+/**
+ * Your communities that match Home's search (see the header): hidden until
+ * something is typed, then every pinned or joined community whose name
+ * matches, each a tile that opens its hub. Mounted under every look, since
+ * it is also what keeps the account's pins read (`wireHomePins`).
+ */
+export function HomeCommunityMatches() {
   const t = useMessages('home');
   const state = useStoreState(homePinsStore);
   const query = useSettledHomeQuery();
-  const [editing, setEditing] = useState(false);
-  const [showAll, setShowAll] = useState(false);
-  // "All communities" elsewhere (the switcher, the tour's last step) opens
-  // this section's (Home.showCommunities, SHOW_ALL_COMMUNITIES).
-  useEffect(() => {
-    const open = () => setShowAll(true);
-    document.addEventListener('home:show-all-communities', open);
-    return () => document.removeEventListener('home:show-all-communities', open);
-  }, []);
-  const { badgeNeeds } = useStoreState(communityScopeStore) as { badgeNeeds?: number };
-  const needs = Math.max(0, Number(badgeNeeds) || 0);
-  // THE CARDS (Drea's review of #6699): in the default look on a wide
-  // screen each pinned community says what is going on there. Read after
-  // mount only (useSkin, useWide), and only where it is drawn.
-  const skin = useSkin();
-  const wide = useWide();
-  const cards = skin === 'brand' && wide;
-  const activity = useStoreState(homePinsActivityStore);
-  const pinKey = state.pins.map((p) => p.slug).join(',');
-  useEffect(() => {
-    if (cards && state.ready && pinKey) void loadHomePinsActivity();
-  }, [cards, state.ready, pinKey]);
 
   useEffect(() => {
     const moved = (count: number) => t('home:devicePins.moved', { count });
@@ -289,94 +273,27 @@ export function PinnedCommunities() {
     if ((window as any).App?.user) void importDevicePins(moved).then((count) => (count ? loadHomePins() : loadHomePinsForSession()));
     return unwire;
   }, []);
-  useEffect(() => { if (query) setEditing(false); }, [query]);
 
-  const pinned = useMemo(() => state.pins.filter((p) => matchesQuery(query, p.name, p.slug)), [state.pins, query]);
-  const unpinned = useMemo(() => {
+  // Pinned first, in their order, then the others you are in.
+  const matches = useMemo(() => {
+    if (!query) return [];
     const on = new Set(state.pins.map((p) => p.slug));
-    return state.joined
+    const joined = state.joined
       .filter((c) => !on.has(c.slug))
-      .map((c) => ({ slug: c.slug, name: c.name || c.slug, iconUrl: c.icon_url || null, iconEmoji: c.icon_emoji || null, iconColor: c.icon_color || null }))
-      .filter((c) => matchesQuery(query, c.name, c.slug));
-  }, [state.joined, state.pins, query]);
-  const say = (name: string) => ({
-    pinned: t('home:communities.pinned', { community: name }),
-    unpinned: t('home:communities.unpinned', { community: name }),
-    failed: (reason: string) => t('home:communities.failed', { reason }),
-  });
+      .map((c) => ({ slug: c.slug, name: c.name || c.slug, iconUrl: c.icon_url || null, iconEmoji: c.icon_emoji || null, iconColor: c.icon_color || null }));
+    return [...state.pins, ...joined].filter((c) => matchesQuery(query, c.name, c.slug));
+  }, [state.pins, state.joined, query]);
   // Read after mount only (state.ready), so the prerender and the first
   // client render agree: both draw the section hidden.
-  const win = typeof window !== 'undefined' ? (window as any) : null;
-  const offerCreate = state.ready && !win?.App?.user?.privateMember;
-  const createOn = offerCreate && !!win?.Home?.canCreate?.();
-  const locked = t('home:communities.newLocked', { hint: t('home:create.disabledHint') });
-  const visible = state.ready && (pinned.length > 0 || unpinned.length > 0 || (!query && (offerCreate || needs > 0)));
+  const visible = state.ready && matches.length > 0;
 
   return (
-    <section id="home-communities-section" className="px-3" hidden={!visible} data-editing={editing ? '' : undefined}>
-      <SectionHeading
-        action={state.pins.length && !query ? (
-          <button
-            type="button"
-            className={HEAD_ACTION}
-            aria-label={editing ? t('home:edit.done') : t('home:communities.editLabel')}
-            onClick={() => setEditing((on) => !on)}
-          >
-            <span className="whitespace-nowrap">{editing ? t('home:edit.done') : t('home:edit.start')}</span>
-          </button>
-        ) : null}
-      >
-        {t('home:communities.heading')}
-      </SectionHeading>
+    <section id="home-communities-section" className="px-3" hidden={!visible}>
+      <SectionHeading>{t('home:communities.matches')}</SectionHeading>
       <div className="grid grid-cols-4 gap-x-1 gap-y-4 px-1 pt-2 pb-2">
-        {pinned.map((pin) => (
-          <PinTile
-            key={pin.slug}
-            pin={pin}
-            votes={state.owed[pin.slug] || 0}
-            editing={editing}
-            detail={cards ? activity.bySlug[pin.slug] : undefined}
-            onUnpin={() => { void setHomePin(pin, false, say(pin.name)); }}
-          />
+        {matches.map((c) => (
+          <PinTile key={c.slug} pin={c} votes={state.owed[c.slug] || 0} editing={false} />
         ))}
-        {(showAll || query) && !editing ? unpinned.map((c) => (
-          <PinTile
-            key={c.slug}
-            pin={c}
-            votes={state.owed[c.slug] || 0}
-            editing={false}
-            faded
-            onPin={() => { void setHomePin({ ...c, member: true } as HomePin, true, say(c.name)); }}
-          />
-        )) : null}
-        {needs > 0 && !query && !editing ? <NeedsTile count={needs} /> : null}
-        {unpinned.length && !query && !editing ? (
-          <ActionTile
-            id="home-all-communities"
-            label={t('home:communities.all')}
-            pressed={showAll}
-            icon={<Squares2X2Icon className="w-[30px] h-[30px]" aria-hidden="true" />}
-            onClick={() => setShowAll((on) => !on)}
-          />
-        ) : null}
-        {offerCreate && !query && !editing ? (
-          <ActionTile
-            id="home-new-community"
-            dashed
-            muted={!createOn}
-            label={t('home:communities.new')}
-            icon={<PlusIcon className="w-6 h-6" aria-hidden="true" />}
-            attrs={{
-              'data-panel-slot': 'create',
-              'data-create-enabled': String(createOn),
-              title: createOn ? t('home:communities.newTip') : locked,
-              'aria-label': createOn ? undefined : locked,
-            }}
-            // Both states open the same dialog: at the limit its quota row
-            // explains the lock, as the old New project tile's did.
-            onClick={() => { (window as any).App?.showCreateModal?.(); }}
-          />
-        ) : null}
       </div>
     </section>
   );

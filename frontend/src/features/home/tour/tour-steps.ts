@@ -129,14 +129,14 @@ export interface TourStep {
  */
 export const TOUR_STEPS: readonly TourStep[] = [
   {
-    // One Home (#6361): no Communities tab. Home's Pinned communities is
-    // where the ones you are in live (joining pins them), and Communities to
-    // join is the fallback while nothing is pinned, so the copy's "here" is
-    // still a place on screen.
+    // The Communities tab, on the phone's bar and the sidebar alike: its
+    // page is where the ones you are in live (joining pins them there).
+    // Home's Communities to join is the fallback where the bar is not
+    // drawn, so the copy's "here" is still a place on screen.
     id: 'communities',
     title: 'onboarding:tour.step.communities.title',
     body: 'onboarding:tour.step.communities.body',
-    targets: ['#home-communities-section', '#home-join-section'],
+    targets: ['#platform-tab-workshop', '#home-join-section'],
   },
   {
     // The Pinned apps section, heading and grid together, so the card never

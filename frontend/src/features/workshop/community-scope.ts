@@ -35,8 +35,12 @@
  * AND ONLY A COMMUNITY THAT IS YOURS PUTS THEM ON THE TAB (5 Oct 2026). One
  * you are in only because every account is, Homeroom, and have not taken
  * part in yet is UNCHOSEN (`unchosen`, from GET /api/workshop/counts): its
- * votes stay in `needs` and the switcher, and `tabVotes` leaves them off the
- * badge.
+ * votes stay in `needs` and the switcher, and `badgeNeeds`, the tab's
+ * number, leaves them out: the platform's own community, which every
+ * account is put in, asked a brand-new account for five or eight votes on
+ * the screen that asks what it wants to make. They are still owed, and
+ * still in Needs you and the switcher: they just do not summon anybody
+ * until the community is theirs.
  *
  * ── The switcher ───────────────────────────────────────────────────────
  *
@@ -116,7 +120,7 @@ export interface CommunityScopeState {
   totalNeeds: number | null;
   /**
    * The ones of those that ask for you: every community's but the unchosen
-   * ones'. The tab's badge on All communities (`tabVotes`).
+   * ones'. The Communities tab's badge, and the Needs you tile's.
    */
   badgeNeeds: number | null;
   /** Where the open switcher was opened from; null when it is shut. */
@@ -149,27 +153,13 @@ function sums(list: string[], info: Record<string, CommunityInfo>): { totalNeeds
 /**
  * THE ONE COUNT OF VOTES WAITING ON YOU (#5296), for one community: the
  * votes it owes you that you have not passed over or already cast (`needs`),
- * and none at all while it is UNCHOSEN (see `tabVotes`). The tab's badge, its
- * sum on All communities, and All communities' own "N votes waiting on you"
+ * and none at all while it is UNCHOSEN (see the header). The tab's badge
+ * (their sum, `badgeNeeds`), and All communities' own "N votes waiting on you"
  * and each row's "N to vote" (./index.tsx `unseenRow`) all read it, so the
  * tab and the page can no longer say 13 and 14 for the same votes.
  */
 export function votesWaiting(entry: { needs?: number; unchosen?: boolean } | null | undefined): number {
   return entry && !entry.unchosen ? Number(entry.needs) || 0 : 0;
-}
-
-/**
- * THE NUMBER ON THE TAB: the votes the community it is on is waiting on you
- * for, or on All communities the votes every community is. An UNCHOSEN
- * community's votes are left out of it (5 Oct 2026): the platform's own
- * community, which every account is put in, asked a brand-new account for
- * five or eight votes on the screen that asks what it wants to make. They
- * are still owed, and still in Needs you, the Communities list and the
- * switcher: they just do not summon anybody until the community is theirs.
- */
-export function tabVotes(st: Pick<CommunityScopeState, 'slug' | 'info' | 'badgeNeeds'>): number {
-  if (st.slug) return votesWaiting(st.info[st.slug]);
-  return Number(st.badgeNeeds) || 0;
 }
 
 /**
@@ -508,24 +498,36 @@ export function warmCommunities(delayMs = 1500): () => void {
 }
 
 /**
- * Go to a community from the switcher: All communities is Home's (and
- * forgets the page the tab reopened); a community opens on the place you
- * were on when it has it, else its hub (landKeepingPlace).
+ * The Communities tab's page, at `#communities` (../communities/): the
+ * destination that always lands (#5730). An ordinary address, so the
+ * hashchange routes through `restoreFromHash` to `navigateToCommunities`,
+ * which reveals the page and lights the tab. The remembered Workshop view is
+ * forgotten first, as choosing All communities always did; that also clears
+ * `currentApp`, which is what makes a `navigateToApp` still waiting drop
+ * itself.
+ */
+export function openCommunitiesPage(): void {
+  try { (window as unknown as { App?: { _forgetWorkshopView?: () => void } }).App?._forgetWorkshopView?.(); }
+  catch { /* nothing stored to forget */ }
+  if (window.location.hash !== '#communities') window.location.hash = '#communities';
+}
+
+/**
+ * Go to a community from the switcher: All communities is the Communities
+ * tab's page (and forgets the page the tab reopened); a community opens on
+ * the place you were on when it has it, else its hub (landKeepingPlace).
  *
- * ALL COMMUNITIES IS HOME'S (One Home, #6361): its Pinned communities, with
- * the section's All communities open (Home.showCommunities), where the
- * Communities screen's list was. The Hub's grid button and the lit tab's
- * last step both come here.
+ * ALL COMMUNITIES IS THE COMMUNITIES PAGE (`#communities`): every community
+ * you are in, pinned or not. It was Home's Pinned communities with its All
+ * communities open (One Home, #6361) while Home listed them. The Hub's grid
+ * button and the lit tab's last step both come here.
  */
 export function goToCommunity(slug: string | null): void {
   closeSwitcher();
   const app = (window as any).App;
   if (!slug) {
     setScope(null);
-    try { app?._forgetWorkshopView?.(); } catch { /* nothing to forget */ }
-    const home = (window as any).Home;
-    if (home?.showCommunities) home.showCommunities({ all: true });
-    else app?.navigateHome?.();
+    openCommunitiesPage();
     return;
   }
   setScope(slug);

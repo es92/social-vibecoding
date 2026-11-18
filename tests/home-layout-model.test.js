@@ -236,9 +236,11 @@ test('two rows by default — a cap on what is shown, not on what exists', () =>
   // an eight-row canvas would push them off the bottom of a phone. Each host
   // is rendered by its own component since #1191, so the ids live one file
   // down — the island mounts the two, and the sections carry the hosts.
-  // One Home (#6361): Pinned communities, Challenges and Communities to join.
+  // One Home (#6361): Challenges and Communities to join, and your own
+  // communities only while a search finds them (HomeCommunityMatches): the
+  // list itself is the Communities tab's page.
   const SECTIONS = read('frontend/src/features/home/panels/sections.tsx');
-  for (const tag of ['<PinnedCommunities />', '<ChallengesSection />', '<HomeJoin />']) {
+  for (const tag of ['<HomeCommunityMatches />', '<ChallengesSection />', '<HomeJoin />']) {
     assert.ok(ISLAND.includes(tag), `the island mounts ${tag}`);
   }
   assert.doesNotMatch(ISLAND, /<DiscoverSection \/>/);

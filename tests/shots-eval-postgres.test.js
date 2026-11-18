@@ -149,6 +149,9 @@ function fakeOutsideWorld({ dispatched, costUsd = 0.5, hold = null }) {
       getProposalDiff: async () => ({ diff: 'diff --git', fileCount: 1, truncated: false }),
     }],
     [shotsAgent, {
+      // The trial's worker, started before the agent's clock
+      // (shots-orchestrator dispatchAgent `prepare`): there is none here.
+      prepareWorker: async () => {},
       dispatch: async (cfg, options) => {
         dispatched.push({
           model: shotsAgent.agentModel(cfg), budgetMs: cfg.shots.maxAgentMs, timeoutMs: options.timeoutMs,

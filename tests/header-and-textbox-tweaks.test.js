@@ -107,7 +107,9 @@ test('both message text boxes use it, keyed on their own value', () => {
   // The dependency is the controlled value rather than an input listener: by
   // the time the effect runs React has re-rendered, so one measurement covers
   // typing, pasting, a clear on send and a draft restored on mount.
-  assert.match(COMPOSER, /useAutoGrow\(inputRef, value\)/);
+  // #6810: the conversation's own scroller is named too, so a collapse puts
+  // it back at its newest line when it was there.
+  assert.match(COMPOSER, /useAutoGrow\(inputRef, value, scroller\)/);
   assert.match(ROW, /useAutoGrow\(editRef, editValue\)/);
   assert.equal(message('messages:row.editLabel'), 'Edit message');
   assert.match(ROW, /<textarea ref=\{editRef\} dir="auto" aria-label=\{t\('messages:row\.editLabel'\)\}/,

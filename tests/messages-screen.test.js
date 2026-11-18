@@ -44,17 +44,16 @@ test('Messages is a hidden React-owned top-level screen with global navigation',
   // tabs are adjacent siblings. The markup is the desktop rail's order
   // (#6019, 29 Oct 2026; One Home #6361 put AI above Messages and retired
   // Discover's tab): Home, AI, Messages, Communities (key `workshop`), you;
-  // app.css draws no Communities, on either bar, and lays the phone's four
-  // out as Home, AI, Messages, you. D (18 Oct 2026): Recents (the
-  // communities pinned to its top, then your others) sits after them, drawn
-  // only on a desktop.
+  // app.css lays the phone's five out as Home, Communities, AI, Messages,
+  // you. D (18 Oct 2026): Recents (the communities pinned to its top, then
+  // your others) sits under the Communities row, drawn only on a desktop.
   // Most hrefs are left out: the runner's selector cap
   // (`MAX_TEST_SELECTOR_LEN`, tests/proposal-tests-manifest.test.js) would
   // clip them, and the render tests pin them.
   assert.ok(dapp.tests.some((entry) => entry.expectSelector
     === '#platform-tabs #platform-tab-home + #platform-tab-ai[href="#homeroom-bot"]'
-      + ' + #platform-tab-messages + #platform-rail-pinned'
-      + ' + #platform-rail-communities + #platform-tab-workshop + #platform-tab-me'),
+      + ' + #platform-tab-messages + #platform-tab-workshop[href="#communities"]'
+      + ' + #platform-rail-pinned + #platform-rail-communities + #platform-tab-me'),
   'a declared check pins the bar order');
   assert.match(screen, /useVisibilityHiddenClass\(screenRef, 'messages-screen', false\)/);
   // Membership INSIDE the array literal. The previous form,

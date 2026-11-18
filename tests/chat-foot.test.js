@@ -146,13 +146,13 @@ test('a conversation, its reply threads and a blank thread with Homeroom bot: th
     'className="messages-thread-scroll platform-safe-scroll chat-transcript"',
     '<TranscriptOverlay edge="foot">',
     '<ChatStatusLine className="messages-typing">{typingLine(t, typing)}</ChatStatusLine>',
-    '<MessageComposer />',
+    '<MessageComposer scroller={scroller} />',
   ], 'a conversation');
   inOrder(body(src, 'function ReplyThreadPanel('), [
     'className="messages-thread-scroll messages-reply-scroll platform-safe-scroll chat-transcript"',
     '<JumpToLatest scroller={scroller} />',
     '<ChatStatusLine className="messages-typing">{typingLine(t, threadTyping)}</ChatStatusLine>',
-    '<MessageComposer threadRootId={rootId} />',
+    '<MessageComposer threadRootId={rootId} scroller={scroller} />',
   ], 'a reply thread');
   inOrder(read(NEW_THREAD), [
     'className="messages-thread-scroll messages-reply-scroll platform-safe-scroll flex flex-col justify-end chat-transcript"',

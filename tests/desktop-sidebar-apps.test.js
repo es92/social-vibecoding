@@ -154,12 +154,12 @@ test('the source: the part holds App, then the places; the five leave the pins o
   // less the pinned ones.
   assert.match(src, /railRows\(shown, here\.onPage \|\| here\.onApp, here\.live\)/);
   assert.match(src, /\.filter\(\(slug\) => !pinned\.includes\(slug\)\);/);
-  // #18 (19 Oct polish board): the All row states every vote waiting on
-  // you, the tab's own figure, not the remainder after the rows above it.
+  // #18 (19 Oct polish board): the Communities row states every vote
+  // waiting on you, not the remainder after the rows under it.
   const bar = read('frontend/src/features/nav/tab-bar.tsx');
-  assert.match(bar, /const allVotes = Number\(scope\.badgeNeeds\) \|\| 0;/);
-  assert.match(bar, /key === 'workshop' && allVotes > 0 \? \(\s*<span className="platform-tab-all-votes" aria-label=\{t\('core:tabs\.votesWaiting', \{ count: allVotes \}\)\}>/);
-  assert.doesNotMatch(bar, /votesElsewhere/);
+  assert.match(bar, /const votes = Number\(scope\.badgeNeeds\) \|\| 0;/);
+  assert.match(bar, /\{key === 'workshop' \? <VotesBadge count=\{votes\} \/> : null\}/);
+  assert.doesNotMatch(bar, /votesElsewhere|platform-tab-all-votes/);
 });
 
 test('the pinned section: its own heading, the pins drawn as rows, the slot while a tile is in the air', () => {

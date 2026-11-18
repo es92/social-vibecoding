@@ -318,19 +318,31 @@ function loadKubernetesWorker(outcomes) {
   const kubernetes = require('../src/services/kubernetes');
   const prevRuntime = process.env.WORKER_RUNTIME;
   process.env.WORKER_RUNTIME = 'kubernetes';
-  const saved = { ensureWorker: kubernetes.ensureWorker, getWorkerStatus: kubernetes.getWorkerStatus };
+  const saved = {
+    ensureWorker: kubernetes.ensureWorker, getWorkerStatus: kubernetes.getWorkerStatus,
+    workerIdentity: kubernetes.workerIdentity, deleteWorkerIdentity: kubernetes.deleteWorkerIdentity,
+    workerIdentityGone: kubernetes.workerIdentityGone,
+  };
   const calls = [];
+  const deleted = [];
   kubernetes.getWorkerStatus = async () => 'not_found';
+  // A failed volume's heal (worker-volume-heal.js): the claim is the one
+  // that failed, its delete is accepted and it is gone at once.
+  kubernetes.workerIdentity = async () => ({ deployment: 'dep-uid', secret: 'sec-uid', pvc: 'claim-uid' });
+  kubernetes.deleteWorkerIdentity = async (_config, sessionId, ids) => { deleted.push({ sessionId, ids }); };
+  kubernetes.workerIdentityGone = async () => true;
   kubernetes.ensureWorker = async (_config, opts) => {
-    calls.push({ timeoutMs: opts.timeoutMs, retryAttempt: opts.retryAttempt });
+    calls.push({ timeoutMs: opts.timeoutMs, retryAttempt: opts.retryAttempt, avoidNodes: opts.avoidNodes || null });
     const outcome = outcomes[Math.min(calls.length - 1, outcomes.length - 1)];
     if (outcome instanceof Error) throw outcome;
     return { runtimeKind: 'kubernetes', runtimeName: `sv-worker-s${opts.sessionId}`, pvcName: null };
   };
   const loaded = loadWorker();
+  require('../src/services/worker-volume-heal')._resetForTests();
   return {
     ...loaded,
     calls,
+    deleted,
     restore: () => {
       Object.assign(kubernetes, saved);
       if (prevRuntime === undefined) delete process.env.WORKER_RUNTIME;
@@ -379,5 +391,82 @@ test('a Kubernetes worker that cannot start at all is not retried', async () => 
     assert.equal(calls.length, 1);
     assert.equal(err.bootstrapReason, 'image_unavailable');
     assert.ok(!worker.isRetryableBootstrapError(err));
+  } finally { restore(); }
+});
+
+// ── 6. A state volume that cannot be made or mounted ────────────────────
+//
+// 18 Nov 2026: every attempt reused the same broken claim on the same full
+// node, so no retry could ever work. A claim that never held anything is
+// deleted and the worker tried again off that node; one that may hold the
+// agent's conversation is kept, and the setup stops at once.
+
+const { VOLUME_FAILURE_TEXT } = require('../src/services/kubernetes-worker-bootstrap');
+
+function volumeFailed(kind, { node = 'talos-ap6-6cz', bound = true } = {}) {
+  const err = new Error(VOLUME_FAILURE_TEXT[kind]);
+  Object.defineProperty(err, 'bootstrapReason', { value: `volume_${kind}_failed` });
+  Object.defineProperty(err, 'volumeFailure', { value: {
+    kind, reason: `volume_${kind}_failed`, node, claim: 'sv-worker-s14-state', claimUid: 'claim-uid',
+    volume: bound ? 'pvc-7a1' : null, bound, message: 'kubelet words', count: 1,
+  } });
+  return err;
+}
+
+test('a volume that never held anything is deleted and the worker started again off its node', async () => {
+  const { worker, calls, deleted, restore } = loadKubernetesWorker([volumeFailed('format'), 'ok']);
+  try {
+    const progress = [];
+    await worker.ensureWorker(14, { ...ENSURE_ARGS, onProgress: (t) => progress.push(t) });
+    assert.equal(calls.length, 2);
+    assert.equal(calls[0].avoidNodes, null, 'a first attempt is placed as it always was');
+    assert.deepEqual(calls[1].avoidNodes, ['talos-ap6-6cz']);
+    assert.deepEqual(deleted, [{ sessionId: 14, ids: { deployment: 'dep-uid', secret: 'sec-uid', pvc: 'claim-uid' } }]);
+    assert.deepEqual(progress, ['[retrying setup (attempt 2 of 3)]']);
+  } finally { restore(); }
+});
+
+test('a volume that may hold state is kept, and the setup stops at once with the reason in words', async () => {
+  const { worker, calls, deleted, logs, restore } = loadKubernetesWorker([volumeFailed('mount')]);
+  try {
+    const err = await expectReject(() => worker.ensureWorker(15, ENSURE_ARGS));
+    assert.equal(calls.length, 1, 'the same claim on the same node would fail the same way');
+    assert.deepEqual(deleted, []);
+    assert.equal(err.message, 'This change’s worker couldn’t start: its disk volume failed to mount.');
+    assert.equal(err.volumeHeal.why, 'may_hold_state');
+    assert.ok(!worker.isRetryableBootstrapError(err));
+    assert.ok(!worker.isTransientStartError(err));
+    assert.equal(worker.workerStartReason(err), err.message);
+    const failed = logs.find((l) => l.msg === 'Bootstrap failed');
+    assert.deepEqual([failed.data.node, failed.data.claim, failed.data.volumeHeal], ['talos-ap6-6cz', 'sv-worker-s14-state', 'report:may_hold_state']);
+  } finally { restore(); }
+});
+
+test('a healed volume that fails on every node in turn gives up after three attempts, still worth a later try', async () => {
+  const { worker, calls, restore } = loadKubernetesWorker([
+    volumeFailed('provision', { node: 'n1', bound: false }), volumeFailed('format', { node: 'n2' }), volumeFailed('format', { node: 'n3' }),
+  ]);
+  try {
+    const err = await expectReject(() => worker.ensureWorker(16, ENSURE_ARGS));
+    assert.equal(calls.length, 3);
+    assert.deepEqual(calls.map((c) => c.avoidNodes), [null, ['n1'], ['n1', 'n2']]);
+    assert.equal(err.message, VOLUME_FAILURE_TEXT.format);
+    assert.ok(worker.isTransientStartError(err), 'its claim was deleted: a later setup starts fresh');
+  } finally { restore(); }
+});
+
+test('why a worker could not start, in words, for every kind of start failure', () => {
+  const { worker, restore } = loadWorker();
+  try {
+    const typed = (reason) => Object.defineProperty(new Error('worker could not start (x)'), 'bootstrapReason', { value: reason });
+    assert.equal(worker.workerStartReason(typed('volume_provision_failed')), VOLUME_FAILURE_TEXT.provision);
+    assert.equal(worker.workerStartReason(typed('image_unavailable')), 'This change’s worker couldn’t start: its software couldn’t be downloaded.');
+    assert.equal(worker.workerStartReason(typed('unschedulable')), 'This change’s worker couldn’t start: no machine had room for it.');
+    assert.equal(worker.workerStartReason(new Error('warm-ready timeout for sv-worker-s1')), 'This change’s worker didn’t finish starting in time.');
+    assert.match(worker.workerStartReason(new Error('clone failed: fatal: unable to access')), /couldn’t download the project’s code/);
+    for (const error of [null, new Error('checkout failed: branch missing'), new Error('Image build failed'), { code: 'shots_agent_failed' }]) {
+      assert.equal(worker.workerStartReason(error), null);
+      assert.equal(worker.isWorkerStartFailure(error), false);
+    }
   } finally { restore(); }
 });

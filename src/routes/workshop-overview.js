@@ -1233,13 +1233,20 @@ const DEMO_NEEDS_FEED = [
     // deciding-first order can be seen on ?demo=1 without a governed project.
     advisory: true,
     // #4490: no diagram, so its picture is "What it touches".
+    // #6814: its author declared that nothing on screen changes, so the same
+    // picture stands where its own page would show the empty box.
+    shots_detail: {
+      intent: {
+        version: 1, impact: 'none', rationale: 'A shared list is added; nothing on screen changes yet.', stories: [],
+      },
+    },
     touches: {
-      version: 1, files: 5,
+      version: 1, files: 3,
       areas: [
-        { key: 'screens', label: 'Screens', files: 3, lines: 140 },
+        { key: 'screens', label: 'Screens', files: 0, lines: 0 },
         { key: 'server', label: 'Server', files: 1, lines: 46 },
         { key: 'database', label: 'Database', files: 1, lines: 12 },
-        { key: 'tests', label: 'Tests', files: 0, lines: 0 },
+        { key: 'tests', label: 'Tests', files: 1, lines: 20 },
         { key: 'docs', label: 'Docs', files: 0, lines: 0 },
         { key: 'other', label: 'Other', files: 0, lines: 0 },
       ],

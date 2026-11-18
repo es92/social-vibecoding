@@ -130,10 +130,8 @@ test('GET /api/apps carries the launcher copy of every manifest', async () => {
     const { apps } = await getJson(server, '/api/apps');
     assert.equal(apps.length, 1);
     const snap = apps[0].manifest_snapshot;
-    assert.equal(snap.description, MANIFEST.description, 'the card sentence survives');
-    assert.deepEqual(snap.secrets, MANIFEST.secrets);
-    assert.equal(snap.tests, undefined);
-    assert.equal(snap.platform_env, undefined);
+    assert.deepEqual(snap, { description: MANIFEST.description },
+      '#6794: the card sentence survives, and it is the only part a client reads');
   } finally {
     server.close();
   }
@@ -170,4 +168,59 @@ test('the shell reads the app record as a summary', () => {
   const messages = fs.readFileSync(path.join(root, 'frontend/src/features/messages/store.ts'), 'utf8');
   assert.match(messages, /\/api\/apps\/\$\{encodeURIComponent\(want\)\}\?manifest=summary/,
     'the discussion pane reads the summary');
+});
+
+// ── #6794: the list selects and sends only what a list reads ───────────
+
+test('#6794: the list query leaves out what nothing reads and has Postgres trim the two JSON columns', () => {
+  const cols = appAccess.appListColumnList('a');
+  for (const gone of appAccess.APP_LIST_UNSELECTED_COLUMNS) {
+    assert.ok(!new RegExp(`\\ba\\.${gone}\\b`).test(cols), `${gone} is not selected`);
+  }
+  assert.match(cols, /a\.manifest_snapshot - 'tests' - 'platform_env' ELSE a\.manifest_snapshot END AS manifest_snapshot/);
+  assert.match(cols, /jsonb_build_object\('reason', a\.last_failure->'reason', 'at', a\.last_failure->'at'\) ELSE a\.last_failure END AS last_failure/,
+    'the boot log never leaves the database for a list');
+  // What the handler derives its answer from is still read.
+  for (const kept of ['a.main_sha', 'a.directory_review_status', 'a.deploy_state', 'a.offline_cache_off_sha', 'a.self_hosted']) {
+    assert.ok(cols.includes(kept), kept);
+  }
+  // One app's own read is unchanged.
+  assert.ok(appAccess.nonSecretAppColumnList().includes('main_check_detail'));
+  const src = require('node:fs').readFileSync(require.resolve('../src/routes/apps'), 'utf8');
+  assert.ok(src.includes("SELECT ${appAccess.appListColumnList('a')},"), 'GET /api/apps uses it');
+  assert.ok(src.includes('SELECT ${appAccess.nonSecretAppColumnList()}, template,'), 'GET /api/apps/:slug keeps every column');
+});
+
+test('#6794: a list row carries no column that only the server reads, and keeps what the cards read', async () => {
+  appRow = makeAppRow({
+    main_sha: 'a'.repeat(40), main_pr_number: 12, repo_url: 'https://github.com/example/recipes',
+    main_check_state: 'passing', main_check_sha: 'b'.repeat(40), db_size_bytes: 1234,
+    directory_review_status: 'listed', deploy_state: null, container_id: 'c1', retry_count: 2, community_id: 9,
+    screenshot_device_scale: 2, demo_base_sha: null, offline_cache_off_sha: null,
+    last_failure: { reason: 'Boot failed', at: '2026-11-18T00:00:00Z' },
+    icon_emoji: '🍲', audience: 'open',
+  });
+  const server = await startServer();
+  try {
+    const { apps } = await getJson(server, '/api/apps');
+    const row = apps[0];
+    for (const key of appAccess.APP_LIST_UNSENT_KEYS) assert.equal(key in row, false, `${key} is not sent`);
+    assert.equal(row.slug, 'recipes');
+    assert.equal(row.main_sha, 'a'.repeat(40), 'the About sheet falls back to it');
+    assert.equal(row.version.shortSha, 'aaaaaaa');
+    assert.equal(row.last_failure_reason, 'Boot failed');
+    assert.equal(row.last_failure_at, '2026-11-18T00:00:00Z');
+    assert.equal('last_failure' in row, false);
+    assert.equal(row.icon_emoji, '🍲');
+    assert.ok('directory' in row && 'deployProgress' in row && 'offline_cache' in row, 'what is derived from them still is');
+  } finally {
+    server.close();
+  }
+});
+
+test('listManifestSnapshot keeps the one line and passes through what is not a manifest', () => {
+  assert.deepEqual(appAccess.listManifestSnapshot(MANIFEST), { description: MANIFEST.description });
+  assert.deepEqual(appAccess.listManifestSnapshot({ secrets: [] }), {});
+  assert.equal(appAccess.listManifestSnapshot(null), null);
+  assert.equal(appAccess.listManifestSnapshot('nope'), 'nope');
 });

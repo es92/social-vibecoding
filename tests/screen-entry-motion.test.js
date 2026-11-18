@@ -45,7 +45,7 @@ test('the resolved type is stamped on the screen element', () => {
 
 // ── Every screen entry routes through it ───────────────────────────────
 
-test('all ten screen transitions go through App._entryTransition', () => {
+test('all eleven screen transitions go through App._entryTransition', () => {
   // It was nine, then eight, nine again, Global Chat made ten, and an agent
   // session's own screen (#2779, #agent/<id> on a phone) makes eleven. Notifications and Messages
   // gave one back each when they stopped being screens — a sheet presents over
@@ -59,13 +59,14 @@ test('all ten screen transitions go through App._entryTransition', () => {
   // Home (#6361) retired Discover's screen, which gave another: ten. This
   // week (#6371, #week) is a root of its own that replaces the screen you
   // were on, so it makes eleven. The agent session's screen left with agent
-  // chats: ten.
+  // chats: ten. The Communities tab's page (#communities) is a root again,
+  // which replaces the screen you were on: eleven.
   const calls = appJs.match(/PlatformUI\.transition\(/g) || [];
-  assert.equal(calls.length, 10,
-    `expected 10 PlatformUI.transition call sites in app.js, found ${calls.length} — `
+  assert.equal(calls.length, 11,
+    `expected 11 PlatformUI.transition call sites in app.js, found ${calls.length} — `
     + 'a new one must route its type through App._entryTransition too');
   const routed = appJs.match(/type: App\._entryTransition\(/g) || [];
-  assert.equal(routed.length, 10,
+  assert.equal(routed.length, 11,
     'every call site must take its type from the gate, or that screen keeps '
     + 'animating over the closing drawer');
 });

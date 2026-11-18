@@ -165,10 +165,17 @@ export function tileOf(slug: string): string {
   return `#app-list .app-card[data-slug="${slug}"]`;
 }
 
-/** Its community's tile in Home's Pinned communities (One Home, #6361), which opens its hub. */
-export function communityTileOf(slug: string): string {
-  return `#home-communities-section [data-home-community="${slug}"]`;
-}
+/**
+ * The Communities tab (features/nav/tab-bar.tsx), the same element on a
+ * phone's bar and on the sidebar from 768px up: its page lists the reader's
+ * communities, the walk's project's among them, each a tile that opens its
+ * hub. The walk pointed at that community's own tile on Home while Home
+ * listed them (One Home, #6361).
+ */
+export const COMMUNITIES_TAB = '#platform-tab-workshop';
+
+/** Home's New project control: the grid's last tile, or the filled button beside search in a look that draws one. */
+export const NEW_PROJECT = '#home-create-tile, #home-new-project-top';
 
 /**
  * The project a walk is about: its slug (the tile), its name, the change
@@ -220,10 +227,10 @@ export function homeWalkSteps({ slug, name, example = null }: HomeWalkProject): 
         : translate('onboarding:firstSession.walk.bot.text', { app }),
     },
     {
-      // One Home (#6361): no Communities tab. Its community's own tile on
-      // Home, pinned for its maker (and for a joiner) by the server.
+      // The Communities tab: its page lists the project's community, pinned
+      // for its maker (and for a joiner) by the server.
       screen: 'home',
-      target: communityTileOf(slug),
+      target: COMMUNITIES_TAB,
       ringed: true,
       title: translate('onboarding:firstSession.walk.communities.title'),
       text: translate('onboarding:firstSession.walk.communities.text', { app }),
@@ -236,17 +243,16 @@ export function homeWalkSteps({ slug, name, example = null }: HomeWalkProject): 
 /**
  * "Look around first" (decision E, #4072): it used to land on Home with
  * nothing explained. Four cards on Home, each pointing at one place and
- * leading on with Next, so nobody is taken anywhere. One Home (#6361) put
- * all three of the first on Home itself: New community, where a community
- * and its app start whenever they want one, then the communities to join
- * under it, then Pinned communities, where the ones you join go; and last
- * the AI tab.
+ * leading on with Next, so nobody is taken anywhere: New project, where a
+ * community and its app start whenever they want one, then the communities
+ * to join under it, then the Communities tab, whose page is where the ones
+ * you join go; and last the AI tab.
  */
 export function lookAroundSteps(): TourStep[] {
   return [
     {
       screen: 'home',
-      target: '#home-new-community',
+      target: NEW_PROJECT,
       ringed: true,
       title: translate('onboarding:firstSession.tour.look.make.title'),
       text: translate('onboarding:firstSession.tour.look.make.text'),
@@ -261,8 +267,8 @@ export function lookAroundSteps(): TourStep[] {
     },
     {
       screen: 'home',
-      // One Home (#6361): no Communities tab; joining pins it here.
-      target: '#home-communities-section',
+      // Joining pins a community on the Communities tab's page.
+      target: COMMUNITIES_TAB,
       ringed: true,
       title: translate('onboarding:firstSession.tour.look.communities.title'),
       text: translate('onboarding:firstSession.tour.look.communities.text'),

@@ -403,3 +403,48 @@ test('every way in opens the one sheet', () => {
   assert.match(controller, /const ownRule = !!appData\.can_manage && !appData\.self_hosted;/);
   assert.match(controller, /const showGov = !!appData\.can_manage && !!appData\.self_hosted;/);
 });
+
+test('#6811: the app’s groups, matched by name and listed when no rule uses them', () => {
+  const model = loadTsx(MODEL);
+  const appGroups = [
+    { name: '15-minute finishers', key: '15-minute finishers', size: 12, reportedAt: '2026-11-18T10:00:00Z' },
+    { name: 'Lifeguards', key: 'lifeguards', size: 2, reportedAt: null },
+    { name: 'members', key: 'members', size: 40, reportedAt: null },
+  ];
+  assert.equal(model.appGroupFor(appGroups, '15-MINUTE   finishers').size, 12, 'capital letters and extra spaces aside');
+  assert.equal(model.appGroupFor(appGroups, '15 minute finishers'), null, 'a typo matches nothing');
+  assert.equal(model.appGroupFor(null, 'Lifeguards'), null, 'an older server sends none');
+  const draft = [{ name: 'Lifeguards', people: [], keptByApp: true }];
+  assert.deepEqual(model.undeclaredAppGroups(appGroups, draft).map((g) => g.key),
+    ['15-minute finishers'], 'a group the draft names is not listed, and neither is a built-in');
+  assert.deepEqual(model.undeclaredAppGroups(appGroups, []).map((g) => g.key),
+    ['15-minute finishers', 'lifeguards'], 'removing it from the draft brings its row back');
+});
+
+test('#6811: the app’s groups are one tap on the sheet, and a typo is said before the vote', () => {
+  const sheet = read('frontend/src/features/dialogs/who-decides.tsx');
+  assert.match(sheet, /data-who-app-group=\{g\.key\}/);
+  assert.match(sheet, /undeclaredAppGroups\(appGroups, draft\.groups\)/);
+  assert.match(sheet, /onClick=\{\(\) => addAppGroup\(g\)\}/);
+  assert.match(sheet, /data-who-kept-nomatch=""/);
+  assert.match(sheet, /appGroupFor\(appGroups, groupDraft\.name\)/);
+  // Proposing is unchanged: a kept group is still written as its name and
+  // keptByApp, with its size only on screen.
+  const model = loadTsx(MODEL);
+  assert.deepEqual(model.blockFor({
+    preset: null,
+    groups: [{ name: '15-minute finishers', people: [], keptByApp: true, size: 12 }],
+    rules: [{ group: '15-minute finishers', kind: 'majority', n: null }],
+  }), {
+    groups: [{ name: '15-minute finishers', keptByApp: true }],
+    rules: [{ group: '15-minute finishers', majority: true }],
+  });
+  const dialogs = JSON.parse(read('frontend/locales/en/dialogs.json'));
+  assert.equal(dialogs['whoDecides.group.appGroupSub_one'].text, '{{count}} person · sent {{when}} · Not in the rules yet');
+  assert.equal(dialogs['whoDecides.group.appGroupSub_other'].text, '{{count}} people · sent {{when}} · Not in the rules yet');
+  assert.equal(dialogs['whoDecides.group.appGroupNotSent'].text, 'Not sent yet · Not in the rules yet');
+  assert.match(dialogs['whoDecides.group.appGroupNoMatch'].text, /hasn't sent a group called this yet/);
+  for (const id of ['appGroupSub_one', 'appGroupSub_other', 'appGroupNotSent', 'appGroupNoMatch']) {
+    assert.ok(dialogs[`whoDecides.group.${id}`].description, `${id} says where it appears`);
+  }
+});

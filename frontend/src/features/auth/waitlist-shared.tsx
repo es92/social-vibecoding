@@ -266,9 +266,13 @@ export function waitlistOptions(): Promise<WaitlistOptions | null> {
  * sees — every options-driven region renders empty, exactly as the
  * hand-written document shipped it.
  */
-export function useWaitlistOptions(): WaitlistOptions | null {
+export function useWaitlistOptions(enabled = true): WaitlistOptions | null {
   const [options, setOptions] = useState<WaitlistOptions | null>(null);
   useEffect(() => {
+    // A screen that is in the document but hidden (sign-in and the landing,
+    // for somebody signed in) passes whether it has been shown (#6797): it
+    // read the options on every page load for words nobody saw.
+    if (!enabled) return undefined;
     let live = true;
     void waitlistOptions().then((opts) => {
       if (live && opts) setOptions(opts);
@@ -276,7 +280,7 @@ export function useWaitlistOptions(): WaitlistOptions | null {
     return () => {
       live = false;
     };
-  }, []);
+  }, [enabled]);
   return options;
 }
 

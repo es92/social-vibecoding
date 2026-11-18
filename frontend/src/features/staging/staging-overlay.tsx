@@ -123,15 +123,22 @@ export function previewFacts(
   return parts;
 }
 
+/** Pure: the vote is decided (merging, merged, closed): nothing is left to vote on. */
+export function previewVoteSettled(vote: VoteLike | null): boolean {
+  return !!vote && vote.status !== 'promoted';
+}
+
 /**
- * Pure: the Vote button's words. "Vote" while the vote is open and still
- * waits on the viewer, "See the vote" once they have voted or it has settled.
+ * Pure: the Vote button's words, as the chat's vote card says them
+ * (group-chat/vote-card.tsx): "Vote" while the vote is open, whether or not
+ * the viewer has voted yet (a vote can be changed until it is decided), and
+ * "See the vote" once it is decided.
  */
 export function previewVoteLabel(vote: VoteLike | null): string {
   if (!vote) return '';
-  return vote.status === 'promoted' && !vote.myVote
-    ? translate('chat:group.voteCard.vote')
-    : translate('chat:group.voteCard.seeVote');
+  return previewVoteSettled(vote)
+    ? translate('chat:group.voteCard.seeVote')
+    : translate('chat:group.voteCard.vote');
 }
 
 export function StagingOverlay(): ReactNode {
@@ -154,6 +161,7 @@ export function StagingOverlay(): ReactNode {
   const sizeRef = useRef<HTMLButtonElement | null>(null);
   const shotsRef = useRef<HTMLDivElement | null>(null);
   const liveRef = useRef<HTMLSpanElement | null>(null);
+  const shotsLinkRef = useRef<HTMLButtonElement | null>(null);
 
   // Publish the element the bridge mutates. Registered once — this component
   // never unmounts, and the ref never points at a different node.
@@ -187,9 +195,14 @@ export function StagingOverlay(): ReactNode {
   useHiddenClass(voteRef, !state.vote);
   useHiddenClass(sizeRef, state.placement === 'full');
   useHiddenClass(shotsRef, !showingShots);
+  useHiddenClass(shotsLinkRef, !(state.loaderShots && shotsOffered));
   useHiddenClass(liveRef, !(docked && state.beside === 'app' && !!state.liveSpot));
 
-  const title = state.changeTitle || state.urlLabel || t('devchat:staging.header.preview');
+  // While the change's name is being looked up the title is a placeholder,
+  // not the project's name that the change's own would replace a moment later.
+  const pending = state.changePending && !state.changeTitle;
+  const fallback = t('devchat:staging.header.preview');
+  const title = state.changeTitle || (pending ? '' : state.urlLabel) || (pending ? '' : fallback);
   // The project's name under a change's own title in the whole window; the
   // fallback title ("Homeroom · Preview") already carries it.
   const facts = previewFacts({ appName: state.appName, number: state.changeNumber, vote: state.vote, withApp: !docked && !!state.changeTitle });
@@ -197,7 +210,7 @@ export function StagingOverlay(): ReactNode {
   const position: CSSProperties | undefined = rect
     ? { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
     : undefined;
-  const voted = !!state.vote && (state.vote.status !== 'promoted' || !!state.vote.myVote);
+  const settled = previewVoteSettled(state.vote);
   const exitLabel = docked ? t('devchat:staging.close') : t('core:common.back');
   const sizeLabel = state.expanded ? t('devchat:staging.dock') : t('devchat:staging.fullWindow');
 
@@ -212,7 +225,7 @@ export function StagingOverlay(): ReactNode {
       data-view={showingShots ? 'shots' : 'preview'}
       style={position}
       role="region"
-      aria-label={title}
+      aria-label={title || fallback}
     >
       {/*
           `staging-chrome-bar` is a STYLE HOOK, not decoration: in the whole
@@ -253,7 +266,7 @@ export function StagingOverlay(): ReactNode {
               (AppView._stagingTitle). The id is the old name: it showed the
               raw staging address once, which told a newcomer nothing.
           */}
-          <span id="staging-url-label" className="staging-title">{title}</span>
+          <span id="staging-url-label" className="staging-title" data-pending={pending ? '' : undefined}>{title}</span>
           <span id="staging-facts" className="staging-facts">
             {facts.map((part, i) => (
               <span key={i} className="staging-fact" data-kind={part.ask ? 'ask' : part.app ? 'app' : undefined}>{part.text}</span>
@@ -294,13 +307,16 @@ export function StagingOverlay(): ReactNode {
           </button>
         </div>
         <span className="staging-gap" />
-        {/* The platform's Vote, as on a chat's vote card: it opens the change's Votes card. */}
+        {/*
+            The platform's Vote, as on a chat's vote card: it opens the
+            change's Votes card, and says "See the vote" once it is decided.
+        */}
         <button
           id="staging-vote-btn"
           ref={voteRef}
           type="button"
           className="hidden staging-vote"
-          data-voted={voted ? '' : undefined}
+          data-settled={settled ? '' : undefined}
           onClick={() => stagingHandlers.onVote?.()}
         >
           {previewVoteLabel(state.vote)}
@@ -501,6 +517,19 @@ export function StagingOverlay(): ReactNode {
           >
             {state.loaderRetryLabel ?? t('devchat:staging.loader.retrySignIn')}
           </Button>
+          {/*
+              While the preview is waited on, or cannot open, the change can
+              still be checked: its before and after, the switch's other side.
+              Only when it has verified shots.
+          */}
+          <button
+            ref={shotsLinkRef}
+            type="button"
+            className="hidden staging-link staging-loader-shots"
+            onClick={() => stagingHandlers.onView?.('shots')}
+          >
+            {t('devchat:staging.loader.seeShots')}
+          </button>
         </div>
       </div>
       {/*

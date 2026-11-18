@@ -62,7 +62,12 @@
  * silent on failure); there is no error state to draw.
  */
 
+import { useEffect, useRef, useState } from 'react';
+
+import { ChevronLeftIcon, ChevronRightIcon } from '@/components/ui/icons';
+
 import { resolveIllustration } from '../../../lib/challenge-illustrations';
+import { useMessages } from '../../../lib/i18n/react';
 import { useLiveSkin } from '../../../lib/skin';
 import { ChallengeCard } from '../../leaderboard/challenge-card';
 import type { ChallengeRowView, ChallengesView } from '../panels-store';
@@ -93,33 +98,79 @@ function WipChallengeArt({ row }: { row: ChallengeRowView }) {
  * when it is done.
  */
 function WipChallengePosters({ view }: { view: ChallengesView }) {
+  const t = useMessages('home');
+  const rail = useRef<HTMLDivElement | null>(null);
+  // Which way there is more of the row: an arrow is drawn at that end only.
+  const [more, setMore] = useState({ back: false, on: false });
+  useEffect(() => {
+    const el = rail.current;
+    if (!el) return undefined;
+    const sync = () => {
+      // The row's start is its left in a left-to-right language and its
+      // right in a right-to-left one, where scrollLeft counts down from zero.
+      const at = Math.abs(el.scrollLeft);
+      const end = el.scrollWidth - el.clientWidth;
+      setMore((was) => {
+        const next = { back: at > 2, on: at < end - 2 };
+        return was.back === next.back && was.on === next.on ? was : next;
+      });
+    };
+    sync();
+    el.addEventListener('scroll', sync, { passive: true });
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(sync) : null;
+    ro?.observe(el);
+    return () => { el.removeEventListener('scroll', sync); ro?.disconnect(); };
+  }, [view.rows.length]);
+  // One screen of the row at a time, toward its end or back to its start.
+  const page = (dir: 1 | -1) => {
+    const el = rail.current;
+    if (!el) return;
+    const rtl = getComputedStyle(el).direction === 'rtl';
+    el.scrollBy({ left: dir * (rtl ? -1 : 1) * el.clientWidth, behavior: 'smooth' });
+  };
   return (
-    <WipCard className="wip-posters" data-wip-challenges="">
-      {view.rows.map((row) => {
-        const pct = row.state === 'done' ? 100
-          : row.fill != null ? Math.round(Math.max(0, Math.min(row.fill, 1)) * 100)
-          : row.state === 'progress' ? 8 : 0;
-        return (
-          <button
-            key={row.id}
-            type="button"
-            className="wip-poster"
-            data-challenge-id={row.id}
-            data-state={row.state}
-            onClick={() => panels()?.goToChallenge?.(row.eventId, row.id)}
-          >
-            <WipChallengeArt row={row} />
-            <b className="wip-item-title">{row.goal}</b>
-            <span className="wip-poster-facts">
-              <span className="wip-item-meta">{row.stateLabel}</span>
-              {row.earned || row.reward ? (
-                <span className={row.earned ? 'wip-poster-worth wip-poster-worth-ok' : 'wip-poster-worth'}>{row.earned || row.reward}</span>
-              ) : null}
-            </span>
-            <span className="wip-meter" aria-hidden="true"><span style={{ width: `${pct}%` }} /></span>
-          </button>
-        );
-      })}
+    <WipCard className="wip-posters-card" data-tone="goal" data-wip-challenges="">
+      <div ref={rail} className="wip-posters">
+        {view.rows.map((row) => {
+          const pct = row.state === 'done' ? 100
+            : row.fill != null ? Math.round(Math.max(0, Math.min(row.fill, 1)) * 100)
+            : row.state === 'progress' ? 8 : 0;
+          return (
+            <button
+              key={row.id}
+              type="button"
+              className="wip-poster"
+              data-challenge-id={row.id}
+              data-state={row.state}
+              onClick={() => panels()?.goToChallenge?.(row.eventId, row.id)}
+            >
+              {/* The picture leads, at the side; beside it the goal, where
+                  the viewer stands and what it is worth, and the meter. */}
+              <WipChallengeArt row={row} />
+              <span className="wip-item-text">
+                <b className="wip-item-title">{row.goal}</b>
+                <span className="wip-poster-facts">
+                  <span className="wip-item-meta">{row.stateLabel}</span>
+                  {row.earned || row.reward ? (
+                    <span className={row.earned ? 'wip-poster-worth wip-poster-worth-ok' : 'wip-poster-worth'}>{row.earned || row.reward}</span>
+                  ) : null}
+                </span>
+                <span className="wip-meter" aria-hidden="true"><span style={{ width: `${pct}%` }} /></span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {more.back ? (
+        <button type="button" className="wip-rail-arrow wip-rail-arrow-back" aria-label={t('home:challenges.scrollBack')} onClick={() => page(-1)}>
+          <ChevronLeftIcon className="wip-rail-arrow-glyph" strokeWidth="2.4" aria-hidden="true" />
+        </button>
+      ) : null}
+      {more.on ? (
+        <button type="button" className="wip-rail-arrow wip-rail-arrow-on" aria-label={t('home:challenges.scrollOn')} onClick={() => page(1)}>
+          <ChevronRightIcon className="wip-rail-arrow-glyph" strokeWidth="2.4" aria-hidden="true" />
+        </button>
+      ) : null}
     </WipCard>
   );
 }

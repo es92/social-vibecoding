@@ -89,6 +89,7 @@ import { SidePanel } from './features/side-panel';
 import { AiScreen } from './features/ai';
 import { WorkshopScreen } from './features/workshop';
 import { WeeklyDigestScreen } from './features/weekly-digest';
+import { CommunitiesScreen } from './features/communities';
 import { NotificationsIsland } from './features/notifications';
 import { MobileInstallBanner } from './features/mobile-install';
 import { SettingsScreen } from './features/settings';
@@ -210,6 +211,15 @@ export function Shell() {
           (#weekly-digest-screen is in App.REACT_SCREEN_IDS).
       */}
       <Island name="WeeklyDigestScreen"><WeeklyDigestScreen /></Island>
+      {/*
+          The Communities tab's page (`#communities`): the communities you
+          pinned and the others you are in, then the way to the ones to join.
+          A fully React-owned sibling screen like #workshop-screen: it ships
+          hidden with both groups empty (the pins are read after mount), and
+          is shown through the visibility store (#communities-screen is in
+          App.REACT_SCREEN_IDS). Mounted by App.navigateToCommunities.
+      */}
+      <Island name="CommunitiesScreen"><CommunitiesScreen /></Island>
       {/*
           Leaderboard screen (hidden by default): the one place the group's
           shared progress lives — the Topochain standings, the Kudos

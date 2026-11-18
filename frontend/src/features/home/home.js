@@ -372,24 +372,13 @@ const Home = {
     else location.hash = `#app/${encodeURIComponent(slug)}/dev/hub`;
   },
 
-  // Home's Pinned communities (One Home, #6361), where the communities you
-  // are in live: Home, scrolled to them once they are drawn. `all` opens
-  // the section's All communities too (the ones you are in but have not
-  // pinned), which is what "All communities" anywhere else names now that
-  // the Communities screen's list is gone (features/home/pinned-communities.tsx
-  // listens for SHOW_ALL_COMMUNITIES).
-  SHOW_ALL_COMMUNITIES: 'home:show-all-communities',
-  showCommunities({ all = false } = {}) {
-    if (typeof App !== 'undefined' && App.navigateHome) App.navigateHome();
-    if (all) {
-      try { document.dispatchEvent(new CustomEvent(Home.SHOW_ALL_COMMUNITIES)); } catch (err) { /* the section opens on its own press */ }
-    }
-    const scroll = () => {
-      // Under a look the kit page draws the section (frame/home-frame.tsx).
-      const el = document.getElementById('home-frame-communities') || document.getElementById('home-communities-section');
-      if (el && !el.hidden) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
-    };
-    requestAnimationFrame(() => requestAnimationFrame(scroll));
+  // Where the communities you are in live: the Communities tab's page
+  // (`#communities`, features/communities/), pinned and joined. They were
+  // Home's Pinned communities (One Home, #6361) until the tab came back
+  // (18 Nov 2026); the tour's Finish and "All communities" anywhere still
+  // come through here.
+  showCommunities() {
+    if (location.hash !== '#communities') location.hash = '#communities';
   },
 
   // The sidebar's search glyph (features/nav/rail-communities.tsx): Home,
@@ -2311,8 +2300,8 @@ const Home = {
     if (!app) return Home._favoriteUnknown(slug, desired, onChange);
     // ONE HOME (#6361): pinning an app is only that. It no longer joins the
     // app's community, and taking it off Home no longer asks about leaving
-    // (#5962's sheet): the community has its own pin, on Pinned communities,
-    // and its own Leave, on its hub.
+    // (#5962's sheet): the community has its own pin, on the Communities
+    // tab's page, and its own Leave, on its hub.
     const prev = { is_favorited: app.is_favorited, your_apps_hidden: app.your_apps_hidden, is_member: app.is_member };
     app.is_favorited = desired;
     if (app.is_collaborator) app.your_apps_hidden = !desired;

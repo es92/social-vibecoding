@@ -88,6 +88,7 @@ const KINDS = Object.freeze([
   { kind: 'check_failed', app: true },
   { kind: 'stale_pr', app: true },
   { kind: 'pr_merged', app: true },
+  { kind: 'change_closed', app: true, detail: 'event:1' },
   { kind: 'voted_change_merged', app: true, detail: 'yes' },
   { kind: 'weekly_digest', app: false, detail: 'w:3:12:3' },
   { kind: 'vote_digest', detail: '3' },

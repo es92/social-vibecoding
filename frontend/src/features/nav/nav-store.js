@@ -55,7 +55,7 @@ import { createStore } from '../../lib/plain-store.js';
 /**
  * Screen root id → the tab that owns it.
  *
- * FIVE TABS, NINE ROOTS: the bar names sections, not screens, so several
+ * FIVE TABS, TEN ROOTS: the bar names sections, not screens, so several
  * roots share a tab. Leaderboard, Settings and Admin are all things about
  * YOU or your account, so they light Me. `#app-view` is absent on purpose — an app is not one of
  * the platform's places, so the rail beside a running app (on a desktop;
@@ -65,6 +65,9 @@ import { createStore } from '../../lib/plain-store.js';
  */
 export const TAB_FOR_SCREEN = Object.freeze({
   'home-screen': 'home',
+  // The Communities tab's page (`#communities`): the communities you pinned
+  // and the others you are in. The tab's key is still `workshop`.
+  'communities-screen': 'workshop',
   'messages-screen': 'messages',
   // #6019 follow-up: the AI tab's own page. Main, the chat with the bot, is
   // a conversation of the Messages screen, lit as AI by the bar itself.

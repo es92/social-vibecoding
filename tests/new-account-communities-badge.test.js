@@ -79,9 +79,8 @@ test('a brand-new account: Homeroom\'s five votes are counted, and the tab says 
   assert.equal(st.info.homeroom.needs, 5, 'the votes are still owed: the switcher still says "5 to vote"');
   assert.equal(st.totalNeeds, 5, 'and its All communities line counts them');
   assert.equal(st.badgeNeeds, 0, 'but none of them asks for a newcomer');
-  assert.equal(scope.tabVotes(st), 0, 'no number on the tab on All communities');
-  // On Homeroom's own page the tab is on Homeroom, and says nothing either.
-  assert.equal(scope.tabVotes({ ...st, slug: 'homeroom' }), 0);
+  // Nor does its own tile on the Communities page.
+  assert.equal(scope.votesWaiting(st.info.homeroom), 0);
 });
 
 test('a member of a group with a change waiting for them: that one asks', async () => {
@@ -100,8 +99,7 @@ test('a member of a group with a change waiting for them: that one asks', async 
   assert.equal(st().info['flat-4b'].unchosen, false, 'a community they are in by choice is never unchosen');
   assert.equal(st().totalNeeds, 6);
   assert.equal(st().badgeNeeds, 1, 'the group\'s one change, and not Homeroom\'s five');
-  assert.equal(scope.tabVotes(st()), 1);
-  assert.equal(scope.tabVotes({ ...st(), slug: 'flat-4b' }), 1, 'and on the group\'s own page');
+  assert.equal(scope.votesWaiting(st().info['flat-4b']), 1, 'the number the group\'s own tile says');
   // Swiped past in a Needs you feed: both sums follow at once (#3526).
   seen.markNeedsSeen('flat-4b', 'proposal:90@0');
   assert.equal(st().badgeNeeds, 0);
@@ -121,7 +119,7 @@ test('once they have voted in Homeroom, its votes count on the tab', async () =>
   });
   const { scope } = loadScope();
   await scope.loadCommunities(true);
-  assert.equal(scope.tabVotes(scope.communityScopeStore.get()), 0);
+  assert.equal(scope.communityScopeStore.get().badgeNeeds, 0);
   fakeBrowser(43, {
     '/api/apps': { apps: [HOMEROOM] },
     '/api/workshop/counts': { counts: { homeroom: { working: 0, needs: 4, owed: HOMEROOM_OWED.slice(1) } } },
@@ -130,7 +128,6 @@ test('once they have voted in Homeroom, its votes count on the tab', async () =>
   const st = scope.communityScopeStore.get();
   assert.equal(st.info.homeroom.unchosen, false, 'read fresh on every load');
   assert.equal(st.badgeNeeds, 4);
-  assert.equal(scope.tabVotes(st), 4);
 });
 
 test('#5296: All communities hands its counts to the tab, so a vote that lands moves both at once', async () => {
@@ -145,7 +142,7 @@ test('#5296: All communities hands its counts to the tab, so a vote that lands m
   });
   const { scope } = loadScope();
   await scope.loadCommunities(true);
-  assert.equal(scope.tabVotes(scope.communityScopeStore.get()), 1);
+  assert.equal(scope.communityScopeStore.get().badgeNeeds, 1);
   scope.takeCounts({
     homeroom: { working: 0, needs: 5, owed: HOMEROOM_OWED, unchosen: true },
     'flat-4b': { working: 0, needs: 2, owed: ['proposal:90@0', 'proposal:91@0'] },
@@ -194,20 +191,24 @@ test('the tab draws no accent number for an unchosen community, and draws one fo
     'someone who takes part in Homeroom still sees its votes');
 });
 
-test('the tab reads its number from tabVotes, and the counts route carries the flag', () => {
+test('the tab reads its number from badgeNeeds, and the counts route carries the flag', () => {
+  // The tab is a door to all your communities, so its number is
+  // `badgeNeeds`, the sum that leaves an unchosen community's votes out. It
+  // no longer follows the community the tab was on, and the helper that
+  // chose between the two (`tabVotes`) went with that.
   const bar = read('frontend/src/features/nav/tab-bar.tsx');
-  assert.match(bar, /const votes = tabVotes\(scope\);/);
-  assert.doesNotMatch(bar, /scope\.totalNeeds/, 'All communities\' badge is not every vote owed any more');
+  assert.match(bar, /const votes = Number\(scope\.badgeNeeds\) \|\| 0;/);
+  assert.doesNotMatch(bar, /scope\.totalNeeds/, 'the badge is not every vote owed, an unchosen community\'s among them');
   const route = read('src/routes/workshop-overview.js');
   assert.match(route, /communities\.unchosenCommunities\(pool, req\.user\.id\)/);
   assert.match(route, /\.\.\.\(unchosen\.has\(row\.slug\) \? \{ unchosen: true \} : \{\}\),/);
-  // The switcher and the app menu still count every vote owed. Home's Needs
+  // The switcher and the app menu still count every vote owed. The Needs
   // you tile does not (#5296): it says the tab's number, `badgeNeeds`, the
   // sum of the tab's own `votesWaiting`, because a page saying 14 under a
-  // tab that said 13 was the bug. (It was the Communities list's Needs you
-  // row until One Home, #6361.)
+  // tab that said 13 was the bug. The tile is the Communities page's (it was
+  // Home's Pinned communities' while Home listed them, One Home, #6361).
   assert.match(read('frontend/src/features/workshop/community-scope.ts'), /badgeNeeds \+= votesWaiting\(info\[s\]\);/);
-  assert.match(read('frontend/src/features/home/pinned-communities.tsx'), /const \{ badgeNeeds \} = useStoreState\(communityScopeStore\)/);
+  assert.match(read('frontend/src/features/communities/index.tsx'), /const \{ badgeNeeds \} = useStoreState\(communityScopeStore\)/);
   for (const file of [
     'frontend/src/features/workshop/community-switcher.tsx',
     'frontend/src/features/app-context/app-context-sheet.tsx',

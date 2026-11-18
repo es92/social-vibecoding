@@ -464,7 +464,7 @@ test('the thread pane reads the two lists as one transcript, counted together, a
   assert.match(screen, /row\.kind === 'reply' && row\.message\.id < 0/, 'a reply still in flight stays last');
   assert.match(screen, /t\('messages:replies\.count', \{ count: merged\.length \}\)/, 'the count is of both');
   assert.match(screen, /discussion\?\.more \? <a className="messages-load-older" href=\{issueRefHref\(discussion\.appSlug/);
-  assert.match(screen, /<MessageComposer threadRootId=\{rootId\} \/>/,
+  assert.match(screen, /<MessageComposer threadRootId=\{rootId\} scroller=\{scroller\} \/>/,
     'the composer is untouched: replies still go in the private thread');
   const store = read('frontend/src/features/messages/store.ts');
   assert.match(store, /discussion: null/, 'a loading thread carries no discussion');

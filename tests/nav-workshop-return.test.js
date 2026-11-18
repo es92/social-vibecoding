@@ -261,19 +261,29 @@ test('the session sweep forgets the Workshop view', async () => {
   assert.equal(r.storage.has(KEY), false, 'the next account is not taken into this one\'s app');
 });
 
-test('the Workshop tab asks the router before its href runs', () => {
+test('the Communities tab is a plain door to its page, and resumes nothing', () => {
+  // The tab used to ask the router first (App.resumeWorkshopView) and reopen
+  // the Workshop view you left (#2776), and on a phone open the drawer's list
+  // (#5581). Its page lists every community you are in now (18 Nov 2026), so
+  // a press goes there at every width. The router still remembers the view:
+  // the first session's walk resumes it (features/first-session/index.tsx).
   const TAB = read('frontend/src/features/nav/tab-bar.tsx');
   assert.match(TAB, /key === 'workshop' \? onWorkshopClick/);
   const fn = TAB.slice(TAB.indexOf('function onWorkshopClick('));
   const body = fn.slice(0, fn.indexOf('\n}'));
   assert.match(body, /isNativeClick\?\.\(event\)\) return;/, 'a modified click is left alone');
-  assert.match(body, /if \(app\?\.resumeWorkshopView\?\.\(\)\) \{ event\.preventDefault\(\); return; \}/,
-    'and the href runs unless the router took over');
-  // #5581: on a phone the href (the full-screen All communities page) is not
-  // what a press means: the drawer's list is, and that is goToCommunity's.
-  assert.match(body, /if \(wideWindow\(\)\) return;\s*event\.preventDefault\(\);\s*goToCommunity\(null\);/,
-    'a phone takes the All communities door, which opens the drawer\'s list');
+  assert.match(body, /event\.preventDefault\(\);\s*openCommunitiesPage\(\);/, 'a plain one opens the page');
+  assert.doesNotMatch(TAB, /resumeWorkshopView|wideWindow\(/, 'no resume, and no width decides where it goes');
   // The late road (the pill slid first) takes the same door.
   const go = TAB.slice(TAB.indexOf('function goToTab('), TAB.indexOf('export function PlatformTabs()'));
-  assert.match(go, /if \(key === 'workshop' && !wideWindow\(\)\) \{\s*goToCommunity\(null\);\s*return;\s*\}/);
+  assert.match(go, /if \(key === 'workshop'\) \{\s*openCommunitiesPage\(\);\s*return;\s*\}/);
+  // The page is the view the tab returns to: opening it forgets the one
+  // remembered, in the door itself and in the router's own function.
+  const scope = read('frontend/src/features/workshop/community-scope.ts');
+  const open = scope.slice(scope.indexOf('export function openCommunitiesPage('), scope.indexOf('export function goToCommunity('));
+  assert.match(open, /App\?\._forgetWorkshopView\?\.\(\)/);
+  const app = read('public/js/app.js');
+  const nav = app.slice(app.indexOf('  navigateToCommunities() {'), app.indexOf('  navigateToAi() {'));
+  assert.match(nav, /App\._forgetWorkshopView\(\);/);
+  assert.match(read('frontend/src/features/first-session/index.tsx'), /App\?\.resumeWorkshopView\?\.\(\)/, 'the walk still resumes it');
 });

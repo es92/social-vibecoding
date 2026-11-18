@@ -305,7 +305,7 @@
   },
   "title.communities": {
     "text": "Communities",
-    "description": "Title shown in the header bar, and as the browser tab's title, on the Communities screen, which lists the communities the person is in."
+    "description": "Title shown in the header bar, and as the browser tab's title, on the Communities page, which lists the communities the person pinned and the others they are in."
   },
   "title.ai": {
     "text": "Homeroom bot",

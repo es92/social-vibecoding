@@ -92,6 +92,9 @@ const App = {
   // took the "already on home" branch and drew Home beside the bot page
   // (#6530).
   _inAi: false,
+  // The Communities tab's page (#communities): set by navigateToCommunities(),
+  // cleared by any other screen's reveal in _showOnlyScreen, as _inAi is.
+  _inCommunities: false,
 
   // Chromeless full-screen mode (/app/<slug>/full): the App tab with the
   // platform header + tab bar hidden, so the embedded app fills the
@@ -1362,7 +1365,18 @@ const App = {
     // arrives pushed on /ws/events (`platform_version`, #2545), which is
     // what usually gets there first; this poll is what carries a tab whose
     // socket is down, and everything the message does not say.
-    setInterval(App.loadVersion, 10_000);
+    // A tab nobody is looking at does not ask (#6797): six requests a minute
+    // from every background tab told nobody anything. It asks once when it
+    // comes back (App._foregroundResync).
+    setInterval(App._pollVersion, 10_000);
+  },
+  _versionPollMissed: false,
+  _pollVersion() {
+    if (typeof document !== 'undefined' && document.hidden) {
+      App._versionPollMissed = true;
+      return;
+    }
+    App.loadVersion();
   },
 
   // Admin / moderation console entry point (#588). Was a header shield
@@ -5212,6 +5226,7 @@ const App = {
         else if (App._inMessages) App.navigateHome();
         else if (App._inWorkshop) App.navigateHome();
         else if (App._inAi) App.navigateHome();
+        else if (App._inCommunities) App.navigateHome();
         else {
           // Already on home (no app, no leaderboard). Don't call
           // navigateHome() — that would pushState, AppView.close(),
@@ -5239,7 +5254,7 @@ const App = {
         // The same list as the `!hash` branch above (QA 2026-09-24 Q1).
         if (App.currentApp || App._inLeaderboard || App._inProfile
           || App._inAdmin || App._inSettings
-          || App._inMessages || App._inWorkshop || App._inAi) {
+          || App._inMessages || App._inWorkshop || App._inAi || App._inCommunities) {
           App.navigateHome();
         } else {
           App._ensureHomeVisible();
@@ -5353,13 +5368,16 @@ const App = {
         return;
       }
       if (parts[0] === 'communities' || parts[0] === 'workshop') {
-        // ONE HOME (#6361): the Communities screen's list is retired. Home
-        // holds your communities (Pinned communities and its All
-        // communities), and Needs you, the feed the list's top row opened,
-        // is its own page. Both addresses still arrive (a shared link, an
-        // older notification, a bookmark), so they are rewritten in place,
-        // which adds no Back step: with `?ws=needs` (in the query or the
-        // fragment's) to #needs, else to Home.
+        // THE COMMUNITIES TAB'S PAGE (`#communities`): the communities you
+        // pinned and the others you are in, with New community and the way
+        // to the ones to join (features/communities/index.tsx). One Home
+        // (#6361) had retired the Communities screen and sent this address
+        // to Home; the tab and its page are back, and Home no longer lists
+        // your communities. Needs you, the feed the old list's top row
+        // opened, stays its own page: with `?ws=needs` (in the query or the
+        // fragment's) the address is rewritten in place to #needs, which
+        // adds no Back step. `#workshop`, the tab's older address, is
+        // rewritten to `#communities` the same way.
         App.setChromeless(false);
         let toNeeds = false;
         try {
@@ -5371,8 +5389,10 @@ const App = {
           App.navigateToWorkshop();
           return;
         }
-        try { history.replaceState(null, '', App._rootUrl('')); } catch (err) { /* non-fatal */ }
-        App.navigateHome();
+        if (parts[0] === 'workshop') {
+          try { history.replaceState(null, '', App._rootUrl('#communities')); } catch (err) { /* non-fatal */ }
+        }
+        App.navigateToCommunities();
         return;
       }
       if (parts[0] === 'apps' || parts[0] === 'discover') {
@@ -5837,6 +5857,12 @@ const App = {
       }
     } finally {
       App._isRestoring = false;
+      // A preview the address names (`?preview=<slug>/<id>`) reopens over the
+      // page it was opened on: a reload, a pasted link, Back onto its entry.
+      // After the route, so the page is the one it stands over.
+      if (typeof AppView !== 'undefined' && typeof AppView.restorePreviewFromAddress === 'function') {
+        setTimeout(() => AppView.restorePreviewFromAddress(), 0);
+      }
     }
   },
 
@@ -6044,9 +6070,10 @@ const App = {
 
   // The rail's own places: the roots its tabs navigate to. #6019: AI is the
   // Messages screen's bot chat. This list is only read at the rail's width.
+  // The Communities tab's page (#communities-screen) is one of them again.
   // Needs you (#workshop-screen) is a page under Home since One Home
   // (#6361), reached from it, not a place of the rail's.
-  _RAIL_ROOTS: ['home-screen', 'messages-screen', 'profile-screen', 'ai-screen'],
+  _RAIL_ROOTS: ['home-screen', 'communities-screen', 'messages-screen', 'profile-screen', 'ai-screen'],
 
   // Whether entering `screenEl` with `preferred` is a switch between places
   // on the desktop rail. The rail has to be on screen now (not hidden inside
@@ -6076,7 +6103,7 @@ const App = {
   // visible at a time (they are `flex-1` siblings in the body column, so
   // two visible roots split the viewport 50/50 — see the #764 note on
   // the zoom transition).
-  SCREEN_IDS: ['app-view', 'home-screen',
+  SCREEN_IDS: ['app-view', 'home-screen', 'communities-screen',
     'workshop-screen', 'weekly-digest-screen', 'leaderboard-screen', 'profile-screen', 'admin-screen',
     'settings-screen', 'messages-screen', 'ai-screen'],
 
@@ -6150,6 +6177,8 @@ const App = {
     // is the one showing", and the reveal that shows something else is what
     // makes that untrue.
     if (revealId !== 'ai-screen') App._inAi = false;
+    // …and the Communities tab's page, which keeps no state to leave either.
+    if (revealId !== 'communities-screen') App._inCommunities = false;
     // Publish the final root state directly. Showing a house and then hiding
     // it in a per-screen callback shifts the shared title slot unnecessarily.
     //
@@ -6662,6 +6691,8 @@ const App = {
   // is reported then.
   _NAV_CODE_FOR_SCREEN: Object.freeze({
     'home-screen': 'home',
+    // The Communities tab's page (`#communities`).
+    'communities-screen': 'communities',
     'workshop-screen': 'needs',
     'leaderboard-screen': 'challenges',
     'profile-screen': 'profile',
@@ -7134,6 +7165,9 @@ const App = {
     // features/workshop/index.tsx takes useVisibilityHiddenClass, so it has to
     // be listed here or the class gets the two owners the note above describes.
     'workshop-screen',
+    // The Communities tab's page (`#communities`): features/communities/index.tsx
+    // takes useVisibilityHiddenClass from its first commit, same seam.
+    'communities-screen',
     // This week (#6371): features/weekly-digest/index.tsx takes
     // useVisibilityHiddenClass from its first commit, same seam.
     'weekly-digest-screen',
@@ -7609,6 +7643,38 @@ const App = {
       App._showOnlyScreen('weekly-digest-screen');
       App._enterScreenChrome();
       App.setHeaderTitle(PlatformI18n.t('weekly-digest:title'));
+    }, { type: App._entryTransition(fromIframe ? 'none' : 'push', screen) });
+  },
+
+  // THE COMMUNITIES TAB'S PAGE (`#communities`, features/communities/): the
+  // communities you pinned and the others you are in. A tab root, so it
+  // takes no back control (App._BACK_SLOT), and it is the view the tab
+  // returns to: the page a community's Workshop was left on is forgotten, as
+  // choosing All communities always did. The island owns the whole root and
+  // reads from the controller's open() while still hidden.
+  navigateToCommunities() {
+    if ((App._inCommunities || App._revealedScreen === 'communities-screen') && !App.currentApp) return;
+    App._forgetWorkshopView();
+    const fromIframe = !!(App.currentApp && App.currentTab === 'app');
+    const leavingApp = !!App.currentApp;
+    App.currentApp = null;
+    if (App._inLeaderboard) App._exitLeaderboard();
+    if (App._inProfile) App._exitProfile();
+    if (App._inAdmin) App._exitAdminConsole();
+    if (App._inSettings) App._exitSettings();
+    if (App._inMessages) App._exitMessages();
+    if (App._inWorkshop) App._exitWorkshop();
+    // Before the transition, like _inAi below: popstate and hashchange land
+    // in the same tick, and the reveal is not recorded until the callback
+    // runs, so a later-set flag would let the second run through.
+    App._inCommunities = true;
+    const screen = document.getElementById('communities-screen');
+    window.UsernodeReact?.communities?.open?.();
+    PlatformUI.transition(() => {
+      if (leavingApp) AppView.close();
+      App._showOnlyScreen('communities-screen');
+      App._enterScreenChrome();
+      App.setHeaderTitle(PlatformI18n.t('shell:title.communities'));
     }, { type: App._entryTransition(fromIframe ? 'none' : 'push', screen) });
   },
 
@@ -8895,6 +8961,8 @@ const App = {
   // a tab it is not the root of is listed here with that tab's address.
   _BACK_SLOT: {
     'home-screen': ['none'],
+    // The Communities tab's page is a tab root.
+    'communities-screen': ['none'],
     'messages-screen': ['none'],
     // One Home (#6361): Needs you is a page under Home (its tile opens it),
     // so it has an arrow up to Home, as Challenges has one up to Me.
@@ -9463,6 +9531,11 @@ window.App = App;
 // switches where the tab stays "visible" throughout.
 App._foregroundResync = () => {
   if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+  // The version poll stood down while the tab was hidden: ask once now.
+  if (App._versionPollMissed) {
+    App._versionPollMissed = false;
+    App.loadVersion();
+  }
   if (window.SessionState) SessionState.syncIfStale?.();
   // #6429: coming back to the tab is also a reason to ask who is signed in,
   // when the boot's check ran out of time. A slow server used to leave the
@@ -9608,6 +9681,7 @@ App._bootScreenFor = function _bootScreenFor(hash, pathname, signedIn) {
     case 'apps': return frag.split('/')[1] ? 'app-view' : null;
     case 'discover': return frag.split('/')[1] ? 'app-view' : null;
     case 'needs': return 'workshop-screen';  // Needs you (One Home, #6361)
+    case 'communities': return 'communities-screen'; // the Communities tab's page
     case 'week': return 'weekly-digest-screen'; // This week (#6371)
     case 'profile': return 'profile-screen';
     case 'settings': return 'settings-screen';

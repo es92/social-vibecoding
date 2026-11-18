@@ -67,16 +67,22 @@ test('the tabs are the ones the bar renders', () => {
   // stays lit over Main, the Messages screen's chat with the bot (the nav
   // store's `bot`). The desktop rail added Discover's (29 Oct 2026), retired
   // with its screen by One Home (#6361), so the rail answers as the phone.
-  // One Home (#6361): no screen is the Communities tab's own; Needs you,
-  // the page left of its screen, is Home's. The tab still lights for a
-  // project's own Workshop (app.js, below), on neither bar.
-  assert.deepEqual(sections, ['ai', 'home', 'me', 'messages']);
+  // The Communities tab has a screen of its own again (18 Nov 2026): its
+  // page, `#communities`, which lists the communities you pinned and the
+  // others you are in. One Home (#6361) had left it none. Needs you, the
+  // page left of the old Communities screen, is still Home's. The tab also
+  // lights for a project's own Workshop (app.js, below).
+  assert.deepEqual(sections, ['ai', 'home', 'me', 'messages', 'workshop']);
+  assert.equal(TAB_FOR_SCREEN['communities-screen'], 'workshop', 'the key is still `workshop`');
+  assert.equal(TAB_FOR_SCREEN['workshop-screen'], 'home', 'Needs you is a page under Home');
   assert.deepEqual({ ...RAIL_TAB_FOR_SCREEN }, {});
   assert.equal(tabForScreen('home-screen', true), 'home', 'the rail answers as the phone');
+  assert.equal(tabForScreen('communities-screen', true), 'workshop', 'and for the Communities page too');
   const bar = read('frontend/src/features/nav/tab-bar.tsx');
   const keys = [...bar.matchAll(/key: '([a-z]+)' as const/g)].map((m) => m[1]);
-  // The rail's order is the markup's; app.css orders the phone's four and
-  // draws no Communities (One Home, #6361: AI above Messages, Discover gone).
+  // The sidebar's order is the markup's; app.css orders the phone's five,
+  // with Communities next to Home (One Home, #6361: AI above Messages,
+  // Discover gone).
   assert.deepEqual(keys, ['home', 'ai', 'messages', 'workshop', 'me']);
   assert.match(bar, /const tab = routedTab === 'messages' && bot \? 'ai' : routedTab;/);
   assert.match(read('frontend/src/features/messages/store.ts'),
@@ -727,7 +733,7 @@ test('the Messages count is the quiet one: grey, on the glyph\'s corner on the p
   // the glyph's corner is gone, and its offsets with it).
   const at = css.indexOf('@media (min-width: 768px) {\n  /* THE ONE NUMBER THE REST FOLLOWS.');
   const block = css.slice(at, css.indexOf('\n}\n', at));
-  const row = block.match(/\n {2}\.platform-tab-badge,\n {2}\.platform-tab-votes,\n {2}\.platform-tab-all-votes \{[^}]*\}/);
+  const row = block.match(/\n {2}\.platform-tab-badge,\n {2}\.platform-tab-votes \{[^}]*\}/);
   assert.ok(row, 'the sidebar places the badge inside its block');
   assert.match(row[0], /position: static;\s*order: 2;/);
   const rail = css.slice(css.indexOf('@media (min-width: 768px) {\n  /* THE BAND AT THE FOOT GOES AWAY'));
@@ -1020,10 +1026,12 @@ test('a plain press on another tab lights it and slides first; the router answer
   const press = src.slice(src.indexOf('const press = (el: HTMLElement'), src.indexOf('return { box, lit, markerRef, press };'));
   assert.ok(press.indexOf('place(el, true);') < press.indexOf('schedulePress('), 'the pill moves in the press\'s own task');
   assert.match(press, /schedulePress\(pending, key, go, \(\) => setPressed\(null\), undefined, undefined, undefined, fallback\);/);
-  // The three roads the clicks take at once, taken late.
+  // The three roads the clicks take at once, taken late: Home through the
+  // router, Communities to its page, and otherwise the tab's own href.
   const go = src.slice(src.indexOf('function goToTab('), src.indexOf('export function PlatformTabs()'));
   assert.match(go, /app\.navigateHome\(\{ viaTab: true \}\);/);
-  assert.match(go, /if \(key === 'workshop' && app\?\.resumeWorkshopView\?\.\(\)\) return;/);
+  assert.match(go, /if \(key === 'workshop'\) \{\s*openCommunitiesPage\(\);\s*return;\s*\}/);
+  assert.doesNotMatch(go, /resumeWorkshopView/, 'the tab resumes nothing: its page lists every community');
   assert.match(go, /window\.location\.assign\(href\);/);
   // The router lighting the pressed tab answers the press.
   assert.match(src, /if \(!pending\.current \|\| pending\.current\.key !== tab\) return;\s*pending\.current\.cancel\(\);\s*pending\.current = null;\s*setPressed\(null\);/);
@@ -1055,13 +1063,15 @@ test('#6714: the AI tab pressed from a project carries the project, and nothing 
 //
 // Pressed from Me (#profile) or Discover (#apps, retired with One Home,
 // #6361), the Communities tab could
-// light for a moment and then slide back: the resume it runs
+// light for a moment and then slide back: the resume it ran then
 // (App.resumeWorkshopView) hands off to navigateToApp, and the phone's list
-// road (goToCommunity(null)) needs a community to open over, so neither
-// necessarily reveals a screen. The router never lit `workshop`, and
-// schedulePress's settle put the pill back. That press now carries a fallback
-// — the All communities page, which is an ordinary address and always lands —
-// and the fallback is given the same wait again rather than settling.
+// road (goToCommunity(null)) needed a community to open over, so neither
+// necessarily revealed a screen. The router never lit `workshop`, and
+// schedulePress's settle put the pill back. That press carries a fallback,
+// the Communities page, which is an ordinary address and always lands, and
+// the fallback is given the same wait again rather than settling. The press
+// itself goes to that page now (18 Nov 2026), so the fallback is the same
+// door taken a second time, and stays for a press whose route did not land.
 
 /** The fake frames, the fake clock and `fire(ms)` the press tests drive. */
 function pressClock() {
@@ -1156,15 +1166,23 @@ test('#5730: only a Communities press carries a fallback, guarded on the screen 
     'captured at press time, and it acts only if that is still the screen on show');
   assert.match(click, /press\(event\.currentTarget, key, \(\) => goToTab\(key, href\), fallback\)/,
     'the press is given it; every other tab passes none');
-  // The fallback is the page, not the drawer's road that just failed.
-  const open = src.slice(src.indexOf('function openCommunitiesPage('), src.indexOf('export function PlatformTabs()'));
+  // The fallback is the page, an address that always routes. It lives
+  // beside goToCommunity now (features/workshop/community-scope.ts), which
+  // takes the same road for All communities.
+  assert.match(src, /import \{\s*communityScopeStore, goToCommunity, hydrateCommunityScope, openCommunitiesPage, warmCommunities,\s*\} from '\.\.\/workshop\/community-scope';/);
+  assert.doesNotMatch(src, /function openCommunitiesPage\(/, 'the bar keeps no copy of its own');
+  const scope = read('frontend/src/features/workshop/community-scope.ts');
+  const open = scope.slice(scope.indexOf('export function openCommunitiesPage('), scope.indexOf('export function goToCommunity('));
   assert.match(open, /App\?\._forgetWorkshopView\?\.\(\)/, 'the community that did not open is forgotten');
   assert.match(open, /if \(window\.location\.hash !== '#communities'\) window\.location\.hash = '#communities';/,
-    'the address that always routes to the All communities page');
-  assert.doesNotMatch(open, /goToCommunity\(/, 'never the phone drawer road that revealed nothing');
+    'the address that always routes to the Communities page');
+  assert.doesNotMatch(open.slice(0, open.indexOf('/**')), /goToCommunity\(/, 'never back through the door that calls it');
   assert.doesNotMatch(open, /console\./, 'a console error fails proposal checks');
-  // The desktop sidebar of rows is a hash route that always lands: unchanged.
-  assert.match(click, /if \(key === 'workshop' && sidebarRows\) \{\s*event\.preventDefault\(\);\s*if \(screen === 'workshop-screen'\) pressLitTab\(screen\);\s*else goToCommunity\(null\);\s*return;\s*\}/);
+  // The router lands that address on the page and lights the tab.
+  assert.match(appSource, /if \(parts\[0\] === 'workshop'\) \{\s*try \{ history\.replaceState\(null, '', App\._rootUrl\('#communities'\)\); \} catch \(err\) \{ \/\* non-fatal \*\/ \}\s*\}\s*App\.navigateToCommunities\(\);/);
+  // In the sidebar of rows the lit tab goes straight to its page, and on
+  // the page it only scrolls; a press from another tab is the press above.
+  assert.match(click, /if \(key === 'workshop' && sidebarRows && lit === 'workshop'\) \{\s*event\.preventDefault\(\);\s*if \(screen === 'communities-screen'\) pressLitTab\(screen\);\s*else goToCommunity\(null\);\s*return;\s*\}/);
 });
 
 // ── #4417: the desktop strip, and where its apps went ───────────────────
@@ -1182,7 +1200,7 @@ test('#5730: only a Communities press carries a fallback, guarded on the screen 
 const PINNED = 'frontend/src/features/nav/rail-pinned.tsx';
 const RAIL = 'frontend/src/features/nav/rail-communities.tsx';
 
-test('the sidebar: the sections as rows, the pinned communities above yours, then you at the foot', () => {
+test('the sidebar: the sections as rows, Communities then the pinned communities above yours, then you at the foot', () => {
   // The strip's icon over a label went with the strip: from 768px a section
   // is a row, its glyph then its name.
   const rail = css.slice(css.indexOf('@media (min-width: 768px) {\n  /* THE BAND AT THE FOOT GOES AWAY'));
@@ -1195,10 +1213,15 @@ test('the sidebar: the sections as rows, the pinned communities above yours, the
   assert.match(tab, /height: 36px;/);
   assert.match(tab, /font-size: 14px;/);
   // Recents are gone, and so are the strip's apps: the pins sit above your
-  // communities, and nothing lists apps apart from them.
+  // communities, and nothing lists apps apart from them. Both follow the
+  // Communities row in the markup, so a keyboard meets the row first.
   const bar = read('frontend/src/features/nav/tab-bar.tsx');
   assert.doesNotMatch(bar, /RecentsList|recents-list|StripApps/);
-  assert.match(bar, /key === 'workshop' \? <RailPinned key="pinned" \/> : null,\n[\s\S]*?key === 'workshop' \? <RailCommunities key="communities" shown=\{railShown\} \/> : null,/);
+  assert.match(bar, /<\/a>,\n[\s\S]*?key === 'workshop' \? <RailPinned key="pinned" \/> : null,\n\s*key === 'workshop' \? <RailCommunities key="communities" shown=\{railShown\} \/> : null,/);
+  const html = renderComponent('frontend/src/features/nav/tab-bar.tsx', 'PlatformTabs', {});
+  const order = ['platform-tab-messages', 'platform-tab-workshop', 'platform-rail-pinned', 'platform-rail-communities', 'platform-tab-me']
+    .map((id) => html.indexOf(`id="${id}"`));
+  assert.ok(order.every((at, i) => at > 0 && (i === 0 || at > order[i - 1])), 'Messages, Communities, the pins, yours, then you');
   for (const gone of [
     'frontend/src/features/nav/recents.ts', 'frontend/src/features/nav/recents-list.tsx', 'tests/nav-recents.test.js',
     'frontend/src/features/nav/strip-apps.tsx',
@@ -1207,8 +1230,8 @@ test('the sidebar: the sections as rows, the pinned communities above yours, the
   }
   assert.doesNotMatch(css, /\.platform-recents?\b/, 'and its styles with it');
   assert.doesNotMatch(css, /\.platform-strip-/, 'and the strip apps\' with theirs');
-  // The phone's bar is unchanged: five equal cells, no pins.
-  assert.match(css, /\.platform-tab-all-votes,\n\.platform-rail-pinned \{\n {2}display: none;\n\}/);
+  // The phone's bar draws neither group: five cells, no pins.
+  assert.match(css, /\.platform-rail-communities,\n\.platform-rail-pinned \{\n {2}display: none;\n\}/);
 });
 
 // #5323: the "Pin here" slot is the one row the Pinned section draws while a
@@ -1403,16 +1426,17 @@ test('the folded Duo\'s corner shifts the bar\'s cells, never its shape (6072)',
 
 test('the phone\'s bar is read in the order it is drawn; the markup keeps the rail\'s (audit N01)', () => {
   const { PHONE_TAB_ORDER, phoneReadingOrder } = loadTsx('frontend/src/features/nav/tab-bar.tsx');
-  // The four, in the order app.css's `order` draws them (TWO ORDERS, ONE
-  // MARKUP); One Home (#6361) took the Communities tab off the bar.
+  // The five, in the order app.css's `order` draws them (TWO ORDERS, ONE
+  // MARKUP): Communities, fourth in the markup, is second on the bar. One
+  // Home (#6361) had taken it off; it is back (18 Nov 2026).
   assert.deepEqual([...PHONE_TAB_ORDER],
-    ['platform-tab-home', 'platform-tab-ai', 'platform-tab-messages', 'platform-tab-me']);
+    ['platform-tab-home', 'platform-tab-workshop', 'platform-tab-ai', 'platform-tab-messages', 'platform-tab-me']);
   const css = fs.readFileSync(path.join(__dirname, '..', 'public/css/app.css'), 'utf8');
   const block = css.slice(css.indexOf('/* TWO ORDERS, ONE MARKUP'));
-  const drawn = ['home', 'ai', 'messages']
+  const drawn = ['home', 'ai', 'messages', 'workshop']
     .map((k) => [k, Number(new RegExp(`#platform-tab-${k} \\{ order: (-?\\d+); \\}`).exec(block)[1])])
     .sort((a, b) => a[1] - b[1]).map(([k]) => `platform-tab-${k}`);
-  assert.deepEqual(PHONE_TAB_ORDER.slice(0, 3), drawn, 'aria-owns follows the bar\'s own order');
+  assert.deepEqual(PHONE_TAB_ORDER.slice(0, 4), drawn, 'aria-owns follows the bar\'s own order');
   assert.equal(phoneReadingOrder(true, false), PHONE_TAB_ORDER.join(' '));
   assert.equal(phoneReadingOrder(false, false), null, 'the rail reads in its markup order');
   assert.equal(phoneReadingOrder(true, true), null, 'the Duo strip is left alone');
@@ -1422,23 +1446,30 @@ test('the phone\'s bar is read in the order it is drawn; the markup keeps the ra
   assert.match(src, /bar\.setAttribute\('aria-owns', owns\)/);
 });
 
-test('the Communities ring overhangs instead of pushing its label down (audit N02)', () => {
+test('the Communities tab draws a glyph like every other tab, so its label sits on the bar\'s one baseline (audit N02)', () => {
+  // The tab's face was a 28px ring around the community it was on, which
+  // had to overhang by 3px so "Communities" did not sit below the other
+  // labels. The tab is a plain door now and draws its own 22px glyph, so
+  // there is no ring to allow for, on either bar.
   const css = fs.readFileSync(path.join(__dirname, '..', 'public/css/app.css'), 'utf8');
-  const ring = /\.platform-tab-ring \{([^}]*)\}/.exec(css)[1];
-  assert.match(ring, /width: 28px; height: 28px/);
-  // 28 - 2 * 3 = the 22px of every other tab's glyph.
-  assert.match(ring, /margin-block: -3px;/);
-  assert.match(css, /@media \(min-width: 768px\) \{\s*\.platform-tab-ring \{[^}]*margin-block: 0;/);
+  assert.doesNotMatch(css, /\.platform-tab-ring\b/, 'no ring left in the sheet');
+  assert.doesNotMatch(css, /\.platform-tab-tile\b/, 'nor the tile it held');
+  const html = renderComponent('frontend/src/features/nav/tab-bar.tsx', 'PlatformTabs', {});
+  const at = html.indexOf('id="platform-tab-workshop"');
+  const tab = html.slice(at, html.indexOf('</a>', at));
+  assert.match(tab, /<span class="platform-tab-mark"><svg[^>]*class="platform-tab-glyph"/, 'its glyph is the mark\'s first child, as Home\'s is');
+  assert.doesNotMatch(tab, /platform-tab-ring|platform-tab-tile/);
 });
 
 test('on a phone the Tab key moves through the bar in its drawn order (audit N01 follow-up)', () => {
   const { nextPhoneTab } = loadTsx('frontend/src/features/nav/tab-bar.tsx');
-  assert.equal(nextPhoneTab('platform-tab-home', false), 'platform-tab-ai');
+  assert.equal(nextPhoneTab('platform-tab-home', false), 'platform-tab-workshop', 'Communities is next to Home');
+  assert.equal(nextPhoneTab('platform-tab-workshop', false), 'platform-tab-ai');
   assert.equal(nextPhoneTab('platform-tab-ai', false), 'platform-tab-messages');
   assert.equal(nextPhoneTab('platform-tab-messages', false), 'platform-tab-me');
   assert.equal(nextPhoneTab('platform-tab-me', false), null, 'out of You: the browser\'s, as before');
-  assert.equal(nextPhoneTab('platform-tab-ai', true), 'platform-tab-home');
-  assert.equal(nextPhoneTab('platform-tab-workshop', false), null, 'not drawn on the bar since One Home (#6361)');
+  assert.equal(nextPhoneTab('platform-tab-ai', true), 'platform-tab-workshop');
+  assert.equal(nextPhoneTab('platform-tab-workshop', true), 'platform-tab-home');
   assert.equal(nextPhoneTab('platform-tab-home', true), null, 'back out of Home: the browser\'s');
   assert.equal(nextPhoneTab('platform-tab-discover', false), null, 'the rail\'s alone');
   const src = fs.readFileSync(path.join(__dirname, '..', 'frontend/src/features/nav/tab-bar.tsx'), 'utf8');

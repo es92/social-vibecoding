@@ -153,7 +153,7 @@ export function NeedsYouCard(): ReactNode {
           href="#needs"
           label={more > 0 ? t('home:needsCard.seeAllCount', { count: summary.total }) : t('home:needsCard.seeAll')}
         >
-          <span id="home-needs-card-title">{t('home:needsCard.eyebrow')}</span>
+          <span id="home-needs-card-title" className="wip-head-words">{t('home:needsCard.eyebrow')}</span>
           <span className="wip-count" aria-hidden="true">{summary.total}</span>
         </WipHeadMore>
         <span className="sr-only">{t('home:needsCard.waiting', { count: summary.total })}</span>

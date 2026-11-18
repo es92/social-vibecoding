@@ -200,6 +200,21 @@ test('a project’s rules, stored by the reconcile and read by the gate', { time
     assert.equal(described.groups[0].keptByApp, true);
     assert.equal(described.groups[0].size, 1);
     assert.ok(described.groups[0].reportedAt);
+
+    // #6811: every group the app has sent rides along, declared or not, with
+    // its size and when it sent its list, and counts only.
+    await pool.query(
+      "INSERT INTO app_groups (app_id, key, name) VALUES ($1, 'finishers', 'Finishers')", [app.id]
+    );
+    const all = (await governance.describeApproval(pool, app.id, await governance.getGovernance(pool, app.id))).appGroups;
+    assert.deepEqual(all.map((g) => [g.name, g.key, g.size]), [['App users', 'app users', 1], ['Finishers', 'finishers', 0]]);
+    assert.ok(all[0].reportedAt, 'the declared group says when the app last sent it');
+    assert.equal(all[1].reportedAt, null, 'a group the app made but never sent has no time');
+    for (const g of all) {
+      assert.deepEqual(Object.keys(g).sort(), ['key', 'name', 'reportedAt', 'size'], 'counts only, never who is in it');
+      assert.equal(g.people, undefined);
+      assert.equal(g.ids, undefined);
+    }
   });
 
   await t.test('an old-style block takes the project back to the two columns', async () => {
@@ -207,5 +222,9 @@ test('a project’s rules, stored by the reconcile and read by the gate', { time
     const gov = await governance.getGovernance(pool, app.id);
     assert.equal(gov.rules, null);
     assert.equal(gov.approvalsRequired, 1);
+    // #6811: the app's groups are listed on a project on the two columns too.
+    const cols = await governance.describeApproval(pool, app.id, gov);
+    assert.equal(cols.mode, 'columns');
+    assert.ok(cols.appGroups.some((g) => g.name === 'App users'), 'the sheet lists the app’s groups whatever the rules');
   });
 });

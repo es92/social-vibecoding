@@ -50,6 +50,7 @@ const { featuredAppsAdminRoutes } = require('./admin-featured-apps');
 const { emailTemplateAdminRoutes } = require('./admin-email-templates');
 const { emailImageAdminRoutes } = require('./email-images');
 const appStorageCap = require('../services/app-storage-cap');
+const appFiles = require('../services/app-files');
 const appLimit = require('../services/app-limit');
 const previewProjectsSetting = require('../services/preview-projects-setting');
 const versionsSetting = require('../services/versions-setting');
@@ -1953,17 +1954,42 @@ function adminRoutes(config) {
   // garbage instead of a 404, not a safety measure.
   const STORAGE_SLUG_RE = /^[a-z0-9][a-z0-9_-]{0,127}$/;
 
+  // Each app's stored files beside its database: what they take and the
+  // allowance they count against (services/app-files.js).
+  const NO_FILES = { fileBytes: 0, fileAppOwnedBytes: 0, fileCapBytes: appFiles.PER_APP_CAP, fileCapOverrideBytes: null };
+  function withFiles(payload, files) {
+    return {
+      ...payload,
+      apps: payload.apps.map((row) => ({ ...row, ...(files.get(row.slug) || NO_FILES) })),
+      defaults: { ...payload.defaults, fileCapBytes: appFiles.PER_APP_CAP },
+    };
+  }
+  // Staging mock data: fixed, obviously fake file figures for the demo
+  // rows, one of them under its own allowance.
+  function withDemoFiles(payload) {
+    const MB = 1024 * 1024;
+    const files = new Map(payload.apps.map((row, i) => [row.slug, {
+      fileBytes: [0, 640 * MB, 2300 * MB, 9 * 1024 * MB][i % 4],
+      fileAppOwnedBytes: [0, 600 * MB, 0, 8 * 1024 * MB][i % 4],
+      fileCapBytes: i % 4 === 3 ? 25 * 1024 * MB : appFiles.PER_APP_CAP,
+      fileCapOverrideBytes: i % 4 === 3 ? 25 * 1024 * MB : null,
+    }]));
+    return withFiles(payload, files);
+  }
+
   router.get('/api/admin/storage', async (req, res) => {
     // Staging mock data: a preview's cloned apps table may carry no
     // figures, and nothing is ever frozen from a preview, so ?demo=1
     // answers with fixed rows that show every state. Read-path only,
     // obviously fake, strict no-op in production.
     if (IS_STAGING && req.query.demo === '1') {
-      return res.json(appStorageCap.demoAdminPayload());
+      return res.json(withDemoFiles(appStorageCap.demoAdminPayload()));
     }
     try {
       const sweep = await clocks.status(pool, 'app-storage-cap');
-      res.json(await appStorageCap.adminPayload(pool, { lastSweep: sweep.result }));
+      const payload = await appStorageCap.adminPayload(pool, { lastSweep: sweep.result });
+      const files = await appFiles.adminFileFigures(pool);
+      res.json(withFiles(payload, files));
     } catch (err) {
       log.error('admin', 'Read app storage failed', { message: err.message });
       res.status(500).json({ error: 'Internal server error' });
@@ -1973,10 +1999,16 @@ function adminRoutes(config) {
   router.put('/api/admin/storage/:slug', requireAdminWrite, async (req, res) => {
     const slug = String(req.params.slug || '');
     if (!STORAGE_SLUG_RE.test(slug)) return res.status(400).json({ error: 'Invalid app slug' });
-    const { capBytes, graceMinutes } = req.body || {};
-    if (capBytes === undefined && graceMinutes === undefined) {
+    const { capBytes, graceMinutes, fileCapBytes } = req.body || {};
+    if (capBytes === undefined && graceMinutes === undefined && fileCapBytes === undefined) {
       return res.status(400).json({
-        error: 'Provide capBytes (a number of bytes, or null for the default) and/or graceMinutes',
+        error: 'Provide capBytes or fileCapBytes (a number of bytes, or null for the default) and/or graceMinutes',
+      });
+    }
+    if (fileCapBytes !== undefined && fileCapBytes !== null
+        && !(Number.isSafeInteger(fileCapBytes) && fileCapBytes >= 0)) {
+      return res.status(400).json({
+        error: 'fileCapBytes must be a non-negative integer number of bytes, or null for the default',
       });
     }
     if (capBytes !== undefined && capBytes !== null
@@ -2002,10 +2034,17 @@ function adminRoutes(config) {
         row = await appStorageCap.grantGrace(pool, slug, graceMinutes);
         if (!row) return res.status(404).json({ error: 'App not found' });
       }
+      let files = null;
+      if (fileCapBytes !== undefined) {
+        files = await appFiles.setFileCapOverride(pool, slug, fileCapBytes);
+        if (!files) return res.status(404).json({ error: 'App not found' });
+        if (!row) row = await appStorageCap.readApp(pool, slug);
+      }
+      if (!files) files = (await appFiles.adminFileFigures(pool)).get(slug) || NO_FILES;
       log.info('admin', 'App storage settings updated', {
-        by: req.user.username, slug, capBytes, graceMinutes,
+        by: req.user.username, slug, capBytes, graceMinutes, fileCapBytes,
       });
-      res.json(row);
+      res.json({ ...row, ...files });
     } catch (err) {
       log.error('admin', 'Update app storage failed', { slug, message: err.message });
       res.status(500).json({ error: 'Internal server error' });

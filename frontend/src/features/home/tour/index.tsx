@@ -448,11 +448,9 @@ function backToTopOfHome(): void {
 
 /**
  * #5528: Finish ends the tour ON the communities its first card pointed at:
- * Home's Pinned communities since One Home (#6361), brought into view
- * (Home.showCommunities), where it was the Communities page. Not the
- * community-scope setter (`goToCommunity` with null), which would reset the
- * tab's chosen community scope and forget the resumable Workshop view; the
- * tour changes neither.
+ * the Communities tab's page (Home.showCommunities), which lists the ones
+ * the reader is in. Opening that page forgets the Workshop view the tab
+ * would otherwise reopen, as every visit to it does (App.navigateToCommunities).
  */
 function goToCommunities(): void {
   const home = (window as unknown as { Home?: { showCommunities?: () => void } }).Home;
@@ -979,9 +977,9 @@ export function OnboardingTour() {
     clearStep(userId);
     setConfirming(false);
     setOpen(false);
-    // #5528: Finish's landing is Home's Pinned communities; Skip hands the
+    // #5528: Finish's landing is the Communities tab's page; Skip hands the
     // viewer back the top of the page they started on (the steps may have
-    // scrolled it). Either way the screen under the tour is Home.
+    // scrolled it), which is Home.
     if (ended === 'finish') goToCommunities();
     else backToTopOfHome();
     // Back on the screen under the tour: the next step of the path (#3369).

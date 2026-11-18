@@ -98,6 +98,50 @@ test('the clock stops a turn that runs past its budget', async () => {
   assert.equal(out.stopped, true);
 });
 
+// 18 Nov 2026: a shots run spent its agent's whole clock waiting for a worker
+// whose disk volume never mounted, and was reported as the agent running out
+// of time. What the turn runs on is readied before its clock starts.
+test('prepare runs before the clock starts: a slow worker is not the turn running out of time', async () => {
+  for (const steps of [() => durableSteps.none(), () => item().steps]) {
+    let stops = 0;
+    const order = [];
+    const out = await durableTurn.runTurn(steps(), 'shots', {
+      pool: pool(), session: SESSION, mode: 'shots', budgetMs: 20,
+      stop: () => { stops += 1; },
+      prepare: () => new Promise((resolve) => { order.push('prepare'); setTimeout(resolve, 60); }),
+      dispatch: async () => { order.push('dispatch'); return { result: { exitCode: 0 } }; },
+      deps: { worker: fakeWorker() },
+    });
+    assert.deepEqual(order, ['prepare', 'dispatch']);
+    assert.equal(stops, 0, 'the 60 ms of preparing is not counted against the 20 ms clock');
+    assert.equal(out.stopped, false);
+    assert.deepEqual(out.routed, { result: { exitCode: 0 } });
+  }
+});
+
+test('a prepare that throws is the dispatch failing; a turn a restart caught is followed without preparing', async () => {
+  const failed = await durableTurn.runTurn(item().steps, 'shots', {
+    pool: pool(), session: SESSION, mode: 'shots', budgetMs: 1000,
+    prepare: async () => { throw new Error('no worker'); },
+    dispatch: async () => { throw new Error('not reached'); },
+    deps: { worker: fakeWorker() },
+  });
+  assert.deepEqual(failed.routed, { error: 'dispatch: no worker' });
+
+  // A turn already running in its worker is followed, never prepared for:
+  // making its worker sure could replace it under the turn.
+  const w = item({ 'turn:build': { phase: 'started', mode: 'build', deadlineAt: Date.now() + 60000, headBefore: 'base', record: { turnId: 't-9', journal: '/j/9' } } });
+  let prepared = 0;
+  const followed = await durableTurn.runTurn(w.steps, 'build', {
+    pool: pool({ turnId: 't-9', journal: '/j/9', mode: 'build' }), session: SESSION, mode: 'build', budgetMs: 60000,
+    prepare: async () => { prepared += 1; },
+    dispatch: async () => { throw new Error('not dispatched again'); },
+    deps: { worker: fakeWorker({ exitCode: 0, pushOk: true }), agentTurn },
+  });
+  assert.equal(followed.followed, true);
+  assert.equal(prepared, 0);
+});
+
 test('a durable turn is saved as started, then with its record, then done, and only then is its record released', async () => {
   const w = item();
   const worker = fakeWorker();

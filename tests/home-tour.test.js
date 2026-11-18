@@ -114,16 +114,21 @@ test('every step points at a REAL control, and nothing is illustrated', () => {
   // The whole Pinned apps section, heading included, so the card never sits
   // on the heading the step is about (#3240); the grid is the fallback.
   assert.deepEqual([...byId.apps.targets], ['#home-apps-section', '#app-list']);
-  assert.match(message(byId.apps.body), /select New community/,
-    'the step names the tile that starts one, as Pinned communities labels it (One Home, #6361)');
-  assert.ok(message(byId.apps.body).includes(message('home:communities.new')));
+  // The card is about Pinned apps, which ends on New project: New community
+  // left Home with Pinned communities, for the Communities tab's page.
+  assert.match(message(byId.apps.body), /select New project/,
+    'the step names the control that starts one, as Pinned apps labels it');
+  assert.ok(message(byId.apps.body).includes(message('home:create.label')));
+  assert.doesNotMatch(message(byId.apps.body), /New community/, 'no tile of that name is on Home');
   // The way into Settings is the Me tab, whose screen carries
   // #profile-row-settings (#2718) — on a phone it is the only entrance,
   // since the phone has no sidebar gear to point the tour at.
   assert.deepEqual([...byId.settings.targets], ['#platform-tab-me']);
-  // #3567, moved by One Home (#6361): Home's Pinned communities, with
-  // Communities to join while nothing is pinned. No Communities tab.
-  assert.deepEqual([...byId.communities.targets], ['#home-communities-section', '#home-join-section']);
+  // #3567: the Communities tab, whose page is where the ones you are in
+  // live, with Home's Communities to join where the bar is not drawn. One
+  // Home (#6361) had no tab and pointed at Home's Pinned communities; the
+  // tab is back (18 Nov 2026) and Home no longer lists them.
+  assert.deepEqual([...byId.communities.targets], ['#platform-tab-workshop', '#home-join-section']);
   // #4604, moved by #6019: the bot's own tab. It left the Messages list for
   // that tab, so a stop pointing at Messages pointed at a screen without it.
   assert.deepEqual([...byId['meet-bot'].targets], ['#platform-tab-ai']);
@@ -139,7 +144,10 @@ test('every step points at a REAL control, and nothing is illustrated', () => {
   // Discover, and the phone's order names this one.
   const tabsCss = read('public/css/app.css');
   assert.doesNotMatch(tabsCss, /#platform-tab-ai \{ display: none/);
-  assert.match(tabsCss, /#platform-tab-ai \{ order: -3; \}/, 'second on the phone\'s bar since One Home (#6361)');
+  assert.match(tabsCss, /#platform-tab-ai \{ order: -3; \}/, 'third on the phone\'s bar, after Home and Communities');
+  // The Communities tab the first step points at is drawn on both bars too.
+  assert.doesNotMatch(tabsCss, /#platform-tab-workshop \{ display: none/);
+  assert.match(tabsCss, /#platform-tab-workshop \{ order: -4; \}/, 'second on the phone\'s bar, next to Home');
   // THE MENU ARC: the mark that opens it, then the well inside it that holds
   // both of its actions. The mark is on screen on every route, which is what
   // lets this step be the one the arc falls back to. No mock anywhere in the
@@ -427,23 +435,23 @@ test('a tall target is scrolled to its start, not centred past it', () => {
 test('the card keeps clear of the status bar, and the tour hands Home back at its top', () => {
   assert.match(OVERLAY_SRC, /--platform-safe-top/, 'the status bar is measured from the shell token');
   // #5528: handing Home back at its top is the SKIP path; Finish ends on
-  // Home's Pinned communities instead (One Home, #6361). The branch sits
+  // your communities instead, the Communities tab's page. The branch sits
   // inside finish(), after the shared bookkeeping.
   const finish = OVERLAY_SRC.slice(OVERLAY_SRC.indexOf('const finish = useCallback(('));
   const fbody = finish.slice(0, finish.indexOf('}, [userId]);'));
   const main = fbody.slice(fbody.indexOf('clearStep(userId);'));
   assert.match(main, /if \(ended === 'finish'\) goToCommunities\(\);\s*else backToTopOfHome\(\);/,
-    'the hand-back is the skip path; Finish brings Pinned communities into view');
+    'the hand-back is the skip path; Finish opens your communities');
   // The first-touch wait was for a tour that started by itself under the
   // phone's own post-sign-in dialog. It starts on a press now (#3240).
   assert.doesNotMatch(OVERLAY_SRC, /FIRST_TOUCH_WAIT_MS|whenUserSettled/);
 });
 
-test('Finish ends on your communities, Skip stays on Home\'s top (#5528; One Home, #6361)', () => {
+test('Finish ends on your communities, Skip stays on Home\'s top (#5528)', () => {
   // The tour's last card says Finish takes you to your communities, and it
-  // does: Home's Pinned communities, brought into view, where it was the
-  // Communities page. Skip, and Escape then "Skip the tour", leave the
-  // viewer on Home, at its top.
+  // does: the Communities tab's page, which lists them. (It brought Home's
+  // Pinned communities into view while One Home, #6361, had no tab.) Skip,
+  // and Escape then "Skip the tour", leave the viewer on Home, at its top.
   const finish = OVERLAY_SRC.slice(OVERLAY_SRC.indexOf('const finish = useCallback(('));
   const fbody = finish.slice(0, finish.indexOf('}, [userId]);'));
   // The real path and the screenshot route branch the same way; the shot
@@ -452,16 +460,17 @@ test('Finish ends on your communities, Skip stays on Home\'s top (#5528; One Hom
     'both the shot route and the real one branch on `ended`');
   assert.ok(fbody.indexOf('if (isTourShot()) {') < fbody.indexOf('writeDone(userId);'),
     'the shot returns before anything is written');
-  // The helper asks Home to show the section. NOT goToCommunity(null): that
-  // would reset the tab's chosen community scope, which the tour has no
-  // business doing.
+  // The helper asks Home for the door, and Home opens the page by its
+  // address. NOT goToCommunity(null), the switcher's own setter, which the
+  // tour has no business calling.
   const helper = OVERLAY_SRC.slice(OVERLAY_SRC.indexOf('function goToCommunities()'));
   const helperBody = helper.slice(0, helper.indexOf('\n}'));
   assert.match(helperBody, /home\?\.showCommunities\?\.\(\);/);
-  assert.doesNotMatch(helperBody, /#communities/);
+  assert.doesNotMatch(helperBody, /#communities/, 'the address is Home\'s to know');
   assert.doesNotMatch(OVERLAY_SRC, /goToCommunity\(/);
-  assert.match(read('frontend/src/features/home/home.js'), /showCommunities\(\{ all = false \} = \{\}\) \{[\s\S]*?document\.getElementById\('home-communities-section'\);/);
-  // Either way the screen under the tour is Home, so its step is re-reported.
+  assert.match(read('frontend/src/features/home/home.js'), /showCommunities\(\) \{\s*if \(location\.hash !== '#communities'\) location\.hash = '#communities';\s*\},/,
+    'the Communities tab\'s page, and nothing scrolled on Home');
+  // Either way the screen is re-reported once, after the door is asked for.
   assert.equal((fbody.match(/_renotifyNavigation/g) || []).length, 1);
   const main = fbody.slice(fbody.indexOf('clearStep(userId);'));
   assert.ok(main.indexOf('goToCommunities();') < main.indexOf('_renotifyNavigation'));

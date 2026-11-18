@@ -13,11 +13,12 @@
  *     over the card. It lies over the card's content and never changes the
  *     card's height; × on its right, Escape, or a press on the dimmed card
  *     closes it (./step-store.ts).
- *   - `PlanWords` and `ShotsWait`: a plan's text for the layer, and the well
- *     that holds the picture's place before there is one.
+ *   - `PlanWords`, `ShotsWait` and `NoPicture`: a plan's text for the layer,
+ *     the well that holds the picture's place before there is one, and what
+ *     that well says when there will be no picture.
  */
 
-import { createContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode , type CSSProperties } from 'react';
+import { createContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode , type CSSProperties } from 'react';
 
 import { SparklesIcon, XIcon } from '@/components/ui/icons';
 
@@ -27,6 +28,7 @@ import { AppIconContent, appIconKind } from '../../apps/app-card-view';
 import type { FootTone } from './card-model';
 import { dotLine } from './frame/topic-page';
 import type { RequestSpecCard } from './request-model';
+import { TouchesPicture, readTouches } from '../workshop/touches';
 
 /**
  * Whether the page draws the card (the standard look and the brand look), and
@@ -330,9 +332,25 @@ export function PlanWords({ plan }: { plan: RequestSpecCard }): ReactNode {
  * are taken after them), or this version never passed them. A change that
  * is past its tests with no picture says nothing: there is no reason to give.
  */
-export function NoPicture({ none, phase, stopped }: { none: boolean; phase: string; stopped: boolean }): ReactNode {
+export function NoPicture({ none, phase, stopped, touches, diagramLed = false }: {
+  none: boolean;
+  phase: string;
+  stopped: boolean;
+  /** #4490: "What it touches" for this head, if it was read for it. */
+  touches?: unknown;
+  /** The page already leads with the author's diagram, so it needs no box. */
+  diagramLed?: boolean;
+}): ReactNode {
   const t = useMessages('project');
-  if (none) return <ShotsWait state="none" title={t('project:topic.card.shots.noneTitle')} text={t('project:topic.card.shots.noneText')} />;
+  const touchesPicture = useMemo(() => readTouches(touches), [touches]);
+  if (none) {
+    // #4490: nothing on screen changes, so no shots were asked for. The
+    // picture of what did change ("What it touches") says it better than the
+    // box does, and its foot still says nothing on screen changes.
+    if (diagramLed) return null;
+    if (touchesPicture) return <TouchesPicture t={touchesPicture} nothingVisible />;
+    return <ShotsWait state="none" title={t('project:topic.card.shots.noneTitle')} text={t('project:topic.card.shots.noneText')} />;
+  }
   if (phase === 'testing') return <ShotsWait state="waiting" title={t('project:topic.card.shots.notYetTitle')} text={t('project:topic.card.shots.notYetText')} />;
   if (phase === 'failed') {
     return stopped

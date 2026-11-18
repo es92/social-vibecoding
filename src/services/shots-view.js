@@ -254,8 +254,56 @@ function fromSnapshot(session, currentHead) {
   };
 }
 
-function matchesCurrentRun(run, currentHead) {
-  return !currentHead || run.headSha === currentHead;
+// Shots published on a head that a clean merge of main then moved stand for
+// the merged head (the shots machine's carry): the slot names the merged
+// head and the run they were taken on.
+function carriedTo(session, run) {
+  const detail = session?.shots_detail;
+  if (!run || run.state !== 'verified' || !detail || typeof detail !== 'object') return null;
+  return typeof detail.carriedFrom === 'string' && detail.carriedFrom === run.headSha
+    && typeof detail.headSha === 'string' ? detail.headSha : null;
+}
+
+function matchesCurrentRun(run, currentHead, session = null) {
+  return !currentHead || run.headSha === currentHead || carriedTo(session, run) === currentHead;
+}
+
+// The shots people last saw (shots_detail.previous): a run published on an
+// earlier version of the proposal. Its card keeps them, labelled as the
+// previous version's, while this version's are taken, and after they failed
+// or were skipped, until this version's publish (src/workflow/shots/).
+function previousRunId(session) {
+  const value = session?.shots_detail?.previous;
+  return value && typeof value === 'object' && ARTIFACT_ID_RE.test(String(value.runId || ''))
+    ? String(value.runId) : null;
+}
+
+// The previous version's shots as a published run's view has them: what
+// its card draws, and nothing about the run under way.
+function serializePrevious(run, session, slug, { dense = false } = {}) {
+  if (!run || run.id !== previousRunId(session) || run.sessionId !== Number(session?.id)) return null;
+  const claims = cleanClaims(run.claims);
+  const artifacts = cleanArtifacts(run.artifactSummary, { slug, sessionId: session.id, verified: true, dense });
+  if (!claims.length || !artifacts.some((artifact) => artifact.variant === 'context')) return null;
+  return {
+    state: 'verified',
+    claims,
+    baseSha: run.baseSha || null,
+    headSha: run.headSha || null,
+    shotResults: cleanShotResults(run.shotResults),
+    shotNotices: cleanShotNotices(run.shotNotices, claims),
+    afterOnly: run.afterOnly === true,
+    screens: withDensity(cleanScreens(run.screens, claims), artifacts),
+    artifacts,
+    updatedAt: run.updatedAt || null,
+  };
+}
+
+// The view, with the previous version's shots beside it while this
+// version has none published.
+function withPrevious(view, previous) {
+  if (!view) return view;
+  return { ...view, previous: view.state !== 'verified' && view.state !== 'not_required' && previous ? previous : null };
 }
 
 // A screen's geometry stays its CSS pixels; its `density` is that of the
@@ -273,9 +321,9 @@ function withDensity(screens, artifacts) {
 // (viewerSeesDense). Off, the view is exactly what it was before them.
 function serialize(run, session, slug, currentHead, { dense = false } = {}) {
   if (!run) return fromSnapshot(session, currentHead);
-  const verified = matchesCurrentRun(run, currentHead) && run.state === 'verified';
+  const matchesCurrent = matchesCurrentRun(run, currentHead, session);
+  const verified = matchesCurrent && run.state === 'verified';
   const artifacts = cleanArtifacts(run.artifactSummary, { slug, sessionId: session.id, verified, dense });
-  const matchesCurrent = !currentHead || run.headSha === currentHead;
   const publicState = matchesCurrent ? run.state : 'stale';
   return {
     state: PUBLIC_STATES.has(publicState) ? publicState : 'failed',
@@ -337,8 +385,18 @@ async function getForSession(pool, session, slug = session?.app_slug, { viewer =
   const currentHead = visualHeadForSession(session);
   let run = null;
   if (currentHead) run = await state.getForSession(pool, Number(session.id), { headSha: currentHead });
-  const dense = run ? await viewerSeesDense(pool, viewer) : false;
-  return serialize(run, session, slug, currentHead, { dense });
+  // Shots carried across a clean merge of main were taken on the head it
+  // left.
+  const carriedFrom = session.shots_detail?.carriedFrom;
+  if (!run && currentHead && session.shots_detail?.headSha === currentHead && state.validSha(carriedFrom)) {
+    run = await state.getForSession(pool, Number(session.id), { headSha: carriedFrom });
+  }
+  const previousId = previousRunId(session);
+  const dense = run || previousId ? await viewerSeesDense(pool, viewer) : false;
+  const view = serialize(run, session, slug, currentHead, { dense });
+  if (!view || !previousId || view.state === 'verified' || view.state === 'not_required') return withPrevious(view, null);
+  const previous = (await state.getPublishedRuns(pool, [previousId])).get(previousId);
+  return withPrevious(view, serializePrevious(previous, session, slug, { dense }));
 }
 
 async function getForSessions(pool, sessions, slug, { viewer = null } = {}) {
@@ -366,17 +424,25 @@ async function getForSessions(pool, sessions, slug, { viewer = null } = {}) {
     );
     for (const row of rows) bySession.set(Number(row.session_id), state.runSummary(row, row.artifact_summary || []));
   }
-  const dense = bySession.size ? await viewerSeesDense(pool, viewer) : false;
+  // The previous version's shots, for the proposals whose own are not
+  // published (shots_detail.previous).
+  const previousIds = list.filter((session) => session.shots_state !== 'verified' && session.shots_state !== 'not_required')
+    .map(previousRunId).filter(Boolean);
+  const previousRuns = previousIds.length ? await state.getPublishedRuns(pool, previousIds) : new Map();
+  const dense = bySession.size || previousRuns.size ? await viewerSeesDense(pool, viewer) : false;
   const result = new Map();
   for (const session of list) {
     const currentHead = visualHeadForSession(session);
-    result.set(Number(session.id), serialize(
+    const view = serialize(
       bySession.get(Number(session.id)) || null,
       session,
       slug || session.app_slug,
       currentHead,
       { dense },
-    ));
+    );
+    const previousId = previousRunId(session);
+    result.set(Number(session.id), withPrevious(view, previousId
+      ? serializePrevious(previousRuns.get(previousId), session, slug || session.app_slug, { dense }) : null));
   }
   return result;
 }
@@ -393,6 +459,8 @@ module.exports = {
   notStartedReason,
   fromSnapshot,
   serialize,
+  serializePrevious,
+  withPrevious,
   getForSession,
   getForSessions,
 };

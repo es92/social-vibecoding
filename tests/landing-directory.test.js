@@ -222,7 +222,7 @@ test('the join pill is the marketing URL, from the server, opened externally', (
   // fetches in an effect, so neither is computed during render — a value read
   // at render time would differ between the prerender and the client and
   // console.error, and a console error on any route fails the proposal checks.
-  assert.match(tsx, /const waitlistPayload = useWaitlistOptions\(\)/,
+  assert.match(tsx, /const waitlistPayload = useWaitlistOptions\(mounted\)/,
     '…through the hook, i.e. in an effect — never during render (hydration)');
   assert.match(tsx, /const waitlistUrl = marketingWaitlistUrl\(waitlistPayload\)/,
     'the join pill derives from that one call');

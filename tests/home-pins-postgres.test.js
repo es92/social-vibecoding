@@ -157,7 +157,7 @@ test('home pins: join pins the community, so does making one, an app pin joins n
 // activity): for each pinned community, how many members, what went live
 // this week, and who took part this week (people only, the most recent
 // first, with their picture), never for a community the viewer cannot see.
-test('home pins: each pinned community says its members, what went live and who was there this week (PostgreSQL)', async (t) => {
+test('home pins: each community you pinned or are in says its members, what went live and who was there this week (PostgreSQL)', async (t) => {
   const dsn = process.env.TEST_DATABASE_URL || 'postgres://postgres:postgres@127.0.0.1:5432/postgres';
   const root = new Client({ connectionString: dsn, connectionTimeoutMillis: 2000 });
   try { await root.connect(); } catch (err) { await root.end().catch(() => {}); return t.skip(`Local test database unavailable: ${err.code}`); }
@@ -189,6 +189,14 @@ test('home pins: each pinned community says its members, what went live and who 
     await communities.join(pool, tide, carol.id);
     await pool.query('INSERT INTO home_community_pins (community_id, user_id, position) VALUES ($1, $2, 5), ($3, $2, 6)',
       [garden.community_id, alice.id, secret.community_id]);
+    // The Communities page's Joined group: in it, not pinned. Joining pins a
+    // community, so orchard is one alice unpinned; club is a private one she
+    // is a member of and never pinned.
+    const orchard = await addApp('orchard');
+    await communities.join(pool, orchard, alice.id);
+    await pool.query('DELETE FROM home_community_pins WHERE community_id = $1 AND user_id = $2', [orchard.community_id, alice.id]);
+    const club = await addApp('club', 'private');
+    await pool.query('INSERT INTO community_members (community_id, user_id) VALUES ($1, $2)', [club.community_id, alice.id]);
 
     const say = (app, user, ago) => pool.query(
       `INSERT INTO chat_messages (app_id, user_id, content, created_at) VALUES ($1, $2, 'hi', NOW() - $3::interval)`,
@@ -221,7 +229,8 @@ test('home pins: each pinned community says its members, what went live and who 
     };
     assert.equal((await get('')).status, 401, 'signed out has none');
     const { activity } = (await get()).body;
-    assert.deepEqual(Object.keys(activity).sort(), ['garden', 'tide'], 'the pins Home draws, not the private one');
+    assert.deepEqual(Object.keys(activity).sort(), ['club', 'garden', 'orchard', 'tide'],
+      'the pins the page draws and the others she is in; not the private one she only pinned');
     // tide: alice and carol joined it. Bob's change, just now, is the
     // latest; then carol's message, an hour ago; then dana's vote. One change
     // went live this week, the other three weeks ago.
@@ -238,6 +247,9 @@ test('home pins: each pinned community says its members, what went live and who 
     assert.deepEqual(activity.garden, {
       members: 0, liveWeek: 0, activeWeek: 1, people: [{ username: 'carol', avatarUrl: '/avatars/carolpic' }],
     });
+    // A joined one says the same things; a quiet one says only who is in it.
+    assert.deepEqual(activity.orchard, { members: 1, liveWeek: 0, activeWeek: 0, people: [] });
+    assert.deepEqual(activity.club, { members: 1, liveWeek: 0, activeWeek: 0, people: [] });
   } finally {
     if (server) await new Promise((resolve) => server.close(resolve));
     if (pool) await pool.end().catch(() => {});

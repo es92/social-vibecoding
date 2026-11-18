@@ -100,7 +100,7 @@ import { CreateCompact } from './create-tile';
 import { ChallengesSection } from './panels/sections';
 import { HomeJoin } from './home-join';
 import { NeedsYouCard } from './needs-you-card';
-import { PinnedCommunities } from './pinned-communities';
+import { HomeCommunityMatches } from './pinned-communities';
 import { HomeSearchMake } from './search-make';
 import { SectionHeading } from './panels/ui';
 import { WipCard, WipCta, WipHeadMore } from './wip-kit';
@@ -167,8 +167,8 @@ export function HomeScreen() {
   const canEdit = grid.ready && grid.view === 'grid' && !grid.editing
     && grid.items.some((item) => !item.app.demo);
   // ONE HOME (#6361): Pinned apps appears once something is pinned. A new
-  // member meets their communities first, and the second kind of pin when
-  // they choose it (the app's Pin to Home, the hub's ⋯, "Pin its app too").
+  // member meets the communities to join first, and this pin when they
+  // choose it (the app's Pin to Home, the hub's ⋯, "Pin its app too").
   // My apps is hidden only when the loaded grid has nothing at all to show:
   // an account at rest with no apps still draws the trailing New project tile
   // (#6522), so an empty grid whose create view Home.render() hands it keeps
@@ -434,7 +434,7 @@ export function HomeScreen() {
             ) : wip ? t('home:grid.headingProjects') : t('home:grid.heading')}
           </SectionHeading>
           {/* In Standard (WIP) the grid and its "Show all" line are one card
-              (WipCard, ./wip-kit.tsx), as Pinned communities' tiles are. */}
+              (WipCard, ./wip-kit.tsx). */}
           <WipCard on={wip}>
           {frame && grid.editing ? null : <AppGrid />}
           {/*
@@ -449,7 +449,7 @@ export function HomeScreen() {
         </section>
         {/*
             A SEARCH NOTHING ANSWERS IS AN IDEA (./search-make.tsx, #5928):
-            under the grid's own no-match line, once Pinned communities and
+            under the grid's own no-match line, once your communities and
             Communities to join have none either, Make opens "What do you
             want to make?" with the words typed in. Null in the prerender.
         */}
@@ -511,7 +511,15 @@ export function HomeScreen() {
             model now feeds both, rather than a second pass copying one to
             the other.
         */}
-        <PinnedCommunities />
+        {/*
+            YOUR COMMUNITIES THAT MATCH THE SEARCH (./pinned-communities.tsx
+            HomeCommunityMatches). Home no longer lists your communities:
+            they are the Communities tab's page (`#communities`,
+            ../communities/). The section is hidden until something is typed
+            in the field above, so a search here still finds them. It stays
+            mounted under every look, since it is what reads the pins.
+        */}
+        <HomeCommunityMatches />
         {/*
             A PRIVATE MEMBER'S WAITLIST CARD (./waitlist-card.tsx): an invite
             link let them into their group's apps, and this is where they join

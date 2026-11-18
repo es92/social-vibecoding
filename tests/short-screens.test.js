@@ -103,10 +103,17 @@ test('the layout audit has the Android app\'s shape, with its navigation bar', a
 });
 
 test('M01: on a narrow phone the lit Messages pill clears "Homeroom bot"', () => {
-  // Home's and You's short words give the bot's and Messages' seats room;
-  // four seats since One Home (#6361).
-  assert.match(APP_CSS, /@media \(max-width: 767\.98px\) \{[\s\S]{0,600}#platform-tabs \{ grid-template-columns: 1fr 1\.4fr 1\.15fr 1fr; \}/);
-  assert.match(APP_CSS, /@media \(max-width: 374\.98px\) \{[\s\S]{0,300}#platform-tabs \{ grid-template-columns: 1fr 1\.35fr 1\.15fr 1fr; \}/);
+  // Home's and You's short words give Communities', the bot's and Messages'
+  // seats room. Five seats again: the Communities tab is back, second, next
+  // to Home (One Home, #6361, had drawn four).
+  assert.match(APP_CSS, /@media \(max-width: 767\.98px\) \{[\s\S]{0,600}#platform-tabs \{ grid-template-columns: 1fr 1\.25fr 1\.4fr 1\.15fr 1fr; \}/);
+  assert.match(APP_CSS, /@media \(max-width: 374\.98px\) \{[\s\S]{0,300}#platform-tabs \{ grid-template-columns: 1fr 1\.2fr 1\.35fr 1\.15fr 1fr; \}/);
+  // Messages' seat is still wider than Home's and You's, and the bot's the
+  // widest, so the lit Messages pill has the same room beside the bot's name.
+  const seats = /#platform-tabs \{ grid-template-columns: ([^;]+); \}/.exec(APP_CSS)[1].split(' ').map(parseFloat);
+  assert.equal(seats.length, 5);
+  assert.ok(seats[2] > seats[1] && seats[1] > seats[3] && seats[3] > seats[0] && seats[0] === seats[4],
+    'Homeroom bot, then Communities, then Messages, then Home and You');
   // The audience chips that had to fit at 393 went with All communities'
   // list (One Home, #6361).
 });

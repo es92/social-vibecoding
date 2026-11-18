@@ -179,6 +179,14 @@ const KINDS = Object.freeze({
     topic: 'infra', fixer: 'bot', source: 'poll', fileAfterMs: 0, quietMs: DAY, admin: 'incidents',
     done: 'Every interrupted turn is picked up again, with none given up on for a day.',
   }),
+  // One node whose worker state volumes keep failing to be created or
+  // mounted (services/worker-volume-heal.js raises it, keyed by the node):
+  // 18 Nov 2026, a full OpenEBS thin pool. Pushed, so it clears once it has
+  // not been raised for PUSH_STALE_MS.
+  worker_volumes: Object.freeze({
+    topic: 'infra', fixer: 'infra', source: 'push', fileAfterMs: 0, quietMs: 30 * MINUTE, admin: 'status',
+    done: 'Worker volumes on this node are created and mounted again, with none failing for 3 hours.',
+  }),
 });
 
 const WHO_TEXT = Object.freeze({

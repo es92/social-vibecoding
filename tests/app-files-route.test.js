@@ -91,7 +91,7 @@ test('serves a public file: streamed bytes, stored type, immutable cache', async
     const res = await fetch(`http://127.0.0.1:${server.address().port}/app-files/${GOOD_ID}`);
     assert.equal(res.status, 200);
     assert.equal(res.headers.get('content-type'), 'image/png');
-    assert.equal(res.headers.get('cache-control'), 'public, max-age=31536000, immutable');
+    assert.equal(res.headers.get('cache-control'), 'public, max-age=31536000, immutable, no-transform');
     assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
     assert.match(res.headers.get('content-disposition'), /^inline; filename="dish.png"/);
     const body = Buffer.from(await res.arrayBuffer());
@@ -154,7 +154,7 @@ test('private file: 404 without a token, served with a valid one, short private 
     });
     const res = await fetch(`${base}?token=${good}`);
     assert.equal(res.status, 200);
-    assert.equal(res.headers.get('cache-control'), 'private, max-age=3600');
+    assert.equal(res.headers.get('cache-control'), 'private, max-age=3600, no-transform');
   } finally {
     server.close();
   }
@@ -198,7 +198,7 @@ function shellPoolHandler({ appBytes = 0, userBytes = 0, stagingBytes = 0 } = {}
     }
     if (/INSERT INTO app_files/.test(sql)) {
       inserts.push(params);
-      return { rows: [] };
+      return { rows: [{ id: params[0], filename: params[4], content_type: params[5], size_bytes: params[6], visibility: params[7], owner: params[3], sha256: params[9], created_at: new Date(0) }] };
     }
     if (/SELECT id, user_id FROM app_files/.test(sql)) {
       return { rows: [{ id: params[0], user_id: 5 }] };
@@ -224,9 +224,9 @@ test('shell upload stores the file and returns the stored shape', async () => {
     assert.match(j.id, /^[a-f0-9]{32}$/);
     assert.equal(j.contentType, 'image/png');
     assert.equal(j.visibility, 'public');
-    // INSERT params: [id, appId, userId, filename, contentType, size, visibility, staging]
+    // INSERT params: [id, appId, userId, owner, filename, contentType, size, visibility, staging, sha256]
     assert.equal(handler.inserts.length, 1);
-    assert.equal(handler.inserts[0][7], false);
+    assert.equal(handler.inserts[0][8], false);
   } finally {
     server.close();
   }
@@ -242,7 +242,7 @@ test('shell upload with staging=1 stamps the row', async () => {
       { method: 'POST', headers: { 'content-type': 'application/octet-stream', 'X-Usernode-App-Bridge': 'isolated-v2' }, body: PNG }
     );
     assert.equal(res.status, 200);
-    assert.equal(handler.inserts[0][7], true);
+    assert.equal(handler.inserts[0][8], true);
   } finally {
     server.close();
   }
@@ -297,7 +297,7 @@ test('shell upload accepts a 6 MB MP3 through the raw parser as audio/mpeg', asy
     const j = await res.json();
     assert.equal(j.contentType, 'audio/mpeg');
     assert.equal(handler.inserts.length, 1);
-    assert.equal(handler.inserts[0][4], 'audio/mpeg');
+    assert.equal(handler.inserts[0][5], 'audio/mpeg');
   } finally {
     server.close();
   }
@@ -388,7 +388,7 @@ test('shell upload stores a PDF through the raw parser as application/pdf', asyn
     const j = await res.json();
     assert.equal(j.contentType, 'application/pdf');
     assert.equal(handler.inserts.length, 1);
-    assert.equal(handler.inserts[0][4], 'application/pdf');
+    assert.equal(handler.inserts[0][5], 'application/pdf');
   } finally {
     server.close();
   }
@@ -472,4 +472,112 @@ test('a preview identity can serve preview private files but never production pr
     assert.equal((await fetch(base + preview)).status, 200);
     assert.equal((await fetch(base + production)).status, 200);
   } finally { server.close(); }
+});
+
+// ── Byte ranges ─────────────────────────────────────────────────────
+
+test('a Range request gets 206 with only those bytes; an impossible one 416', async () => {
+  const AUDIO = Buffer.concat([Buffer.from('ID3'), Buffer.from('0123456789abcdef')]);
+  poolQueryHandler = async () => ({
+    rows: [{
+      id: GOOD_ID, app_id: 7, filename: 'chapter.mp3', content_type: 'audio/mpeg', visibility: 'public',
+      size_bytes: AUDIO.length, sha256: 'e'.repeat(64),
+    }],
+  });
+  const asked = [];
+  const server = await startServeServer(fakeStore({
+    async getFileStream(_appId, _id, range) {
+      asked.push(range);
+      return Readable.from([range ? AUDIO.subarray(range.start, range.end + 1) : AUDIO]);
+    },
+  }));
+  const url = `http://127.0.0.1:${server.address().port}/app-files/${GOOD_ID}`;
+  try {
+    const whole = await fetch(url);
+    assert.equal(whole.status, 200);
+    assert.equal(whole.headers.get('accept-ranges'), 'bytes');
+    assert.equal(whole.headers.get('content-length'), String(AUDIO.length));
+    assert.equal(whole.headers.get('etag'), `"${'e'.repeat(64)}"`);
+    assert.deepEqual(Buffer.from(await whole.arrayBuffer()), AUDIO);
+
+    const part = await fetch(url, { headers: { range: 'bytes=3-6' } });
+    assert.equal(part.status, 206);
+    assert.equal(part.headers.get('content-range'), `bytes 3-6/${AUDIO.length}`);
+    assert.equal(part.headers.get('content-length'), '4');
+    assert.deepEqual(Buffer.from(await part.arrayBuffer()), Buffer.from('0123'));
+
+    const tail = await fetch(url, { headers: { range: 'bytes=-2' } });
+    assert.equal(tail.status, 206);
+    assert.deepEqual(Buffer.from(await tail.arrayBuffer()), Buffer.from('ef'));
+
+    const beyond = await fetch(url, { headers: { range: `bytes=${AUDIO.length}-` } });
+    assert.equal(beyond.status, 416);
+    assert.equal(beyond.headers.get('content-range'), `bytes */${AUDIO.length}`);
+
+    // The store was asked for the range itself, never the whole file to slice.
+    assert.deepEqual(asked, [null, { start: 3, end: 6 }, { start: AUDIO.length - 2, end: AUDIO.length - 1 }]);
+  } finally {
+    server.close();
+  }
+});
+
+test('a store error after the headers ends the response at once instead of leaving it waiting', async () => {
+  poolQueryHandler = async () => ({
+    rows: [{
+      id: GOOD_ID, app_id: 7, filename: 'chapter.mp3', content_type: 'audio/mpeg', visibility: 'public',
+      size_bytes: 1000, sha256: null,
+    }],
+  });
+  const server = await startServeServer(fakeStore({
+    async getFileStream() {
+      // Ten of the promised 1000 bytes, then the object store fails.
+      return new Readable({
+        read() {
+          if (this.sent) { this.destroy(new Error('connection reset by object store')); return; }
+          this.sent = true;
+          this.push(Buffer.alloc(10, 1));
+        },
+      });
+    },
+  }));
+  try {
+    const started = Date.now();
+    // The connection is cut: before the headers arrive, or partway through
+    // the body. Either way the client learns at once.
+    await assert.rejects((async () => {
+      const res = await fetch(`http://127.0.0.1:${server.address().port}/app-files/${GOOD_ID}`);
+      await res.arrayBuffer();
+    })());
+    assert.ok(Date.now() - started < 3000, 'the body fails fast rather than waiting for the socket timeout');
+  } finally {
+    server.close();
+  }
+});
+
+test('a client that goes away destroys the object-store stream', async () => {
+  poolQueryHandler = async () => ({
+    rows: [{
+      id: GOOD_ID, app_id: 7, filename: 'chapter.mp3', content_type: 'audio/mpeg', visibility: 'public',
+      size_bytes: 10 * 1024 * 1024, sha256: null,
+    }],
+  });
+  let source;
+  const destroyed = new Promise((resolve) => {
+    source = new Readable({ read() { this.push(Buffer.alloc(64 * 1024, 2)); } });
+    source.on('close', resolve);
+  });
+  const server = await startServeServer(fakeStore({ async getFileStream() { return source; } }));
+  try {
+    const controller = new AbortController();
+    const res = await fetch(`http://127.0.0.1:${server.address().port}/app-files/${GOOD_ID}`, { signal: controller.signal });
+    const reader = res.body.getReader();
+    await reader.read();
+    controller.abort();
+    await Promise.race([
+      destroyed,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('source never destroyed')), 3000)),
+    ]);
+  } finally {
+    server.close();
+  }
 });

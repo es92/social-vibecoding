@@ -324,7 +324,17 @@ async function runSyncWork(config, pool, {
       dispatch: async (extra, { budgetMs } = {}) => {
         // Always on the platform key.
         await deps.worker.ensureWorkerImage();
-        await deps.worker.ensureWorker(id, { repoOwner, repoName, branchName: session.branch_name, onProgress });
+        await deps.worker.ensureWorker(id, { repoOwner, repoName, branchName: session.branch_name, onProgress })
+          .catch((err) => {
+            // A worker that could not start says why in words ("Sync with
+            // main failed: This change's worker couldn't start: its disk
+            // volume failed to mount."), not as its setup's Kubernetes
+            // message. The error itself is the worker's, shared with any
+            // other caller waiting on the same setup: it is wrapped, never
+            // changed.
+            const reason = typeof deps.worker.workerStartReason === 'function' ? deps.worker.workerStartReason(err) : null;
+            throw reason ? Object.assign(new Error(reason), { cause: err }) : err;
+          });
         const result = await deps.worker.execInWorker(id, {
           mode: 'sync',
           prompt: '(sync turn — see MODE=sync block in run-cc.sh)',

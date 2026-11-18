@@ -31,6 +31,7 @@
  * edit.
  */
 
+const governance = require('./governance');
 const governanceRules = require('./governance-rules');
 const renamePr = require('./rename-pr');
 const appManifest = require('./app-manifest');
@@ -124,9 +125,21 @@ async function checkPeople(pool, governance) {
   }
 }
 
-/** "Lifeguards: @evan, @maya.", "Lifeguards: nobody yet.", or a kept group. */
-function groupPeopleLine(group) {
-  if (group.keptByApp) return `${group.name}: kept by the app.`;
+/** How many people, in words the proposal's readers count: "12 people today". */
+function peopleToday(n) {
+  return `${n} ${n === 1 ? 'person' : 'people'} today`;
+}
+
+/**
+ * "Lifeguards: @evan, @maya.", "Lifeguards: nobody yet.", or a kept group.
+ * #6811: a kept group the app has sent a list for says its size, so the
+ * people voting on it see how big it is. Counts only.
+ */
+function groupPeopleLine(group, sizes) {
+  if (group.keptByApp) {
+    const sent = sizes && sizes.get(governanceRules.groupKey(group.name));
+    return sent ? `${group.name}: kept by the app, ${peopleToday(sent.size)}.` : `${group.name}: kept by the app.`;
+  }
   return group.people.length
     ? `${group.name}: ${group.people.map((p) => `@${p}`).join(', ')}.`
     : `${group.name}: nobody yet.`;
@@ -138,13 +151,13 @@ function groupPeopleLine(group) {
  * has today (`change.was`, absent on an operation queued before it was
  * passed). Nothing here decides anything: it describes the change.
  */
-function describeRulesChange(change) {
+function describeRulesChange(change, sizes = null) {
   const full = governanceRules.describeRulesInFull(change.governance);
   const lines = ['A change goes live when any one of these rules passes:'];
   for (const sentence of full.sentences) lines.push(`- ${sentence}`);
   if (full.groups.length) {
     lines.push('');
-    for (const group of full.groups) lines.push(groupPeopleLine(group));
+    for (const group of full.groups) lines.push(groupPeopleLine(group, sizes));
   }
   const was = change.was || null;
   const diff = was ? governanceRules.diffRules(was.rules, change.governance) : null;
@@ -155,8 +168,10 @@ function describeRulesChange(change) {
     for (const rule of diff.added) changes.push(`- Added: ${governanceRules.ruleSentence(rule, groups)}.`);
     for (const rule of diff.removed) changes.push(`- Removed: ${governanceRules.ruleSentence(rule, groups)}.`);
     for (const group of diff.groupsAdded) {
+      // #6811: with the app's size when it has sent this group's list.
+      const sent = group.keptByApp && sizes && sizes.get(governanceRules.groupKey(group.name));
       const people = group.keptByApp
-        ? ' (kept by the app)'
+        ? (sent ? ` (kept by the app, ${peopleToday(sent.size)})` : ' (kept by the app)')
         : (group.people.length ? ` (${group.people.map((p) => `@${p}`).join(', ')})` : '');
       changes.push(`- New group: ${group.name}${people}.`);
     }
@@ -196,6 +211,16 @@ async function createWhoDecidesPR(config, pool, app, change, actor, { steps } = 
     ? `${actor.username} (via Homeroom) proposed a change to how changes to "${app.name}" are approved.`
     : `${actor.username} (via Homeroom) proposed a change to who can see and change "${app.name}": it ${parts.join(', and ')}.`;
   const block = change.governance ? governanceRules.blockFor(change.governance) : null;
+  // #6811: the app's own sizes, so a kept group's line says how many people it
+  // has today. Best-effort: a failed read leaves the line as it was.
+  const sizes = new Map();
+  if (change.governance) {
+    try {
+      for (const g of await governance.listAppGroups(pool, app.id)) {
+        if (g.reportedAt) sizes.set(g.key, { size: g.size });
+      }
+    } catch { /* the description is the rules without sizes */ }
+  }
   const result = await renamePr.createManifestPR(config, pool, app, actor, {
     steps,
     mutate: (m) => {
@@ -210,7 +235,7 @@ async function createWhoDecidesPR(config, pool, app, change, actor, { steps } = 
     prTitle: title,
     prBody:
       intro + '\n\n'
-      + (change.governance ? `${describeRulesChange(change)}\n\n` : '')
+      + (change.governance ? `${describeRulesChange(change, sizes)}\n\n` : '')
       + 'This PR updates '
       + [change.visibility ? 'the `visibility` block' : null, block ? 'the `governance` block' : null].filter(Boolean).join(' and ')
       + ' in `dapp.json`. A change to who decides goes live on the creator\'s yes, or on the group\'s real yes votes, '
@@ -247,6 +272,7 @@ module.exports = {
   columnsFor,
   diffChange,
   describeChange,
+  describeRulesChange,
   checkPeople,
   createWhoDecidesPR,
   findWhoDecidesPr,

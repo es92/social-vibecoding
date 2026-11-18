@@ -167,6 +167,10 @@
     "text": "Retry sign-in",
     "description": "Button under the spinner in the staging preview when signing the person in to the previewed app failed: tries the sign-in again."
   },
+  "staging.loader.seeShots": {
+    "text": "See the before & after instead",
+    "description": "Link on the staging preview's waiting or \"isn't running\" screen, under its message, when the change has before-and-after pictures: shows those pictures instead of waiting for the running preview."
+  },
   "staging.compare.dialogLabel": {
     "text": "Before / after comparison",
     "description": "Accessible name of the full-screen overlay that shows a screen before and after a change, side by side."

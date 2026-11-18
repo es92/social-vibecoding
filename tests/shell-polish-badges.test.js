@@ -125,13 +125,23 @@ test('a group\'s header leads with a member\'s face and says who is still invite
   assert.match(read('frontend/src/features/message-actions/thread-activity.tsx'), /\{reply\.bot \? reply\.name : `@\$\{reply\.name\}`\}/);
 });
 
-test('one number on the All row: the votes hide the grey count of unread channels', () => {
-  // The rule that brings the grey count back on the desktop row weighs
-  // (2,3,0); the one that hides it under the All row's votes must weigh as
-  // much and come after it. It weighed (2,1,0), and the row said "1 28".
-  const show = CSS.indexOf('#platform-tab-workshop .platform-tab-mark:has(.platform-tab-votes) > #platform-tabs-badge-communities:not(.hidden) {');
-  const hide = CSS.indexOf('#platform-tab-workshop:has(.platform-tab-all-votes) .platform-tab-mark > #platform-tabs-badge-communities:not(.hidden) {\n    display: none;');
-  assert.ok(show > 0 && hide > show, 'the hide rule, as heavy, after the show rule');
+test('one number on the Communities row: the votes hide the grey count of unread channels', () => {
+  // The sidebar's row drew "1 28" once: a rule there brought the grey count
+  // back beside the All row's own votes pill, and the rule hiding it weighed
+  // less. The row is the tab itself now, with the one votes badge at both
+  // widths, so the one rule beside the badge's own decides it everywhere and
+  // nothing brings the grey count back.
+  const hide = '.platform-tab-mark:has(.platform-tab-votes) > #platform-tabs-badge-communities { display: none; }';
+  assert.equal(CSS.split(hide).length - 1, 1, 'the one rule, once');
+  assert.doesNotMatch(CSS, /#platform-tabs-badge-communities:not\(\.hidden\) \{\s*display: inline-flex;/, 'no rule shows it again beside the votes');
+  assert.doesNotMatch(CSS, /platform-tab-all-votes/, 'the All row\'s own pill is gone');
+  // From 768px the votes sit at the row's end, the size of a row's counts.
+  const at = CSS.indexOf('@media (min-width: 768px) {\n  /* THE ONE NUMBER THE REST FOLLOWS.');
+  const block = CSS.slice(at, CSS.indexOf('\n}\n', at));
+  const row = block.match(/\n {2}\.platform-tab-badge,\n {2}\.platform-tab-votes \{[^}]*\}/);
+  assert.ok(row, 'the sidebar places both counts');
+  assert.match(row[0], /position: static;\s*order: 2;/);
+  assert.doesNotMatch(block, /#platform-tab-workshop \.platform-tab-votes \{\s*display: none;/, 'and the sidebar does not hide the tab\'s votes');
 });
 
 test('V02: on the phone\'s bar the Communities tab\'s one number is its votes; unread channels are a dot', () => {

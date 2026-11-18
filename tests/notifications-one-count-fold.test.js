@@ -247,7 +247,13 @@ test('a subject runs to two lines before it is cut', () => {
 
 test('on a phone the sheet is the screen\'s height, not two thirds', () => {
   assert.doesNotMatch(APP_CSS, /66dvh/);
-  assert.match(APP_CSS, /\.platform-sheet-adopted#notifications-sheet \{\s*height: calc\(100dvh - env\(safe-area-inset-top, 0px\)/);
+  // #6813: the top gap now has a floor (the Duo cover has no status bar at
+  // the top), and the keyboard's height comes out of the sheet's own.
+  assert.match(APP_CSS, /\.platform-sheet-adopted#notifications-sheet \{\s*height: calc\(100dvh - max\(env\(safe-area-inset-top, 0px\), 12px\)/);
+  const bell = APP_CSS.slice(APP_CSS.indexOf('.platform-sheet-adopted#notifications-sheet {'));
+  assert.match(bell.slice(0, bell.indexOf('!important')),
+    /var\(--un-kb-inset, 0px\)/,
+    'a sheet the kit stands on the keyboard must leave the keyboard out of its height');
   assert.match(APP_CSS, /height: calc\(100dvh - env\(safe-area-inset-top, 0px\) - 0\.75rem\);/);
 });
 

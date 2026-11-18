@@ -7,7 +7,9 @@ import { mountLegacyPortal, unmountLegacyPortal } from '../../lib/legacy-portals
 
 // App storage (#admin/storage): how much of its own database each app is
 // using against the per-app cap (#2253), and the two admin levers that undo
-// a freeze, a per-app cap override and a timed grace window.
+// a freeze, a per-app cap override and a timed grace window. Beside it,
+// each app's stored files (services/app-files.js) against its file
+// allowance, which an admin may set per app as well.
 //
 // The figures come from GET /api/admin/storage, which reads what the
 // leader's sweep last recorded on the app rows (services/app-storage-cap.js);
@@ -36,6 +38,10 @@ interface StorageRow {
   graceUntil: string | null;
   warnedAt: string | null;
   state: StorageState;
+  fileBytes: number;
+  fileAppOwnedBytes: number;
+  fileCapBytes: number;
+  fileCapOverrideBytes: number | null;
 }
 
 interface SweepSummary {
@@ -53,7 +59,7 @@ interface SweepSummary {
 
 interface StoragePayload {
   apps: StorageRow[];
-  defaults: { capBytes: number; warnPercent: number; sweepIntervalMs: number };
+  defaults: { capBytes: number; warnPercent: number; sweepIntervalMs: number; fileCapBytes: number };
   lastSweep: SweepSummary | null;
 }
 
@@ -105,14 +111,20 @@ function gbField(bytes: number | null): string {
 }
 
 /** Blank clears the override (null); anything else must be a non-negative number of GB. */
-function parseGb(text: string): number | null {
+function parseGb(text: string, what = 'cap'): number | null {
   const t = text.trim();
   if (!t) return null;
   const n = Number(t);
   if (!Number.isFinite(n) || n < 0) {
-    throw new Error('Enter the cap in gigabytes, or leave it blank to use the default.');
+    throw new Error(`Enter the ${what} in gigabytes, or leave it blank to use the default.`);
   }
   return Math.round(n * GB);
+}
+
+function filesTitle(row: StorageRow): string {
+  return row.fileAppOwnedBytes
+    ? `${formatBytes(row.fileAppOwnedBytes)} of it kept by the app itself, the rest uploaded by people`
+    : 'Uploaded by people using the app';
 }
 
 function plural(n: number, one: string, many: string): string {
@@ -166,10 +178,12 @@ function AppRow({ row, canWrite, onChanged, setStatus }: {
   setStatus: (s: Status | null) => void;
 }) {
   const [cap, setCap] = useState(gbField(row.capOverrideBytes));
+  const [fileCap, setFileCap] = useState(gbField(row.fileCapOverrideBytes));
   const [busy, setBusy] = useState(false);
   // A reload after a save carries the stored value back; the field follows
   // it rather than keeping what was typed.
   useEffect(() => { setCap(gbField(row.capOverrideBytes)); }, [row.capOverrideBytes]);
+  useEffect(() => { setFileCap(gbField(row.fileCapOverrideBytes)); }, [row.fileCapOverrideBytes]);
 
   const used = row.dbSizeBytes;
   const pct = used == null || row.capBytes <= 0 ? 0 : Math.min(100, Math.round((used / row.capBytes) * 100));
@@ -207,6 +221,18 @@ function AppRow({ row, canWrite, onChanged, setStatus }: {
     send({ capBytes }, capBytes == null
       ? `${row.name} uses the default cap again.`
       : `Cap for ${row.name} set to ${formatBytes(capBytes)}.`);
+  };
+  const saveFileCap = () => {
+    let fileCapBytes: number | null;
+    try {
+      fileCapBytes = parseGb(fileCap, 'file allowance');
+    } catch (err: any) {
+      setStatus({ text: err.message, tone: 'err' });
+      return;
+    }
+    send({ fileCapBytes }, fileCapBytes == null
+      ? `${row.name} uses the default file allowance again.`
+      : `File allowance for ${row.name} set to ${formatBytes(fileCapBytes)}.`);
   };
   const allowWrites = () => send({ graceMinutes: GRACE_MINUTES },
     `${row.name} can save data again for the next ${GRACE_MINUTES} minutes.`);
@@ -246,6 +272,13 @@ function AppRow({ row, canWrite, onChanged, setStatus }: {
         title={row.measuredAt || ''}>
         {ago(row.measuredAt)}
       </td>
+      <td className={`${AdminUI.td} align-top whitespace-nowrap tabular-nums`} data-storage-files
+        title={filesTitle(row)}>
+        {formatBytes(row.fileBytes)} of {formatBytes(row.fileCapBytes)}
+        {row.fileCapOverrideBytes != null
+          ? <span className={`${AdminUI.badge.outline} ms-2`} title="This app has its own file allowance">custom</span>
+          : null}
+      </td>
       {canWrite ? (
         <td className={`${AdminUI.td} align-top`}>
           <div className="flex flex-wrap items-center gap-2">
@@ -260,6 +293,14 @@ function AppRow({ row, canWrite, onChanged, setStatus }: {
                 Allow writes for {GRACE_MINUTES} minutes
               </button>
             ) : null}
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <input type="number" min="0" step="1" inputMode="decimal" disabled={busy}
+              className={`${AdminUI.input} w-24 disabled:opacity-60`} placeholder="default"
+              aria-label={`File allowance for ${row.name} in gigabytes`}
+              value={fileCap} onChange={(e) => setFileCap(e.target.value)} />
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">GB of files</span>
+            <button type="button" className={AdminUI.btn.outlineSm} onClick={saveFileCap} disabled={busy}>Save</button>
           </div>
         </td>
       ) : null}
@@ -346,7 +387,9 @@ function StorageSection() {
               + `at ${defaults.warnPercent}% the app's admins are warned, and at the cap the database goes read only `
               + 'until it shrinks, its limit is raised, or writes are allowed for a while.'
             : 'Each app\'s database is capped, and goes read only at the cap until it shrinks or an admin raises its limit.'}
-          {' Uploaded files are counted separately.'}
+          {defaults
+            ? ` Stored files are counted separately, against ${formatBytes(defaults.fileCapBytes)} per app unless it has its own allowance.`
+            : ' Stored files are counted separately.'}
         </p>
         <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
           {defaults ? `Measured automatically every ${plural(Math.round(defaults.sweepIntervalMs / 60000), 'minute', 'minutes')}. ` : ''}
@@ -371,13 +414,14 @@ function StorageSection() {
                   <th className={AdminUI.th}>Usage</th>
                   <th className={AdminUI.th}>State</th>
                   <th className={AdminUI.th}>Last measured</th>
+                  <th className={AdminUI.th}>Files</th>
                   {canWrite ? <th className={AdminUI.th}>Limit</th> : null}
                 </tr>
               </thead>
               <tbody id="admin-storage-rows">
                 {apps.length === 0 ? (
                   <tr>
-                    <td className={`${AdminUI.td} text-zinc-500 dark:text-zinc-400`} colSpan={canWrite ? 7 : 6}>
+                    <td className={`${AdminUI.td} text-zinc-500 dark:text-zinc-400`} colSpan={canWrite ? 8 : 7}>
                       No apps yet.
                     </td>
                   </tr>

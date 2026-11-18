@@ -64,11 +64,18 @@ async function prune(pool, config = {}) {
         AND COALESCE(r.completed_at, r.updated_at) < NOW() - ($1::int * INTERVAL '1 hour')`,
     [failedMediaHours]
   );
+  // A stale run's files go after a week, unless its proposal's card still
+  // shows them as the previous version's (shots_detail.previous) while the
+  // current version's shots are taken.
   const rollbackMedia = await pool.query(
     `DELETE FROM shot_artifacts a
       USING shot_runs r
       WHERE a.run_id = r.id AND r.state = 'stale'
-        AND COALESCE(r.completed_at, r.updated_at) < NOW() - ($1::int * INTERVAL '1 day')`,
+        AND COALESCE(r.completed_at, r.updated_at) < NOW() - ($1::int * INTERVAL '1 day')
+        AND NOT EXISTS (
+          SELECT 1 FROM chat_sessions s
+           WHERE s.id = r.session_id AND s.shots_detail->'previous'->>'runId' = r.id
+        )`,
     [ROLLBACK_MEDIA_DAYS]
   );
   const runs = await pool.query(
@@ -78,7 +85,9 @@ async function prune(pool, config = {}) {
           @> jsonb_build_object('cleanupComplete', true, 'cleanupVersion', $2::int)
         AND COALESCE(r.completed_at, r.updated_at) < NOW() - ($1::int * INTERVAL '1 day')
         AND NOT EXISTS (
-          SELECT 1 FROM chat_sessions s WHERE s.shots_run_id = r.id
+          SELECT 1 FROM chat_sessions s
+           WHERE s.shots_run_id = r.id
+              OR (s.id = r.session_id AND s.shots_detail->'previous'->>'runId' = r.id)
         )`,
     [failedRunDays, environment.RESOURCE_CLEANUP_VERSION]
   );

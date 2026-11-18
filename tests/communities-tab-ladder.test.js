@@ -105,19 +105,21 @@ test('the ladder: below → up, a tab → its top then the root, the root → it
 
 test('step 4: on All communities a press only scrolls, and at the top does nothing', () => {
   const { mod, calls } = loadLadder();
-  const list = scroller('workshop-screen', 480);
-  withPage({ screens: { 'workshop-screen': list } }, (location) => {
-    assert.equal(mod.pressLitTab('workshop-screen'), 'top');
+  const list = scroller('communities-screen', 480);
+  withPage({ screens: { 'communities-screen': list } }, (location) => {
+    assert.equal(mod.pressLitTab('communities-screen'), 'top');
     assert.deepEqual(list.went, [{ top: 0, behavior: 'smooth' }], 'glides to the top');
-    assert.equal(mod.pressLitTab('workshop-screen'), 'none');
+    assert.equal(mod.pressLitTab('communities-screen'), 'none');
     assert.equal(list.went.length, 1, 'already at the top: nothing');
     assert.equal(location.hash, '', 'no navigation');
   });
   assert.deepEqual(calls, [], 'never the switcher, never a page');
+  // Needs you's page (#workshop-screen) is not the tab's root: it lights Home.
+  assert.equal(mod.pressLitTab('workshop-screen'), 'none');
   // Reduced motion lands rather than glides.
-  const again = scroller('workshop-screen', 300);
-  withPage({ screens: { 'workshop-screen': again }, reduced: true }, () => {
-    mod.pressLitTab('workshop-screen');
+  const again = scroller('communities-screen', 300);
+  withPage({ screens: { 'communities-screen': again }, reduced: true }, () => {
+    mod.pressLitTab('communities-screen');
     assert.deepEqual(again.went, [{ top: 0, behavior: 'auto' }]);
   });
 });
@@ -198,10 +200,10 @@ test('the tab bar: the lit Communities tab is the ladder at every width, and hol
   const src = read('frontend/src/features/nav/tab-bar.tsx');
   const click = src.slice(src.indexOf('const onTabClick = '), src.indexOf('return (', src.indexOf('const onTabClick = ')));
   assert.match(click, /if \(key === 'workshop' && lit === 'workshop' && tab === 'workshop'\) \{\s*event\.preventDefault\(\);\s*pressLitTab\(screen\);\s*return;\s*\}/);
-  // v3: in the sidebar of rows the tab is "All 13 communities" and goes
-  // there (a community's own row is the way up its page); on the list it
+  // In the sidebar of rows the lit tab goes straight to the Communities
+  // page (a community's own row is the way up its page); on the page it
   // only scrolls. The strip and the phone's bar keep the ladder.
-  assert.match(click, /if \(key === 'workshop' && sidebarRows\) \{\s*event\.preventDefault\(\);\s*if \(screen === 'workshop-screen'\) pressLitTab\(screen\);\s*else goToCommunity\(null\);\s*return;\s*\}/);
+  assert.match(click, /if \(key === 'workshop' && sidebarRows && lit === 'workshop'\) \{\s*event\.preventDefault\(\);\s*if \(screen === 'communities-screen'\) pressLitTab\(screen\);\s*else goToCommunity\(null\);\s*return;\s*\}/);
   assert.doesNotMatch(click, /toggleSwitcher|openSwitcher|matchMedia/,
     'no media query decides it, and a press never opens the switcher');
   assert.doesNotMatch(src, /toggleSwitcher/);
@@ -250,30 +252,29 @@ test('the pages say what is below their tabs: All items on the project page, a r
 // you. The number is a count again: every press from another tab resumes the
 // remembered view, which pushes the project page and opens the place stored.
 
-test('#5708: the bar has no votes detour, and a return resumes the remembered view', () => {
+test('#5708: the bar has no votes detour, and a press from another tab opens the Communities page', () => {
   const src = read('frontend/src/features/nav/tab-bar.tsx');
   const click = src.slice(src.indexOf('const onTabClick = '), src.indexOf('return (', src.indexOf('const onTabClick = ')));
   assert.doesNotMatch(click, /votes/, 'no press branch keys off the blue number');
   assert.doesNotMatch(src, /goToVotes|openPlace/, 'the bar never routes to Needs you itself');
   assert.doesNotMatch(src, /onVotes|pageOnScreen/);
   // The number itself is unchanged: the badge, its count and its tooltip.
-  assert.match(src, /const votes = tabVotes\(scope\);/);
+  assert.match(src, /const votes = Number\(scope\.badgeNeeds\) \|\| 0;/, 'every vote waiting on you');
   assert.match(src, /<VotesBadge count=\{votes\} \/>/);
-  assert.match(src, /title=\{key === 'workshop' && titleVotes > 0 \? t\('core:tabs\.votesWaiting', \{ count: titleVotes \}\) : undefined\}/,
+  assert.match(src, /title=\{key === 'workshop' && votes > 0 \? t\('core:tabs\.votesWaiting', \{ count: votes \}\) : undefined\}/,
     'pointed at, the tab says what the number counts, and nothing at zero');
   // The sidebar row is still decided first, and the lit tab is still the ladder.
-  const sidebarAt = src.indexOf("if (key === 'workshop' && sidebarRows)");
+  const sidebarAt = src.indexOf("if (key === 'workshop' && sidebarRows && lit === 'workshop')");
   const ladderAt = src.indexOf("if (key === 'workshop' && lit === 'workshop' && tab === 'workshop')");
   assert.ok(sidebarAt > 0 && ladderAt > sidebarAt, 'the sidebar row\'s press comes before the lit tab\'s ladder');
   assert.match(src.slice(ladderAt, ladderAt + 200), /pressLitTab\(screen\)/, 'the lit tab is the ladder');
-  // Every press from another tab is the tab's own navigation, and that tries
-  // the remembered view before the phone's list (#5581).
+  // Every press from another tab is the tab's own navigation: its page,
+  // `#communities`, at every width. It resumes nothing and opens no drawer.
   assert.match(src, /if \(key !== lit && press\(event\.currentTarget, key, \(\) => goToTab\(key, href\), fallback\)\)/,
     'a press from another tab goes through goToTab');
   const goToTab = src.slice(src.indexOf('function goToTab('), src.indexOf('export function PlatformTabs'));
-  const resumeAt = goToTab.indexOf('app?.resumeWorkshopView?.()');
-  const listAt = goToTab.indexOf('goToCommunity(null)');
-  assert.ok(resumeAt > 0 && listAt > resumeAt, 'goToTab resumes the remembered view before the phone\'s list');
+  assert.match(goToTab, /if \(key === 'workshop'\) \{\s*openCommunitiesPage\(\);\s*return;\s*\}/);
+  assert.doesNotMatch(goToTab, /resumeWorkshopView|goToCommunity\(null\)/);
   // And the ladder carries no detour at all.
   const { mod } = loadLadder();
   assert.equal(mod.goToVotes, undefined, 'tab-ladder.ts no longer exports goToVotes');

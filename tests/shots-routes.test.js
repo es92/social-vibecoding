@@ -43,9 +43,21 @@ test('keyed shots stream ranges with the same headers, and refuse access before 
   assert.deepEqual(Buffer.from(await part.arrayBuffer()), clip.subarray(10, 30));
   assert.deepEqual(store.calls.filter((c) => c.op === 'get').map((c) => c.range), [null, { start: 10, end: 29 }]);
   assert.equal((await fetch(url, { headers: { range: 'bytes=9999-' } })).status, 416);
+  // #6793: an image the browser already has is a 304, without opening storage.
+  const tag = `"${key.slice(media.PREFIX.length)}"`;
+  for (const header of [tag, `W/${tag}`, `"other", ${tag}`, '*']) {
+    const same = await fetch(url, { headers: { 'if-none-match': header } });
+    assert.equal(same.status, 304, header);
+    assert.equal(same.headers.get('etag'), tag);
+    assert.equal(same.headers.get('cache-control'), 'private, max-age=31536000, immutable');
+    assert.equal((await same.arrayBuffer()).byteLength, 0);
+  }
+  assert.equal((await fetch(url, { headers: { 'if-none-match': '"something-else"' } })).status, 200, 'a different tag gets the image');
+  assert.equal(store.calls.filter((c) => c.op === 'get').length, 3, 'only the full read, the range and the mismatch opened storage');
   allowed = false;
   assert.equal((await fetch(url)).status, 404);
-  assert.equal(store.calls.filter((c) => c.op === 'get').length, 2, 'neither invalid ranges nor denied requests touch storage');
+  assert.equal((await fetch(url, { headers: { 'if-none-match': tag } })).status, 404, 'a refusal is never a 304');
+  assert.equal(store.calls.filter((c) => c.op === 'get').length, 3, 'neither invalid ranges nor denied requests touch storage');
 });
 
 test('a missing keyed object fails instead of serving old bytes or caching an error as immutable', async (t) => {
@@ -329,7 +341,8 @@ test('run diagnostics are private to the author or app manager, available live, 
 
 test('the binary route is authenticated, current-run fenced, exact-head fenced, and private', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', 'src/routes/shots.js'), 'utf8');
-  assert.match(src, /loadContext\(pool, req\.params\.slug, id, req\.user, 'view'\)/);
+  assert.match(src, /loadContext\(pool, req\.params\.slug, id, req\.user, 'view', CONTEXT_ONLY\)/);
+  assert.match(src, /const CONTEXT_ONLY = 'cs\.id, cs\.app_id';/, '#6793: an image reads only that the change exists');
   assert.match(src, /!config\.shots\?\.present/);
   assert.match(src, /s\.shots_run_id = r\.id/);
   assert.match(src, /s\.shots_state = 'verified' AND r\.state = 'verified'/);

@@ -3207,6 +3207,22 @@
     "text": "{{count}} people, the app keeps this list",
     "description": "Line under a group the project's app keeps. {{count}} is how many people the app last reported."
   },
+  "whoDecides.group.appGroupSub_one": {
+    "text": "{{count}} person · sent {{when}} · Not in the rules yet",
+    "description": "Line under a group the project's app keeps that no rule uses yet, on the Groups list of the Who can see & change it sheet, when it has one person. {{count}} is that number and {{when}} is how long ago the app sent its list, such as 5m ago."
+  },
+  "whoDecides.group.appGroupSub_other": {
+    "text": "{{count}} people · sent {{when}} · Not in the rules yet",
+    "description": "Line under a group the project's app keeps that no rule uses yet, on the Groups list of the Who can see & change it sheet. {{count}} is how many people are in it and {{when}} is how long ago the app sent its list, such as 5m ago."
+  },
+  "whoDecides.group.appGroupNotSent": {
+    "text": "Not sent yet · Not in the rules yet",
+    "description": "Line under a group the project's app made but has not sent its member list for, on the Groups list of the Who can see & change it sheet."
+  },
+  "whoDecides.group.appGroupNoMatch": {
+    "text": "Your app hasn't sent a group called this yet. Check the name matches the one your app uses.",
+    "description": "Warning on the group screen of the Who can see & change it sheet, when a person turns on The app keeps this group and types a name the app has never sent. Saving and proposing are still allowed: the app might send it later."
+  },
   "whoDecides.group.keptSwitch": {
     "text": "The app keeps this group",
     "description": "Switch on the group screen of the Who can see & change it sheet: when on, the project's app decides who is in the group and nobody picks people by hand."

@@ -238,6 +238,11 @@ test('communities against the full PostgreSQL schema', { timeout: 180000 }, asyn
       assert.deepEqual(got.body.approval, {
         policy: 'anyone', approvals_required: null, electorate: 1, required: 1,
         mode: 'columns', preset: 'group_vote', rules: null, groups: [],
+        // #6811: the groups the project's app keeps, so the Who can see &
+        // change it sheet lists the ones no rule names yet. This app keeps
+        // none, and an empty list (not absent) tells the sheet to say a
+        // hand-typed kept group has not been sent.
+        appGroups: [],
         creator: { id: owner.id, username: owner.username, display_name: null },
         creator_gone: false,
         // Polish board #13: the invited approvers' names, so the Workshop's

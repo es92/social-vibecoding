@@ -26,7 +26,7 @@ require('../src/db/pool').getPool = () => ({
 const shotsState = require('../src/services/shots-state');
 const shotsIdentities = require('../src/services/shots-identities');
 const platformJwt = require('../src/services/platform-jwt');
-const { internalRoutes } = require('../src/routes/internal');
+const { internalRoutes, IMPACT_NONE_DIAGRAM_NUDGE } = require('../src/routes/internal');
 
 async function serve(t) {
   const app = express();
@@ -111,6 +111,50 @@ test('a recorded declaration carries the persona warnings for its app', async (t
   assert.equal(Object.hasOwn(failedLookup.body, 'warnings'), false);
 });
 
+// #6815: a build that says nothing visible changes and has sent no diagram
+// is told that the diagram is the only picture voters get. Advisory: the
+// declaration always stands.
+test('an impact-none declaration with no diagram is nudged toward one', async (t) => {
+  stub(t, shotsState, 'recordIntent', async (_pool, sessionId, raw) => ({
+    accepted: true, unchanged: false, required: false, state: 'not_required', intent: raw, runId: null, sessionId,
+  }));
+  const seen = [];
+  stub(t, shotsIdentities, 'personaWarnings', async (_pool, app) => {
+    seen.push(app);
+    return ['persona first.'];
+  });
+  const original = appRow;
+  t.after(() => { appRow = original; });
+  const url = await serve(t);
+  const none = { version: 1, impact: 'none', rationale: 'Server only.', stories: [] };
+
+  appRow = { id: 7, slug: 'vote-inbox', has_diagram: false };
+  const missing = await declare(url, none);
+  assert.equal(missing.status, 200);
+  assert.equal(missing.body.ok, true, 'the declaration is never refused');
+  assert.deepEqual(missing.body.warnings, ['persona first.', IMPACT_NONE_DIAGRAM_NUDGE]);
+  assert.deepEqual(seen.at(-1), { id: 7, slug: 'vote-inbox' }, 'personaWarnings still reads the app alone');
+
+  // A diagram already sent (even one declared first) means nothing to ask.
+  appRow = { id: 7, slug: 'vote-inbox', has_diagram: true };
+  const kept = (await declare(url, none)).body;
+  assert.deepEqual(kept.warnings, ['persona first.'], 'a stored diagram leaves the nudge out');
+
+  // A visible change is not asked: its shots are its picture.
+  appRow = { id: 7, slug: 'vote-inbox', has_diagram: false };
+  const ui = (await declare(url, { version: 1, impact: 'ui', rationale: 'A line.',
+    stories: [{ id: 'summary-line', persona: 'member', claim: 'A line.', viewports: [{ name: 'desktop', width: 1280, height: 900 }],
+      intent: { startPath: '/', steps: ['Open Home'], checkpoint: 'Shown', focus: 'The line', animation: 'none' } }] })).body;
+  assert.deepEqual(ui.warnings, ['persona first.']);
+
+  // A lookup that fails sends no reminder, and still answers 200.
+  stub(t, shotsIdentities, 'personaWarnings', async () => { throw new Error('visibility lookup failed'); });
+  const failed = await declare(url, none);
+  assert.equal(failed.status, 200);
+  assert.equal(failed.body.ok, true);
+  assert.equal(Object.hasOwn(failed.body, 'warnings'), false);
+});
+
 test('a recorded declaration says what data the copies hold, and warns when a change needs a state they lack', async (t) => {
   stub(t, shotsState, 'recordIntent', async (_pool, sessionId, raw) => ({
     accepted: true, unchanged: false, required: true, state: 'planned', intent: raw, runId: null, sessionId,
@@ -147,8 +191,10 @@ test('a recorded declaration says what data the copies hold, and warns when a ch
   assert.match(child.dataNote, /IS_STAGING/);
   assert.equal(child.warnings.length, 3);
 
-  // Nothing to shoot, nothing to say about data.
+  // Nothing to shoot, nothing to say about data. (A diagram is already stored,
+  // so the #6815 reminder does not add a warning of its own.)
   stub(t, shotsIdentities, 'personaWarnings', async () => []);
+  appRow = { id: 7, slug: 'vote-inbox', has_diagram: true };
   const none = (await declare(url, { version: 1, impact: 'none', rationale: 'Server only.', stories: [] })).body;
   assert.equal(Object.hasOwn(none, 'availableStates'), false);
   assert.equal(Object.hasOwn(none, 'warnings'), false);

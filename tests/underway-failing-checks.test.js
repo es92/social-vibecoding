@@ -83,14 +83,19 @@ test('#1766: the payload is bounded, because test_results holds a row per declar
 
 test('#1766: the endpoint sends the summary and never the raw column', () => {
   const src = read('src/routes/sessions.js');
-  // Selected so it can be summarised...
-  assert.match(src, /cs\.check_state, cs\.check_phase, cs\.check_error_detail,\s*\n\s*cs\.test_results,/);
+  // #6793: only the rows that did not pass are selected, and only for a
+  // failing run, so the 800 passing ones are never read to be summarised.
+  assert.ok(src.includes("CASE WHEN cs.check_state = 'failing' AND jsonb_typeof(cs.test_results) = 'array'"));
+  assert.ok(src.includes("FILTER (WHERE (e.v->>'status' = 'pass') IS NOT TRUE), '[]'::jsonb)"));
+  assert.ok(src.includes("ELSE '[]'::jsonb END AS failing_results,"));
+  assert.ok(!/cs\.check_error_detail,\s*\n\s*cs\.test_results,/.test(src), 'the whole column is no longer selected');
   // ...and deleted so a 500-row array is not on a polled feed — except on
   // imported rows, which already shipped it (enrichImportedUnderwaySessions)
   // and whose contract me-active-sessions.test.js pins. Dropping it there
   // would be a silent breaking change in the name of a new one.
   assert.match(src, /if \(row\.source !== 'imported'\) delete row\.test_results;/);
-  assert.match(src, /summarizeFailingChecks\(row\.check_state, row\.test_results\)/);
+  assert.match(src, /summarizeFailingChecks\(row\.check_state, row\.failing_results\)/);
+  assert.match(src, /delete row\.failing_results;/);
   assert.match(src, /if \(summary\.total\) row\.failing_checks = summary;/);
 });
 

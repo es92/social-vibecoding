@@ -6224,7 +6224,7 @@ function registerTools(server, ctx) {
       visualEvidence: z.unknown().optional()
         .describe('Older name for visibleChanges, still accepted. Send visibleChanges.'),
       diagram: z.unknown().optional()
-        .describe('Optional (#4490): a small diagram of the change, which Homeroom draws on its Needs-you card when it has no before & after shots, leads its page with, and writes into the pull request as text. Send DATA, never SVG or HTML: {"version":1,"kind":"rename","from":"spec","to":"plan","places":["Chat cards","Buttons"],"note":"Only the words change."}, {"version":1,"kind":"flow","before":["Vote","Closes"],"after":["Vote","Checks","Closes"]}, {"version":1,"kind":"changes","rows":[{"op":"added|changed|removed","what":"…","detail":"…"}]} or {"version":1,"kind":"numbers","unit":"s","rows":[{"label":"Load time","before":2.4,"after":0.9}]}. Every text 1-60 characters; at most 8 places, 6 steps a side, 6 rows. Use one when the change is a rename, a changed flow, a data or settings change, or a measured improvement. Only when visibleChanges declares impact "none" in this same call and none of the four fits, {"version":1,"kind":"mermaid","source":"flowchart TD\\n  A[Copy] --> B[Retry]"} is accepted: at most 2000 characters and 40 lines, opening with flowchart, graph, sequenceDiagram, stateDiagram-v2, classDiagram or erDiagram, with no %%{ directives, click, href, callback, or < > outside arrows. An invalid one fails the call with invalid_diagram and nothing is written; an update replaces the stored one.'),
+        .describe('Expected when visibleChanges declares impact "none" (it is the change\'s only picture), and recommended for a rename, a changed flow, a data or settings change, or a measured improvement (#4490). A small diagram of the change, which Homeroom draws on its Needs-you card when it has no before & after shots, leads its page with, and writes into the pull request as text. Send DATA, never SVG or HTML: {"version":1,"kind":"rename","from":"spec","to":"plan","places":["Chat cards","Buttons"],"note":"Only the words change."}, {"version":1,"kind":"flow","before":["Vote","Closes"],"after":["Vote","Checks","Closes"]}, {"version":1,"kind":"changes","rows":[{"op":"added|changed|removed","what":"…","detail":"…"}]} or {"version":1,"kind":"numbers","unit":"s","rows":[{"label":"Load time","before":2.4,"after":0.9}]}. Every text 1-60 characters; at most 8 places, 6 steps a side, 6 rows. Use one when the change is a rename, a changed flow, a data or settings change, or a measured improvement. Only when visibleChanges declares impact "none" in this same call and none of the four fits, {"version":1,"kind":"mermaid","source":"flowchart TD\\n  A[Copy] --> B[Retry]"} is accepted: at most 2000 characters and 40 lines, opening with flowchart, graph, sequenceDiagram, stateDiagram-v2, classDiagram or erDiagram, with no %%{ directives, click, href, callback, or < > outside arrows. An invalid one fails the call with invalid_diagram and nothing is written; an update replaces the stored one.'),
       expectedHeadSha: z.string().optional()
         .describe('Only for an update: the proposal’s current commit as you last read it, from get_proposal’s `branch.headSha`. Pass it and Homeroom refuses with `branch_moved` if somebody advanced the proposal while you were working, instead of building on a head you have not seen. Optional — omitted, your branch still has to sit on top of whatever the current head is. For an update by patch it is the commit the patch was made from, where it is applied; omitted, that is the update task’s base commit.'),
       recheck: z.boolean().optional()
@@ -6278,6 +6278,8 @@ function registerTools(server, ctx) {
         .describe('Whether supplied visibleChanges were not persisted (for example because collection is disabled). Validation errors fail the tool instead of silently returning true here.'),
       diagramAccepted: z.boolean().nullable().optional()
         .describe('Whether this call stored the supplied diagram. Null when none was supplied or nothing was written.'),
+      warnings: z.array(z.string()).optional()
+        .describe('Advisory notes about this submission. Present when the change declared impact "none" and no diagram was sent or stored: it then goes to the vote with "What it touches" as its only picture.'),
       shotsRequired: z.boolean().nullable()
         .describe('Whether the proposal gets before/after shots for its current revision.'),
       shotsNextStep: z.string().nullable()
@@ -6646,6 +6648,19 @@ function registerTools(server, ctx) {
       diagramAccepted = await proposalDiagram.store(pool, target, acceptedDiagram, 'author');
     }
 
+    // #6815: nothing visible changes and no diagram was sent, so the change
+    // goes to the vote with "What it touches" as its only picture. Advisory:
+    // the submission stands. A stored diagram (an earlier update's, or this
+    // build's) means there is nothing to remind about.
+    let warnings = null;
+    if (acceptedVisibleChanges?.impact === 'none' && !acceptedDiagram && !result.alreadySubmitted) {
+      const target = Number(updating ? proposalId : (result.proposalId || result.sessionId));
+      const kept = (updating || result.update === true) && await proposalDiagram.hasStored(pool, target);
+      if (!kept) {
+        warnings = ['No diagram was sent and nothing visible changes, so this change goes to the vote with "What it touches" as its only picture. Send diagram (flow, changes, numbers or rename) in an update.'];
+      }
+    }
+
     // An UPDATE landed on a proposal that already exists, so there is no
     // "now up for a vote" to report — the interesting facts are the new head,
     // and that the votes it had collected are gone. #4263: an update task's
@@ -6838,6 +6853,7 @@ function registerTools(server, ctx) {
         visibleChangesAccepted: acceptedVisibleChanges ? result.visibleChangesAccepted === true : null,
         visibleChangesRejected: acceptedVisibleChanges ? result.visibleChangesRejected === true : null,
         diagramAccepted,
+        ...(warnings ? { warnings } : {}),
         shotsRequired: acceptedVisibleChanges ? result.shotsRequired === true : null,
         shotsNextStep: acceptedVisibleChanges ? (result.shotsNextStep || 'none') : null,
         // #2066. What this push actually set going, rather than what the
@@ -6892,6 +6908,7 @@ function registerTools(server, ctx) {
         visibleChangesAccepted: acceptedVisibleChanges ? result.visibleChangesAccepted === true : null,
         visibleChangesRejected: acceptedVisibleChanges ? result.visibleChangesRejected === true : null,
         diagramAccepted,
+        ...(warnings ? { warnings } : {}),
         shotsRequired: acceptedVisibleChanges ? result.shotsRequired === true : null,
         shotsNextStep: acceptedVisibleChanges ? (result.shotsNextStep || 'none') : null,
         proposed: null,
@@ -6973,6 +6990,7 @@ function registerTools(server, ctx) {
       visibleChangesAccepted: acceptedVisibleChanges ? result.visibleChangesAccepted === true : null,
       visibleChangesRejected: acceptedVisibleChanges ? result.visibleChangesRejected === true : null,
       diagramAccepted,
+      ...(warnings ? { warnings } : {}),
       shotsRequired: acceptedVisibleChanges ? result.shotsRequired === true : null,
       shotsNextStep: acceptedVisibleChanges ? (result.shotsNextStep || 'none') : null,
       // A first submission is promoted by the import itself — `propose` is

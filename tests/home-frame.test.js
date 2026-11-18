@@ -131,7 +131,10 @@ test('the search field drives Home\'s own search, and the shortcut finds it', ()
   assert.match(home, /_searchField\(\) \{\s*return document\.querySelector\('\[data-home-frame-search\] input'\) \|\| document\.getElementById\('home-search-input'\);/);
   assert.match(home, /const input = Home\._searchField\(\);/, 'Home.focusSearch (the bar\'s search, the sidebar\'s) lands in it');
   assert.match(home, /if \(!showing \|\| Home\._searchField\(\) !== input\) \{ Home\.focusSearch\(\); return; \}/, 'and so do Ctrl+K and /');
-  assert.match(home, /document\.getElementById\('home-frame-communities'\) \|\| document\.getElementById\('home-communities-section'\)/, 'Home.showCommunities scrolls to the kit section under a look');
+  // Your communities are the Communities tab's page in every look, a look
+  // of the frame included: Home.showCommunities opens it and scrolls nothing.
+  assert.match(home, /showCommunities\(\) \{\s*if \(location\.hash !== '#communities'\) location\.hash = '#communities';\s*\},/, 'Home.showCommunities opens the Communities page, under a look too');
+  assert.match(home, /document\.getElementById\('home-frame-to-join'\) \|\| document\.getElementById\('home-join-section'\)/, 'Home.showCommunitiesToJoin still scrolls to the kit section under a look');
 });
 
 test('Pinned apps: the launcher\'s tiles, Edit, and the row that unfolds the grid', () => {
@@ -218,7 +221,7 @@ test('Pinned communities are tiles: the pins with what is owed, then Needs you, 
   assert.ok(g.indexOf('home-frame-needs-tile') < g.indexOf('home-frame-all-communities') && g.indexOf('home-frame-all-communities') < g.indexOf('home-frame-new-community'), 'in the standard order');
   const quiet = group(render({}, homeStubs({ pins: [pin('a', 'Alpha')], joined: [joined('a', 'Alpha')] })), 'home-frame-communities');
   assert.doesNotMatch(quiet, /home-frame-needs-tile|home-frame-all-communities/, 'a zero says nothing, and with every community pinned there is no All tile');
-  assert.match(SRC, /document\.addEventListener\('home:show-all-communities', open\)/, 'All communities anywhere else opens the section\'s');
+  assert.doesNotMatch(SRC, /home:show-all-communities/, 'All communities anywhere else is the Communities tab\'s page now; only the tile opens the section\'s');
   assert.match(SRC, /lit=\{showAll\}\s*pressed=\{showAll\}/);
   assert.match(SRC, /\{\(showAll \|\| query\) && !editing \? unpinned\.map/, 'while it is on, or while searching, the unpinned ones follow');
   assert.match(SRC, /void setHomePin\(\{ \.\.\.c, member: true \} as HomePin, true, say\(c\.name\)\)/, 'a + pins one');
@@ -227,7 +230,7 @@ test('Pinned communities are tiles: the pins with what is owed, then Needs you, 
 
 test('a search finds a community you have not pinned, faded, with a + to pin it', () => {
   const g = group(render({}, homeStubs({ query: 'oth', pins: [pin('a', 'Alpha')], joined: [joined('a', 'Alpha'), joined('other', 'Other One')], needs: 3 })), 'home-frame-communities');
-  assert.match(g, /<div class="fr-at fr-dim fr-ring" style="--fr-cr:#[0-9a-f]{6}"><a class="fr-atl" href="\/app\/other\/workshop\?ws=status">.*?<span class="fr-nm">Other One<\/span><\/a><button type="button" class="fr-corner" aria-label="Pin Other One to Home">/s);
+  assert.match(g, /<div class="fr-at fr-dim fr-ring" style="--fr-cr:#[0-9a-f]{6}"><a class="fr-atl" href="\/app\/other\/workshop\?ws=status">.*?<span class="fr-nm">Other One<\/span><\/a><button type="button" class="fr-corner" aria-label="Pin Other One">/s);
   assert.doesNotMatch(g, /Alpha|home-frame-needs-tile|home-frame-new-community|>Edit</, 'only what matches; the section\'s own tiles and Edit wait for the search to end');
 });
 

@@ -972,11 +972,32 @@ jobs:
             --username "${{ github.actor }}" \
             --password-stdin
 
+      # GHCR sometimes refuses a chart it has just stored: `helm push` uploads
+      # the manifest, then tagging it fails with `failed to perform "Tag" on
+      # destination: sha256:…: not found`. On 13 and 15 November 2026 that
+      # failed 3 of about 200 releases, and each left the stalled-release
+      # banner up until someone re-ran the workflow or the next merge carried
+      # the change (#6657). Pushing the same chart version again is
+      # idempotent, so the push is tried four times, 15, 30 and 45 seconds
+      # apart, before the release fails.
       - name: Publish OCI Helm release
         if: steps.current_head.outputs.publish == 'true'
         run: |
-          helm push "${{ steps.chart.outputs.package_path }}" \
-            "oci://ghcr.io/${{ steps.chart.outputs.registry_owner }}/charts"
+          chart="${{ steps.chart.outputs.package_path }}"
+          destination="oci://ghcr.io/${{ steps.chart.outputs.registry_owner }}/charts"
+          attempts=4
+          for attempt in $(seq 1 "$attempts"); do
+            if helm push "$chart" "$destination"; then
+              exit 0
+            fi
+            if [ "$attempt" -eq "$attempts" ]; then
+              echo "::error::helm push failed $attempts times; the release was not published."
+              exit 1
+            fi
+            delay=$(( attempt * 15 ))
+            echo "::warning::helm push failed (attempt $attempt of $attempts); trying again in ${delay}s."
+            sleep "$delay"
+          done
 
       # Argo CD learns of a new chart by re-reading the registry's tag list on
       # its reconcile interval — up to three minutes after the push, and the

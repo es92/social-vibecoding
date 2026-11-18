@@ -802,12 +802,29 @@ export interface ChangeThreadView {
     changes?: { n: number; text: string }[];
     /** The change the shots are of, for the detail column its Expand opens. */
     changeId?: number | null;
+    /** The change this viewer may start its failed run again on, or null (AppView._canRetakeShots). */
+    retake?: number | null;
+    /**
+     * The shots shown are the previous version's (shots-view.js `previous`):
+     * this version's are being taken (`waiting`), or failed or were skipped
+     * (`detail` says why). `line` labels the picture as the previous
+     * version's. Absent when the shots are this version's own.
+     */
+    previous?: { state: string; waiting: boolean; line: string; detail: string | null } | null;
   } | null;
   /**
    * The change shows nothing a person can see, so no shots were asked for
    * (AppView._shotsNotNeeded): the card says so where the picture would be.
    */
   shotsNone?: boolean;
+  /**
+   * #4490: "What it touches" for the change's current head (the proposal
+   * read's `touches`, services/proposal-touches.js), which the change page
+   * shows in place of the empty "nothing you can see changes" box. Untyped
+   * here; workshop/touches.tsx reads it defensively. Null when it was not
+   * read for this head (yet).
+   */
+  touches?: unknown;
   /** The last finished run of its tests: the counts and each failure by name (AppView._checksSummary). */
   checks?: { passed: number; failed: number; fails: { key: string; name: string; reason: string | null; advisory: boolean }[] } | null;
   /** When it went live (its merge, else its release), for "Since …" in the card's foot and the timeline's Live step. */

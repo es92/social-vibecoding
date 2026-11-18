@@ -46,7 +46,10 @@ async function resolveApp(pool, token) {
   return { id: app.id, slug: app.slug };
 }
 
-function appStorageAuth(pool, config) {
+// `userOptional`: the route also answers the app acting for itself (its
+// app token alone), as req.appStorage.userId null. A user token that IS
+// sent must still verify: a bad one is refused, never ignored.
+function appStorageAuth(pool, config, { userOptional = false } = {}) {
   return async function appStorageAuthMiddleware(req, res, next) {
     // #2506: "is the resolved address private" is not the same question as
     // "did this come from inside" — on a trusted-proxy DNS failure clientIp
@@ -63,11 +66,12 @@ function appStorageAuth(pool, config) {
     }
 
     const userToken = req.headers['x-usernode-user-token'];
-    if (!userToken || typeof userToken !== 'string') {
+    const hasUser = !!userToken && typeof userToken === 'string';
+    if (!hasUser && !userOptional) {
       return res.status(401).json({ ok: false, code: 'missing_user_token' });
     }
 
-    if (!process.env.IFRAME_JWT_PUBLIC_KEY) {
+    if (hasUser && !process.env.IFRAME_JWT_PUBLIC_KEY) {
       log.error('app-storage-auth', 'IFRAME_JWT_PUBLIC_KEY not configured');
       return res.status(500).json({ ok: false, code: 'server_misconfigured' });
     }
@@ -84,6 +88,10 @@ function appStorageAuth(pool, config) {
     }
     if (!app) {
       return res.status(401).json({ ok: false, code: 'bad_app_token' });
+    }
+    if (!hasUser) {
+      req.appStorage = { appId: app.id, appSlug: app.slug, userId: null };
+      return next();
     }
 
     // Verify against the RESOLVED app's audience — closes the same

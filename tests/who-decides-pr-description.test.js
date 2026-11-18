@@ -127,3 +127,26 @@ test('a change to who can see it too keeps the wording it had', async (t) => {
   assert.ok(!body.includes('how changes to "Patch" are approved'));
   assert.ok(body.includes('A change goes live when any one of these rules passes:'));
 });
+
+test('#6811: a kept group the app has sent says its size to the voters', () => {
+  const now = rules.parseRulesBlock({
+    groups: [{ name: 'Finishers', keptByApp: true }],
+    rules: [{ group: 'Finishers', atLeast: 2 }],
+  });
+  const sizes = new Map([[rules.groupKey('Finishers'), { size: 12 }]]);
+  const text = whoDecides.describeRulesChange({ visibility: null, governance: now }, sizes);
+  assert.ok(text.includes('Finishers: kept by the app, 12 people today.'));
+  // Unreported or unknown keeps today's line.
+  const none = whoDecides.describeRulesChange({ visibility: null, governance: now }, new Map());
+  assert.ok(none.includes('Finishers: kept by the app.'));
+  assert.ok(!none.includes('people today'));
+  // The new group's own line carries it too.
+  const was = { rules: rules.parseRulesBlock({ preset: 'two_yeses' }) };
+  const diffed = whoDecides.describeRulesChange({ visibility: null, governance: now, was }, sizes);
+  assert.ok(diffed.includes('- New group: Finishers (kept by the app, 12 people today).'));
+  const one = whoDecides.describeRulesChange(
+    { visibility: null, governance: now },
+    new Map([[rules.groupKey('Finishers'), { size: 1 }]]),
+  );
+  assert.ok(one.includes('1 person today'));
+});

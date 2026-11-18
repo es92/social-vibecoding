@@ -137,6 +137,12 @@ export interface AiThread {
    * reads as 0.
    */
   unread?: number;
+  /**
+   * 18 Nov 2026: it came into In progress or Waiting, or changed its list or
+   * its stage there, while the page was up (movedSince). Its row is not
+   * folded away. Set by the page, never by the server.
+   */
+  moved?: boolean;
 }
 
 export interface AiWork {
@@ -344,15 +350,21 @@ export function holdOrder<T extends { key: string }>(rows: T[], drawn: readonly 
  * #6408: Live this week calls it with `liftFresh` false. There, new only
  * means a change went live since the viewer last looked, which is most of the
  * list on a busy day, so it folds after its first few whatever is new.
+ *
+ * 18 Nov 2026: nor is a row that moved while the page was up (`moved`,
+ * movedSince). PR 6792 was promoted with the tab open, went from In progress
+ * to Waiting under three changes going live, and was folded behind Show more
+ * until its checks failed: a change of yours that just moved read as gone.
  */
-export function groupRows<T extends { lit?: boolean; fresh?: boolean }>(items: T[], first: number, open: boolean, liftFresh = true): { items: T[]; shown: number; hidden: number } {
+export function groupRows<T extends { lit?: boolean; fresh?: boolean; moved?: boolean }>(items: T[], first: number, open: boolean, liftFresh = true): { items: T[]; shown: number; hidden: number } {
   const litAt = open ? -1 : items.findIndex((row) => row.lit);
-  // Which rows past the first few must still be shown: the fresh ones and
-  // the one you are on. They keep their order; the rest folds away.
+  // Which rows past the first few must still be shown: the fresh ones, the
+  // ones that just moved and the one you are on. They keep their order; the
+  // rest folds away.
   const lifted = new Set<number>();
   if (!open) {
     if (litAt >= first) lifted.add(litAt);
-    if (liftFresh) items.forEach((row, i) => { if (row.fresh && i >= first) lifted.add(i); });
+    if (liftFresh) items.forEach((row, i) => { if ((row.fresh || row.moved) && i >= first) lifted.add(i); });
   }
   const rest = items.slice(first);
   const drawn = open
@@ -360,6 +372,33 @@ export function groupRows<T extends { lit?: boolean; fresh?: boolean }>(items: T
     : [...items.slice(0, first), ...rest.filter((_, k) => lifted.has(first + k)), ...rest.filter((_, k) => !lifted.has(first + k))];
   const shown = open ? first : first + lifted.size;
   return { items: drawn, shown, hidden: Math.max(0, drawn.length - shown) };
+}
+
+/**
+ * Pure (18 Nov 2026): where each thread of In progress and Waiting stands,
+ * its list and its stage, by thread. A new line (a few minutes left) is not
+ * a move.
+ */
+export function standingsOf(threads: readonly AiThread[]): Map<number, string> {
+  return new Map(threads.map((t) => [t.threadId, `${t.group}:${t.work.stage}`]));
+}
+
+/**
+ * Pure (18 Nov 2026): the threads, each marked `moved` when it was not there
+ * when `seen` was taken (standingsOf) or stands elsewhere now. With nothing
+ * seen yet (the page's first read) none has moved. Hands back the same
+ * threads when none moved.
+ */
+export function movedSince(seen: ReadonlyMap<number, string> | null, threads: AiThread[]): AiThread[] {
+  if (!seen) return threads;
+  const now = standingsOf(threads);
+  let any = false;
+  const out = threads.map((t) => {
+    if (seen.get(t.threadId) === now.get(t.threadId)) return t;
+    any = true;
+    return { ...t, moved: true };
+  });
+  return any ? out : threads;
 }
 
 // ── #6262: what is new in a thread ───────────────────────────────────────
@@ -581,23 +620,54 @@ function whereLine(app: AiApp | null, number: number | null | undefined): Phrase
     : { id: 'messages:ai.row.project', values: where(app, null) };
 }
 
-/** Pure: what the feed's cards are about, as `slug#number`, so a thread already owed there is not listed twice. */
+/**
+ * Pure: a request's key, `slug#number`, and a change's, `slug#change:number`.
+ * 18 Nov 2026: on a project still on GitHub a change's number is GitHub's
+ * and a request's is Homeroom's, two counters that meet. With one key for
+ * both, PR 6792 read as request #6792: while its author owed a vote on the
+ * change built for #6792, PR 6792 was on none of these lists.
+ */
+const requestKey = (slug: string, number: number) => `${slug}#${Number(number)}`;
+const changeKey = (slug: string, number: number) => `${slug}#change:${Number(number)}`;
+
+/** Pure: the request a Needs you card is about: a vote on its change, a pick between its changes, the bot's question. */
+function needRequest(item: NeedItem): number | null {
+  if (item.kind === 'ballot') return item.ballot?.number || null;
+  if (item.kind === 'proposal') return item.request?.number || null;
+  if (item.kind === 'question') return item.number || null;
+  return null;
+}
+
+/** Pure: the change a Needs you card is about, by its number (a ballot's is its first change's). */
+function needChange(item: NeedItem): number | null {
+  return item.kind === 'proposal' || item.kind === 'ballot' ? item.number || null : null;
+}
+
+/** Pure: what the feed's cards are about, by request and by change, so a thread already owed there is not listed twice. */
 export function owedKeys(needs: NeedItem[] | null): Set<string> {
   const owed = new Set<string>();
   for (const item of needs || []) {
     if (!item.app) continue;
-    for (const number of [needNumber(item), shownNumber(item)]) {
-      if (number) owed.add(`${item.app.slug}#${number}`);
-    }
+    const request = needRequest(item);
+    const change = needChange(item);
+    if (request) owed.add(requestKey(item.app.slug, request));
+    if (change) owed.add(changeKey(item.app.slug, change));
   }
   return owed;
+}
+
+/** Pure: the request a thread's row is numbered by, or null for a change's own thread, which is numbered by its change. */
+function threadRequest(t: AiThread): number | null {
+  return t.kind === 'change' ? null : t.number || null;
 }
 
 /** Pure: whether a thread is one the feed already lists, by its request's number or its change's. */
 function isOwed(owed: Set<string>, t: AiThread): boolean {
   if (!t.app) return false;
-  return (!!t.number && owed.has(`${t.app.slug}#${t.number}`))
-    || (!!t.change?.number && owed.has(`${t.app.slug}#${t.change.number}`));
+  const request = threadRequest(t);
+  const change = t.change?.number || (t.kind === 'change' ? t.number : null);
+  return (!!request && owed.has(requestKey(t.app.slug, request)))
+    || (!!change && owed.has(changeKey(t.app.slug, change)));
 }
 
 /**
@@ -606,7 +676,7 @@ function isOwed(owed: Set<string>, t: AiThread): boolean {
  */
 export function filedKey(p: AiPrivate): string | null {
   if ((p.state !== 'filed' && p.state !== 'posted') || !p.app || !(Number(p.resultRef) > 0)) return null;
-  return `${p.app.slug}#${Number(p.resultRef)}`;
+  return requestKey(p.app.slug, Number(p.resultRef));
 }
 
 /**
@@ -625,15 +695,17 @@ function filedThreads(work: AiWork | null): Map<string, number> {
 
 /** Pure (#6153): a request's row, carrying the private thread it was filed from, which it opens. */
 function withThread(filed: Map<string, number>, t: AiThread): AiThread {
-  const rootId = t.app && t.number ? filed.get(`${t.app.slug}#${t.number}`) : undefined;
+  const request = threadRequest(t);
+  const rootId = t.app && request ? filed.get(requestKey(t.app.slug, request)) : undefined;
   return rootId ? { ...t, rootId } : t;
 }
 
-/** Pure (#6153): every request with a row in any list, as `slug#number`. */
+/** Pure (#6153): every request with a row in any list, as `slug#number` (a change's own row is no request's). */
 function listedKeys(needs: NeedItem[] | null, work: AiWork | null): Set<string> {
   const listed = owedKeys(needs);
   for (const t of [...(work?.needs || []), ...(work?.next || []), ...(work?.waiting || []), ...(work?.live || [])]) {
-    if (t.app && t.number) listed.add(`${t.app.slug}#${t.number}`);
+    const request = threadRequest(t);
+    if (t.app && request) listed.add(requestKey(t.app.slug, request));
   }
   return listed;
 }

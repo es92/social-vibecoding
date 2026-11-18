@@ -374,7 +374,7 @@ function fakePool({ failInsert = false } = {}) {
       }
       if (/INSERT INTO app_files/.test(sql)) {
         if (failInsert) throw new Error('insert boom');
-        return { rows: [] };
+        return { rows: [{ id: params[0], filename: params[4], content_type: params[5], size_bytes: params[6], visibility: params[7], owner: params[3], sha256: params[9], created_at: new Date(0) }] };
       }
       if (/SELECT id, user_id FROM app_files/.test(sql)) {
         return { rows: [{ id: params[0], user_id: 5 }] };
@@ -424,7 +424,7 @@ test('storeAppFile: stores an MP3 as audio/mpeg', async () => {
   assert.equal(r.file.contentType, 'audio/mpeg');
   assert.equal(store.ops[0][3], 'audio/mpeg');
   const insert = pool.calls.find((c) => /INSERT INTO app_files/.test(c.sql));
-  assert.equal(insert.params[4], 'audio/mpeg');
+  assert.equal(insert.params[5], 'audio/mpeg');
 });
 
 test('storeAppFile: failed INSERT rolls the object back', async () => {
@@ -473,4 +473,39 @@ test('deleteAppFile: malformed id 404s without querying', async () => {
   const r = await appFiles.deleteAppFile(pool, fakeStore(), { appId: 7, fileId: 'not-an-id' });
   assert.equal(r.status, 404);
   assert.equal(pool.calls.length, 0);
+});
+
+// ── Files an app keeps for itself ───────────────────────────────────
+
+test('quotaVerdict: an app file skips the per-person cap; the app cap is per app', () => {
+  const GB = 1024 * 1024 * 1024;
+  const over = { size: 10, appBytes: 0, userBytes: 2 * GB, stagingBytes: 0, staging: false };
+  assert.equal(appFiles.quotaVerdict({ ...over, owner: 'user' }).code, 'user_quota_exceeded');
+  assert.equal(appFiles.quotaVerdict({ ...over, owner: 'app' }), null);
+  const nearly = { size: 10, appBytes: 3 * GB, userBytes: 0, stagingBytes: 0, staging: false, owner: 'app' };
+  assert.equal(appFiles.quotaVerdict(nearly), null, '10 GB by default');
+  const verdict = appFiles.quotaVerdict({ ...nearly, appCapBytes: 3 * GB });
+  assert.equal(verdict.code, 'app_quota_exceeded');
+  assert.match(verdict.error, /3 GB max/);
+});
+
+test('storeAppFile: owner app stores no uploader and the bytes\' SHA-256', async () => {
+  const pool = fakePool();
+  const store = fakeStore();
+  const r = await appFiles.storeAppFile(pool, store, {
+    appId: 7, userId: null, owner: 'app', filename: 'chapter.mp3', visibility: 'public', staging: false, data: MP3_ID3,
+  });
+  assert.equal(r.ok, true);
+  assert.equal(r.file.owner, 'app');
+  assert.equal(r.file.sha256, require('crypto').createHash('sha256').update(MP3_ID3).digest('hex'));
+  const insert = pool.calls.find((c) => /INSERT INTO app_files/.test(c.sql));
+  assert.equal(insert.params[2], null);
+  assert.equal(insert.params[3], 'app');
+});
+
+test('storeAppFile: refuses a person\'s upload with no person, and an app file in staging', async () => {
+  const base = { appId: 7, filename: 'a.mp3', visibility: 'public', data: MP3_ID3 };
+  await assert.rejects(appFiles.storeAppFile(fakePool(), fakeStore(), { ...base, userId: null, staging: false }), TypeError);
+  await assert.rejects(appFiles.storeAppFile(fakePool(), fakeStore(), { ...base, owner: 'app', staging: true }), TypeError);
+  await assert.rejects(appFiles.storeAppFile(fakePool(), fakeStore(), { ...base, owner: 'nobody', staging: false }), TypeError);
 });

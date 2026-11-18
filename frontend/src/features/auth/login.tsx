@@ -484,15 +484,16 @@ export function LoginScreen() {
   const rootRef = useRef<HTMLElement>(null);
   useVisibilityHiddenClass(rootRef, AUTH_SCREEN_IDS.login, false);
   const t = useMessages('auth');
-  // #6633: the email step says nothing of a waitlist once an admin has
-  // switched it off. The waitlist's words until the options arrive.
-  const accountsWait = newAccountsWait(useWaitlistOptions());
   // The screen's interior mounts on its first reveal, not in the prerender —
   // see lib/mount-on-reveal.ts. AuthScreens.show() asks for it (through
   // window.UsernodeReact.mount) before it wires or reveals the screen, so the
   // hooks this component patches onto AuthScreens are installed and the
   // interior's nodes exist by the time the on-show hook runs.
   const mounted = useMountedOnReveal(AUTH_SCREEN_IDS.login);
+  // #6633: the email step says nothing of a waitlist once an admin has
+  // switched it off. The waitlist's words until the options arrive, which
+  // are read once the screen is first shown.
+  const accountsWait = newAccountsWait(useWaitlistOptions(mounted));
 
   // Everything below starts at the value the prerendered markup shipped with:
   // the base view, no wallet, no errors, and the reset UI unbuilt.

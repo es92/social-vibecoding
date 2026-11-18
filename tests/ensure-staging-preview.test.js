@@ -168,7 +168,7 @@ test('ensureStaging shows the demo copy and never opens when {unavailable,demo}'
   const { AppView, dom, swaps } = makeAppView(okJson({ status: 'unavailable', reason: 'demo' }));
   await AppView.ensureStaging(7, 'https://x.example', null, {});
   assert.equal(swaps.length, 0, 'nothing opened in the demo env');
-  assert.match(dom.els['staging-loader-title'].textContent, /unavailable/i);
+  assert.equal(dom.els['staging-loader-title'].textContent, message('changes:frame.unavailable.title'));
   assert.match(dom.els['staging-loader-sub'].textContent, /demo/i, 'explains it is the demo env');
 });
 
@@ -218,7 +218,7 @@ test('#3413 an ensure-staging error and a network error both offer "Retry previe
       return { ok: true, json: async () => ({ status: 'ready', url: 'https://live.example', verified: true }) };
     });
     await AppView.ensureStaging(7, '', null, {});
-    assert.match(dom.els['staging-loader-title'].textContent, /unavailable/i, fail);
+    assert.equal(dom.els['staging-loader-title'].textContent, message('changes:frame.unavailable.title'), fail);
     assert.match(dom.els['staging-loader-sub'].textContent, fail === 'network' ? /network error/i : /invalid container config/, fail);
     assert.equal(dom.els['staging-retry-btn'].classList._hidden, false, fail);
     assert.equal(dom.els['staging-retry-btn'].textContent, 'Retry preview', fail);
@@ -231,7 +231,9 @@ test('#3413 an ensure-staging error and a network error both offer "Retry previe
 test('#3413 read-only viewers and the demo environment get no retry (mirrors the card)', async () => {
   const ro = makeAppView(async () => ({ ok: true, json: async () => ({ status: 'unavailable', reason: 'missing' }) }));
   await ro.AppView.ensureStaging(7, '', null, { readOnly: true });
-  assert.match(ro.dom.els['staging-loader-sub'].textContent, /collaborator can rebuild/i);
+  // A stopped preview says so, and who can start it, rather than "unavailable".
+  assert.equal(ro.dom.els['staging-loader-title'].textContent, message('changes:frame.notRunning.title'));
+  assert.equal(ro.dom.els['staging-loader-sub'].textContent, message('changes:frame.unavailable.missingReader'));
   assert.equal(ro.dom.els['staging-retry-btn'].classList._hidden, true, 'read-only: no retry');
 
   const demo = makeAppView(okJson({ status: 'unavailable', reason: 'demo' }));

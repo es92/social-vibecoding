@@ -50,7 +50,7 @@ test('it is a section as Pinned projects is: its label line on the page, then on
   assert.match(src, /<section id="home-needs-card" aria-label=\{t\('home:needsCard\.eyebrow'\)\} data-needs=\{String\(summary\.total\)\}>/);
   // The label, the count and a chevron are one link to all of Needs you, right after one another.
   assert.match(src, /<SectionHeading>\s*<WipHeadMore\s+id="home-needs-card-btn"\s+direction="right"\s+href="#needs"/);
-  assert.match(src, /<span id="home-needs-card-title">\{t\('home:needsCard\.eyebrow'\)\}<\/span>\s*<span className="wip-count" aria-hidden="true">\{summary\.total\}<\/span>\s*<\/WipHeadMore>/);
+  assert.match(src, /<span id="home-needs-card-title" className="wip-head-words">\{t\('home:needsCard\.eyebrow'\)\}<\/span>\s*<span className="wip-count" aria-hidden="true">\{summary\.total\}<\/span>\s*<\/WipHeadMore>/);
   assert.match(src, /label=\{more > 0 \? t\('home:needsCard\.seeAllCount', \{ count: summary\.total \}\) : t\('home:needsCard\.seeAll'\)\}/, 'it has no words of its own on screen, so its name says what it opens');
   assert.equal(message('home:needsCard.eyebrow'), 'Needs you');
   assert.equal(message('home:needsCard.seeAll'), 'See all');
@@ -122,8 +122,40 @@ test('what waits is a list in the look\'s columns, each row opening its project\
   // As many columns as the look has room for, the number Challenges' cards read too.
   const css = read('public/css/app.css');
   assert.match(css, /\.wip-rows-cols \{ grid-template-columns: repeat\(var\(--wip-cols, 1\), minmax\(0, 1fr\)\);/);
-  for (const [at, n] of [['640px', 2], ['1024px', 3], ['1440px', 4]]) {
+  // Four from 1024px, where Pinned projects' own four columns become rows: the lists share their lines.
+  for (const [at, n] of [['640px', 2], ['1024px', 4]]) {
     assert.match(css, new RegExp(`@media \\(min-width: ${at}\\) \\{ html\\[data-skin-wip\\] \\{ --wip-cols: ${n}; \\} \\}`));
   }
   assert.match(css, /\.wip-poster \{\s*display: flex;\s*flex: 0 0 calc\(\(100% - \(var\(--wip-cols, 1\) - 1\) \* var\(--wip-col-gap\)\) \/ var\(--wip-cols, 1\)\);/, 'a challenge is one of the same columns');
+});
+
+test('a challenge is its picture, then its words beside it, in a row that pages with an arrow at each end', () => {
+  const src = read('frontend/src/features/home/panels/challenges.tsx');
+  assert.match(src, /className="wip-poster"[\s\S]{0,400}<WipChallengeArt[\s\S]{0,200}<span className="wip-item-text">/, 'the picture first, the words in their own column');
+  // An arrow is drawn only while there is more that way, and names where it goes.
+  assert.match(src, /className="wip-rail-arrow wip-rail-arrow-back" aria-label=\{t\('home:challenges\.scrollBack'\)\} onClick=\{\(\) => page\(-1\)\}/);
+  assert.match(src, /className="wip-rail-arrow wip-rail-arrow-on" aria-label=\{t\('home:challenges\.scrollOn'\)\} onClick=\{\(\) => page\(1\)\}/);
+  assert.equal(message('home:challenges.scrollBack'), 'Earlier challenges');
+  assert.equal(message('home:challenges.scrollOn'), 'More challenges');
+  const css = read('public/css/app.css');
+  assert.match(css, /\.wip-poster-art \{[^}]*width: var\(--wip-poster-art\);[^}]*height: var\(--wip-poster-art\);/);
+  // A row and a poster keep a project tile's own padding, so the three lists' icons start on the same lines.
+  assert.match(css, /\.wip-row \{[^}]*padding: 0\.5rem var\(--wip-cell-pad\);/);
+  assert.match(css, /\.wip-poster \{[^}]*padding: 0\.5rem var\(--wip-cell-pad\);/);
+});
+
+test('the brand kit V2 tokens use yellow and green as marks, never as a row\'s ground, and a project\'s name is one size', () => {
+  const css = read('public/css/app.css');
+  const at = css.indexOf('html[data-skin-wip][data-wip-tokens="brand2"] {');
+  const v2 = css.slice(at, css.indexOf('}', at));
+  assert.match(v2, /--wip-label-mark: #ffee6f;/, 'yellow is the stroke under a title');
+  assert.match(v2, /--wip-worth-bg: rgb\(169 207 151 \/ 0\.5\);/, 'green is the tag behind a challenge\'s points');
+  assert.match(v2, /--wip-pill-bg: #000000;\s*--wip-pill-ink: #fffeea;/, 'what is pressed is cream on black');
+  assert.doesNotMatch(v2, /--wip-(ask|goal)-bg/, 'no block of colour behind Needs you or Challenges');
+  // The stroke is on a title's words alone: the kit gives plain words their own span.
+  assert.match(read('frontend/src/features/home/wip-kit.tsx'), /typeof children === 'string' \? <span className="wip-head-words">\{children\}<\/span> : children/);
+  // A plain pill in a card that asks reads the card's own ink (Advisory was pale on yellow in the dark).
+  assert.match(css, /--wip-ink-soft: var\(--wip-ask-ink\);/);
+  // One size at every width, outside any media query.
+  assert.match(css, /\nhtml\[data-skin-wip\] #app-list \.app-card-title \{\s*font-size: var\(--wip-title-size\);/, 'at the start of a line: not inside a media query');
 });

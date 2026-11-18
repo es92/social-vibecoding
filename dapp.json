@@ -1465,21 +1465,21 @@
       "expectSelector": "#leaderboard-screen:not(.hidden):has(#standings-tabs [data-standings-tab=\"challenges\"] ~ [data-standings-tab=\"topochain\"]) #challenges-root:not(.hidden) #tc-se-grid"
     },
     {
-      "name": "New project is the last tile of Home's My apps again, and New community stays the last of Pinned communities (#6522; both were One Home's, #6361)",
+      "name": "New project is the last tile of Home's Pinned apps (#6522), and Home lists none of the viewer's communities until a search: they are the Communities tab's page",
       "path": "/?demo=1&shot=create-enabled",
-      "expectSelector": "#home-body #home-apps-section:not([hidden]):has(#home-create-tile[data-panel-slot=\"create\"][data-create-enabled=\"true\"]) ~ #home-communities-section:not([hidden]) #home-new-community[data-panel-slot=\"create\"][data-create-enabled=\"true\"]:last-child",
+      "expectSelector": "#home-body:has(#home-communities-section[hidden]) #home-apps-section:not([hidden]) #home-create-tile[data-panel-slot=\"create\"][data-create-enabled=\"true\"]",
+      "expectText": "New project"
+    },
+    {
+      "name": "The Communities page's New community tile is present but locked without app quota, the last of Joined",
+      "path": "/?demo=1&shot=create-disabled#communities",
+      "expectSelector": "#communities-screen:not(.hidden) #communities-joined-section:not([hidden]) #communities-new-community[data-panel-slot=\"create\"][data-create-enabled=\"false\"][aria-label^=\"New community. \"]:last-child:not([disabled])",
       "expectText": "New community"
     },
     {
-      "name": "The New community tile is present but locked without app quota, still the last of Pinned communities (One Home, #6361)",
-      "path": "/?demo=1&shot=create-disabled",
-      "expectSelector": "#home-communities-section:not([hidden]) #home-new-community[data-panel-slot=\"create\"][data-create-enabled=\"false\"][aria-label^=\"New community. \"]:last-child:not([disabled])",
-      "expectText": "New community"
-    },
-    {
-      "name": "One Home (#6361): Home's last section is Communities to join, after Pinned apps and Pinned communities, and Home draws no Discover lane or continue card",
+      "name": "One Home (#6361): Home's last section is Communities to join, after Pinned apps, and Home draws no Discover lane, no continue card and no list of the viewer's communities",
       "path": "/?demo=1",
-      "expectSelector": "#home-body:not(:has(#home-discover-section)):not(:has(#home-continue-card)) #home-apps-section ~ #home-communities-section ~ #home-join-section:not([hidden]) > h2.home-area-label",
+      "expectSelector": "#home-body:not(:has(#home-discover-section)):not(:has(#home-continue-card)) #home-apps-section ~ #home-communities-section[hidden] ~ #home-join-section:not([hidden]) > h2.home-area-label",
       "expectText": "Communities to join"
     },
     {
@@ -2944,9 +2944,9 @@
       "expectSelector": "#platform-header:not(:has(#messages-btn)):has(#platform-mark-btn) #notifications-btn"
     },
     {
-      "name": "The sidebar's destination order: Home, then Homeroom bot (AI) above Messages, then Recents (the pinned group, then the rest), then you (One Home, #6361; the Communities node stays in the markup, drawn on neither bar, for the routes that name it)",
+      "name": "The sidebar's destination order: Home, then Homeroom bot (AI) above Messages, then Communities, then Recents (the pinned group, then the rest), then you",
       "path": "/?shot=app-context&demo=1",
-      "expectSelector": "#platform-tabs #platform-tab-home + #platform-tab-ai[href=\"#homeroom-bot\"] + #platform-tab-messages + #platform-rail-pinned + #platform-rail-communities + #platform-tab-workshop + #platform-tab-me"
+      "expectSelector": "#platform-tabs #platform-tab-home + #platform-tab-ai[href=\"#homeroom-bot\"] + #platform-tab-messages + #platform-tab-workshop[href=\"#communities\"] + #platform-rail-pinned + #platform-rail-communities + #platform-tab-me"
     },
     {
       "name": "Messages is a tab on the bar, with a seat for its count (#2718)",
@@ -3165,9 +3165,9 @@
       "expectText": "Go to community"
     },
     {
-      "name": "#communities, the old Communities screen, opens Home: beside the sidebar's search glyph, Pinned communities offers Needs you with the votes waiting (One Home, #6361; #3051, D)",
+      "name": "#communities opens the Communities tab's page with its tab lit: Pinned leads with Needs you and the votes waiting, Joined ends on New community, and Discover leads to the ones to join",
       "path": "/?demo=1#communities",
-      "expectSelector": "body:has(#platform-rail-search) #home-screen:not(.hidden) #home-communities-section:not([hidden]) a#home-needs-tile[href=\"#needs\"][data-home-needs]",
+      "expectSelector": "body:has(#platform-tab-workshop[aria-current=\"page\"]) #communities-screen:not(.hidden):has(#communities-joined-section #communities-new-community[data-panel-slot=\"create\"]):has(#communities-discover-section #communities-discover-btn) #communities-pinned-section:not([hidden]) a#communities-needs-tile[href=\"#needs\"][data-home-needs]",
       "expectText": "Needs you"
     },
     {
@@ -4661,9 +4661,9 @@
       "expectSelector": "#platform-tabs > #platform-rail-pinned.hidden[role=\"group\"][aria-labelledby=\"platform-rail-pinned-label\"] + #platform-rail-communities"
     },
     {
-      "name": "#2800: you are the sidebar's foot, with your Settings beside you (#6019; One Home #6361 draws no Communities row above you, its node kept for #communities)",
+      "name": "#2800: you are the sidebar's foot, after Recents, with your Settings beside you (#6019)",
       "path": "/?demo=1",
-      "expectSelector": "#platform-tabs > #platform-tab-workshop + a#platform-tab-me + a#platform-rail-settings:last-child"
+      "expectSelector": "#platform-tabs > #platform-rail-communities + a#platform-tab-me + a#platform-rail-settings:last-child"
     },
     {
       "name": "#4417, v3: on a desktop a project's places are nested under its row in the sidebar, the place on show lit there (Needs you), with no column beside it",
@@ -4687,9 +4687,9 @@
       "expectSelector": "a#back-btn:not(.hidden)[aria-label=\"Back\"][href=\"#messages\"]"
     },
     {
-      "name": "On a desktop a running app keeps the sidebar beside it, and the header's corner is the sidebar toggle rather than a ✕; no left-edge hover strip over the app (#3138; the Communities node names no community, D)",
+      "name": "On a desktop a running app keeps the sidebar beside it, and the header's corner is the sidebar toggle rather than a ✕; no left-edge hover strip over the app (#3138; the Communities tab names no community, D)",
       "path": "/#app/staging-demo-forkable",
-      "expectSelector": "body.rail-pinned:has(#app-view:not(.hidden)):has(#platform-tabs:not(.hidden) #platform-tab-workshop:not([aria-label])):not(:has(#platform-rail-peek)) #platform-header .platform-header-left:has(> a#back-btn.hidden) > #sidebar-toggle[aria-pressed=\"true\"]"
+      "expectSelector": "body.rail-pinned:has(#app-view:not(.hidden)):has(#platform-tabs:not(.hidden) #platform-tab-workshop:not([aria-label*=\", on \"])):not(:has(#platform-rail-peek)) #platform-header .platform-header-left:has(> a#back-btn.hidden) > #sidebar-toggle[aria-pressed=\"true\"]"
     },
     {
       "name": "An agent chat's old address opens the Homeroom bot tab: the thread its history was moved under, or the tab's own page when it had none (agent chats retired, 15 Nov 2026)",

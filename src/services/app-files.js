@@ -32,9 +32,17 @@ const MAX_VIDEO_FILE_BYTES = 100 * 1024 * 1024;
 // Plain text, CSV, JSON and calendar files are small by nature.
 const MAX_TEXT_FILE_BYTES = 5 * 1024 * 1024;
 // Object storage removes the DB-bloat constraint, so the caps are
-// generous: images and audio share one allowance.
+// generous: images and audio share one allowance. PER_APP_CAP is the
+// default; an admin may give one app its own (apps.file_storage_cap_bytes).
+// The per-person cap applies to files people upload, never to the files
+// an app keeps for itself (owner 'app').
 const PER_APP_CAP = 10 * 1024 * 1024 * 1024; // 10 GB
 const PER_USER_PER_APP_CAP = 1 * 1024 * 1024 * 1024; // 1 GB
+// Who a stored file belongs to: a person who uploaded it through the app,
+// or the app itself (its server, with the app token alone).
+const OWNERS = new Set(['user', 'app']);
+// Largest page an app may list its files in.
+const MAX_LIST_LIMIT = 1000;
 // Staging-preview uploads (bridge relay path) are capped tighter and
 // GC'd by the server.js sweeper after STAGING_GC_DAYS regardless.
 const STAGING_PER_APP_CAP = 100 * 1024 * 1024; // 100 MB
@@ -393,8 +401,10 @@ function createObjectStore(config, { client: injectedClient } = {}) {
         'Content-Type': contentType,
       });
     },
-    async getFileStream(appId, fileId) {
-      return client.getObject(bucket, objectKey(appId, fileId));
+    async getFileStream(appId, fileId, range = null) {
+      return range
+        ? client.getPartialObject(bucket, objectKey(appId, fileId), range.start, range.end - range.start + 1)
+        : client.getObject(bucket, objectKey(appId, fileId));
     },
     async removeFile(appId, fileId) {
       await client.removeObject(bucket, objectKey(appId, fileId));
@@ -436,12 +446,20 @@ function getStore(config) {
 
 // ── Quota + persistence helpers ─────────────────────────────────────
 
+// The app's file allowance: its admin-set figure, else PER_APP_CAP.
+async function appCapBytes(pool, appId) {
+  const { rows } = await pool.query('SELECT file_storage_cap_bytes FROM apps WHERE id = $1', [appId]);
+  const cap = rows[0] ? rows[0].file_storage_cap_bytes : null;
+  return cap == null ? PER_APP_CAP : Number(cap);
+}
+
 async function usageSums(pool, appId, userId, staging = null) {
   const { rows } = await pool.query(
     `SELECT
        COALESCE(SUM(size_bytes), 0)::bigint AS app_bytes,
        COALESCE(SUM(size_bytes) FILTER (WHERE user_id = $2), 0)::bigint AS user_bytes,
-       COALESCE(SUM(size_bytes) FILTER (WHERE staging), 0)::bigint AS staging_bytes
+       COALESCE(SUM(size_bytes) FILTER (WHERE staging), 0)::bigint AS staging_bytes,
+       COALESCE(SUM(size_bytes) FILTER (WHERE owner = 'app'), 0)::bigint AS app_owned_bytes
      FROM app_files WHERE app_id = $1 AND ($3::boolean IS NULL OR staging = $3)`,
     [appId, userId, staging]
   );
@@ -449,25 +467,29 @@ async function usageSums(pool, appId, userId, staging = null) {
     appBytes: Number(rows[0].app_bytes),
     userBytes: Number(rows[0].user_bytes),
     stagingBytes: Number(rows[0].staging_bytes),
+    appOwnedBytes: Number(rows[0].app_owned_bytes),
   };
 }
 
 // Pure: quota verdict for an upload of `size` bytes given current sums.
-// Returns null when the upload fits, else { code, error }.
-function quotaVerdict({ size, appBytes, userBytes, stagingBytes, staging }) {
+// Returns null when the upload fits, else { code, error }. A file the app
+// keeps for itself counts against the app's allowance only.
+function quotaVerdict({
+  size, appBytes, userBytes, stagingBytes, staging, appCapBytes: appCap = PER_APP_CAP, owner = 'user',
+}) {
   if (staging && stagingBytes + size > STAGING_PER_APP_CAP) {
     return {
       code: 'staging_quota_exceeded',
       error: `Staging upload storage for this app is full (${Math.round(STAGING_PER_APP_CAP / 1024 / 1024)} MB max)`,
     };
   }
-  if (appBytes + size > PER_APP_CAP) {
+  if (appBytes + size > appCap) {
     return {
       code: 'app_quota_exceeded',
-      error: `This app's file storage is full (${Math.round(PER_APP_CAP / 1024 / 1024 / 1024)} GB max)`,
+      error: `This app's file storage is full (${formatCap(appCap)} max)`,
     };
   }
-  if (userBytes + size > PER_USER_PER_APP_CAP) {
+  if (owner === 'user' && userBytes + size > PER_USER_PER_APP_CAP) {
     return {
       code: 'user_quota_exceeded',
       error: `Your file storage in this app is full (${Math.round(PER_USER_PER_APP_CAP / 1024 / 1024)} MB max)`,
@@ -476,52 +498,105 @@ function quotaVerdict({ size, appBytes, userBytes, stagingBytes, staging }) {
   return null;
 }
 
+function formatCap(bytes) {
+  const gb = bytes / (1024 * 1024 * 1024);
+  if (gb >= 1) return `${Math.round(gb * 10) / 10} GB`;
+  return `${Math.round(bytes / 1024 / 1024)} MB`;
+}
+
+// The shape every path answers with, from an app_files row.
+function fileShape(row) {
+  return {
+    id: row.id,
+    url: fileUrl(row.id),
+    filename: row.filename,
+    contentType: row.content_type,
+    sizeBytes: Number(row.size_bytes),
+    visibility: row.visibility,
+    owner: row.owner,
+    sha256: row.sha256 || null,
+    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+  };
+}
+
 // Full upload: validate → quota-check → put object → insert metadata.
 // Object first, row second; on INSERT failure the object is best-effort
 // removed so it can't leak (a row-less object is invisible anyway).
-// Returns { ok: true, file } or { ok: false, status, code, error }.
-async function storeAppFile(pool, store, { appId, userId, filename, visibility, staging, data }) {
+// `owner: 'app'` stores a file the app keeps for itself: no uploader, and
+// only the app's allowance applies. Returns { ok: true, file } or
+// { ok: false, status, code, error }.
+async function storeAppFile(pool, store, { appId, userId, owner = 'user', filename, visibility, staging, data }) {
   if (!store) {
     return { ok: false, status: 503, code: 'storage_unavailable', error: 'File storage is unavailable right now' };
   }
+  if (!OWNERS.has(owner)) throw new TypeError(`Unknown file owner: ${owner}`);
+  if (owner === 'user' && userId == null) throw new TypeError('A person\'s upload needs its user id');
+  // Staging never holds the app token, so a preview never keeps app files.
+  if (owner === 'app' && staging) throw new TypeError('An app file is never staging data');
   const verdict = validateUpload({ filename, data });
   if (!verdict.ok) {
     return { ok: false, status: 400, code: verdict.code, error: verdict.error };
   }
-  const sums = await usageSums(pool, appId, userId);
-  const quota = quotaVerdict({ size: data.length, ...sums, staging: !!staging });
+  const uploader = owner === 'app' ? null : userId;
+  const [sums, appCap] = await Promise.all([usageSums(pool, appId, uploader), appCapBytes(pool, appId)]);
+  const quota = quotaVerdict({ size: data.length, ...sums, staging: !!staging, appCapBytes: appCap, owner });
   if (quota) return { ok: false, status: 400, code: quota.code, error: quota.error };
 
   const id = crypto.randomBytes(16).toString('hex');
+  const sha256 = crypto.createHash('sha256').update(data).digest('hex');
   try {
     await store.putFile(appId, id, data, verdict.contentType);
   } catch (err) {
     log.error('app-files', 'Object store put failed', { appId, err: err.message });
     return { ok: false, status: 503, code: 'storage_unavailable', error: 'File storage is unavailable right now' };
   }
+  let row;
   try {
-    await pool.query(
-      `INSERT INTO app_files (id, app_id, user_id, filename, content_type, size_bytes, visibility, staging)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [id, appId, userId, String(filename).trim(), verdict.contentType, data.length,
-       normalizeVisibility(visibility), !!staging]
+    const { rows } = await pool.query(
+      `INSERT INTO app_files (id, app_id, user_id, owner, filename, content_type, size_bytes, visibility, staging, sha256)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING id, filename, content_type, size_bytes, visibility, owner, sha256, created_at`,
+      [id, appId, uploader, owner, String(filename).trim(), verdict.contentType, data.length,
+        normalizeVisibility(visibility), !!staging, sha256]
     );
+    row = rows[0];
   } catch (err) {
     log.error('app-files', 'Metadata insert failed; removing object', { appId, id, err: err.message });
     await store.removeFile(appId, id).catch(() => {});
     return { ok: false, status: 500, code: 'upload_failed', error: 'Upload failed' };
   }
-  return {
-    ok: true,
-    file: {
-      id,
-      url: fileUrl(id),
-      filename: String(filename).trim(),
-      contentType: verdict.contentType,
-      sizeBytes: data.length,
-      visibility: normalizeVisibility(visibility),
-    },
-  };
+  return { ok: true, file: fileShape(row) };
+}
+
+// One page of an app's own production files, oldest id first after
+// `after`, for an app reconciling or resuming a copy. `owner` narrows it
+// to the app's own files or to people's uploads; omitted, both.
+async function listAppFiles(pool, { appId, owner = null, after = null, limit = 100 }) {
+  if (owner != null && !OWNERS.has(owner)) throw new TypeError(`Unknown file owner: ${owner}`);
+  const n = Math.min(Math.max(1, Number.isInteger(limit) ? limit : 100), MAX_LIST_LIMIT);
+  const { rows } = await pool.query(
+    `SELECT id, filename, content_type, size_bytes, visibility, owner, sha256, created_at
+       FROM app_files
+      WHERE app_id = $1 AND NOT staging
+        AND ($2::text IS NULL OR owner = $2)
+        AND ($3::text IS NULL OR id > $3)
+      ORDER BY id
+      LIMIT $4`,
+    [appId, owner, after, n + 1]
+  );
+  const files = rows.slice(0, n).map(fileShape);
+  return { files, next: rows.length > n ? files[files.length - 1].id : null };
+}
+
+// One of the app's own production files, or null.
+async function findAppFile(pool, { appId, fileId }) {
+  if (!/^[a-f0-9]{32}$/.test(String(fileId || ''))) return null;
+  const { rows } = await pool.query(
+    `SELECT id, app_id, filename, content_type, size_bytes, visibility, owner, sha256, created_at
+       FROM app_files WHERE id = $1 AND app_id = $2 AND NOT staging`,
+    [fileId, appId]
+  );
+  return rows[0] || null;
 }
 
 // Deletion: object first, row second — a failed object delete leaves
@@ -553,13 +628,64 @@ async function deleteAppFile(pool, store, { appId, fileId, requireUserId = null,
   return { ok: true };
 }
 
+// ── Admin: the file allowance beside each app's database cap ──────
+
+function fileFigures(row) {
+  const override = row.file_storage_cap_bytes == null ? null : Number(row.file_storage_cap_bytes);
+  return {
+    fileBytes: Number(row.file_bytes || 0),
+    fileAppOwnedBytes: Number(row.app_owned_bytes || 0),
+    fileCapBytes: override == null ? PER_APP_CAP : override,
+    fileCapOverrideBytes: override,
+  };
+}
+
+// slug → what the admin console shows of each app's stored files.
+async function adminFileFigures(pool) {
+  const { rows } = await pool.query(
+    `SELECT a.slug, a.file_storage_cap_bytes,
+            COALESCE(f.bytes, 0)::bigint AS file_bytes,
+            COALESCE(f.app_owned_bytes, 0)::bigint AS app_owned_bytes
+       FROM apps a
+       LEFT JOIN (SELECT app_id, SUM(size_bytes) AS bytes,
+                         SUM(size_bytes) FILTER (WHERE owner = 'app') AS app_owned_bytes
+                    FROM app_files WHERE NOT staging GROUP BY app_id) f ON f.app_id = a.id
+      WHERE NOT a.self_hosted`
+  );
+  return new Map(rows.map((row) => [row.slug, fileFigures(row)]));
+}
+
+// Set (bytes) or clear (null) one app's file allowance. Takes effect on
+// the next upload. Returns the app's figures, or null for no such app.
+async function setFileCapOverride(pool, slug, capBytesOrNull) {
+  let cap = null;
+  if (capBytesOrNull != null) {
+    cap = Number(capBytesOrNull);
+    if (!Number.isSafeInteger(cap) || cap < 0) {
+      throw new Error('file cap must be a non-negative integer number of bytes, or null for the default');
+    }
+  }
+  const { rows } = await pool.query(
+    `UPDATE apps SET file_storage_cap_bytes = $1
+      WHERE slug = $2 AND NOT self_hosted
+  RETURNING id, file_storage_cap_bytes`,
+    [cap, slug]
+  );
+  if (!rows[0]) return null;
+  log.info('app-files', 'App file allowance set', { slug, capBytes: cap });
+  const sums = await usageSums(pool, rows[0].id, null, false);
+  return fileFigures({ ...rows[0], file_bytes: sums.appBytes, app_owned_bytes: sums.appOwnedBytes });
+}
+
+// `userId` null is the app asking for itself: no person's figures.
 async function usageReport(pool, appId, userId, { staging = false } = {}) {
-  const sums = await usageSums(pool, appId, userId, staging);
+  const [sums, appCap] = await Promise.all([usageSums(pool, appId, userId, staging), appCapBytes(pool, appId)]);
   return {
     appBytes: sums.appBytes,
-    appCapBytes: PER_APP_CAP,
-    userBytes: sums.userBytes,
-    userCapBytes: PER_USER_PER_APP_CAP,
+    appCapBytes: appCap,
+    appOwnedBytes: sums.appOwnedBytes,
+    userBytes: userId == null ? null : sums.userBytes,
+    userCapBytes: userId == null ? null : PER_USER_PER_APP_CAP,
   };
 }
 
@@ -598,6 +724,7 @@ module.exports = {
   UPLOAD_BODY_LIMIT,
   PER_APP_CAP,
   PER_USER_PER_APP_CAP,
+  MAX_LIST_LIMIT,
   STAGING_PER_APP_CAP,
   STAGING_GC_DAYS,
   IMAGE_EXT_TYPES,
@@ -617,8 +744,14 @@ module.exports = {
   createObjectStore,
   getStore,
   usageSums,
+  appCapBytes,
+  fileShape,
   storeAppFile,
+  listAppFiles,
+  findAppFile,
   deleteAppFile,
   usageReport,
+  adminFileFigures,
+  setFileCapOverride,
   sweepStagingFiles,
 };

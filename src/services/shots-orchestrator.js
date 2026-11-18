@@ -86,9 +86,18 @@ function platformFault(error, { now = Date.now() } = {}) {
   // once, a few minutes on, by the recovery sweep.
   if (error.code === 'github_unavailable') return { kind: 'github_unavailable', retryAt: now + 5 * 60_000 };
   if (state.PLATFORM_FAULT_KINDS.has(error.shotsPlatformFault)) return { kind: error.shotsPlatformFault };
-  if (worker.isRetryableBootstrapError(error)) return { kind: 'worker_bootstrap' };
+  // The change's worker could not start (its volume, its image, no room on
+  // any node, a setup that never finished): the platform's, never the
+  // change's, so the run is taken again once.
+  if (worker.isRetryableBootstrapError(error) || worker.isWorkerStartFailure(error)) return { kind: 'worker_bootstrap' };
   return null;
 }
+
+// How long the shots wait for the change's worker to start before they say
+// it did not. Off the agent's own clock (its turn starts once the worker is
+// up), and short enough that the agent's whole budget still fits inside the
+// machine's deadline for the step (machine.ts AGENT_OVERDUE_MS, 15 minutes).
+const WORKER_PREPARE_MAX_MS = 6 * 60_000;
 
 const DIFF_CONTEXT_CHARS = 8_000;
 const MAX_AGENT_EVENTS = 128;
@@ -656,9 +665,12 @@ function shotsBrief({
     darkMode: {
       param: selfApp ? 'theme' : 'un-theme',
       value: 'dark',
+      // save_shot takes each light screen's dark shot where the page stands
+      // (worker/shots-mcp.js takeDarkShots); the parameter is for what it
+      // leaves (darkLeft).
       note: selfApp
-        ? 'Add theme=dark to the start path\'s query to open a page in dark mode.'
-        : 'Add un-theme=dark to the start path\'s query to open a page in dark mode.',
+        ? 'save_shot takes the dark shots. For one it lists in darkLeft, add theme=dark to the start path\'s query.'
+        : 'save_shot takes the dark shots. For one it lists in darkLeft, add un-theme=dark to the start path\'s query.',
     },
     ...(moment ? {
       previewAt: {
@@ -1035,15 +1047,22 @@ function addTiming(metrics, key, startedAtMs) {
   return elapsed;
 }
 
-function addAgentUsage(metrics, dispatched) {
-  const result = dispatched?.result;
-  if (!result || typeof result !== 'object') return;
+// What a turn spent, added to the run's: the `usage` its dispatch worked out
+// (shots-agent.turnUsage, also on a turn that failed or ran out of time),
+// else read off its result, which is all a turn a restart followed has.
+// Usage used to be read only off the live dispatch's own result, by keys that
+// result does not all carry (its cost is `costUsd`, in dollars), so no run
+// recorded what it cost.
+function addAgentUsage(metrics, turn) {
+  const usage = turn?.usage && typeof turn.usage === 'object' ? turn.usage
+    : shotsAgent.turnUsage(turn?.result) || (turn?.result && typeof turn.result === 'object' ? turn.result : null);
+  if (!usage) return;
   for (const key of [
     'inputTokens', 'cachedInputTokens', 'cacheWriteInputTokens',
-    'outputTokens', 'reasoningOutputTokens', 'costCents',
+    'outputTokens', 'reasoningOutputTokens', 'costCents', 'streamed',
   ]) {
-    if (result[key] == null) continue;
-    const value = Number(result[key]);
+    if (usage[key] == null) continue;
+    const value = Number(usage[key]);
     if (!Number.isFinite(value) || value < 0) continue;
     metrics.tokenUsage[key] = (metrics.tokenUsage[key] || 0) + value;
   }
@@ -1261,10 +1280,15 @@ async function buildCopies(config, pool, {
 // failed.
 function agentErrorOf(error) {
   if (!error) return null;
-  const code = errorCode(error);
+  // A worker that never started says so, in words, not as the agent's
+  // failure or its running out of time (18 Nov 2026: "The shots agent ran
+  // out of time." for a worker whose disk volume could not be mounted).
+  const workerStart = worker.workerStartReason(error);
+  const code = workerStart ? 'shots_worker_failed' : errorCode(error);
   return {
     code,
-    message: visibleError(error),
+    message: workerStart || visibleError(error),
+    ...(workerStart ? { workerStart: true } : {}),
     busy: agentBusyRetryable(error),
     died: agentDiedRetryable(error),
     timedOut: code === 'shots_agent_timeout',
@@ -1370,9 +1394,44 @@ async function dispatchAgent(config, pool, {
     }
   };
   await stopIfEnded();
+  // The change's worker is started before the agent's clock (durable-turn
+  // `prepare`): a worker that takes long to start, or never does, is not
+  // the agent running out of time. Bounded on its own (WORKER_PREPARE_MAX_MS);
+  // what it failed with is the dispatch's answer.
+  let prepared = null;
+  const prepare = typeof deps.shotsAgent.prepareWorker !== 'function' ? null : async () => {
+    await stopIfEnded();
+    const startedMs = Date.now();
+    let timer;
+    try {
+      await Promise.race([
+        deps.shotsAgent.prepareWorker(session, { onProgress: onProgress ? (line) => onProgress(`Shots agent: ${line}`) : null, onShotsDiagnostic },
+          injected.agentDependencies || {}),
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(Object.assign(new Error('The worker did not finish starting in time.'), { code: 'worker_start_timeout' })),
+            injected.workerPrepareMaxMs ?? WORKER_PREPARE_MAX_MS);
+        }),
+      ]);
+      prepared = { ok: true };
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      prepared = { error };
+    } finally {
+      clearTimeout(timer);
+      dispatchTrace.workerPrepareMs = Date.now() - startedMs;
+    }
+    // The agent's clock starts now, and so does the run's control plane's.
+    if (prepared.ok) await shotsControl.extend(pool, runId, Date.now() + budgetMs + CONTROL_SLACK_MS);
+  };
   const dispatch = async (extra = {}, { budgetMs: left = budgetMs } = {}) => {
     await stopIfEnded();
     dispatchTrace.timeoutMs = left;
+    if (prepared?.error) {
+      const agentError = agentErrorOf(prepared.error);
+      dispatchTrace.outcome = 'failed';
+      dispatchTrace.code = agentError.code;
+      return { result: null, agentError };
+    }
     try {
       const dispatched = await deps.shotsAgent.dispatch(config, {
         pool, session, runId,
@@ -1394,28 +1453,31 @@ async function dispatchAgent(config, pool, {
         ...(extra.holdTurnRecord ? { holdTurnRecord: true } : {}),
         ...(typeof extra.onTurnRecord === 'function' ? { onTurnRecord: extra.onTurnRecord } : {}),
       }, injected.agentDependencies || {});
-      addAgentUsage(metrics, dispatched);
       dispatchTrace.backend = String(dispatched.backend || 'claude_code').slice(0, 64);
       dispatchTrace.model = safeModelId(dispatched.model);
       dispatchTrace.outcome = 'completed';
-      return { result: dispatched.result };
+      return { result: dispatched.result, ...(dispatched.usage ? { usage: dispatched.usage } : {}) };
     } catch (error) {
       dispatchTrace.outcome = 'failed';
       dispatchTrace.code = errorCode(error);
-      return { result: null, agentError: agentErrorOf(error) };
+      return { result: null, agentError: agentErrorOf(error), ...(error?.shotsUsage ? { usage: error.shotsUsage } : {}) };
     }
   };
   const turn = await deps.durableTurn.runTurn(steps || deps.durableSteps.none(), key, {
-    pool, session, mode: 'shots', budgetMs, dispatch, owner,
+    pool, session, mode: 'shots', budgetMs, dispatch, owner, prepare,
     // Its own clock ends only its own turn (by its record).
     stop: () => require('./durable-turn').clockStop(deps.worker, pool, sessionId, owner),
     onProgress,
   });
   const routed = turn.routed || {};
+  // Whichever way the turn's end arrived: this dispatch, the turn a restart
+  // followed, or the step's kept result.
+  addAgentUsage(metrics, routed);
   let error = routed.agentError || null;
   if (!error && typeof routed.error === 'string') error = { code: 'shots_agent_failed', message: routed.error, busy: false, died: false };
   if (!error && turn.followed) error = followedErrorOf(routed.result);
-  if (turn.stopped && !error?.busy) error = { ...(error || {}), code: 'shots_agent_timeout', message: 'The shots agent ran out of time.', timedOut: true };
+  // A worker that never started never ran the agent: its clock is not why.
+  if (turn.stopped && !error?.busy && !error?.workerStart) error = { ...(error || {}), code: 'shots_agent_timeout', message: 'The shots agent ran out of time.', timedOut: true };
   const finalResponse = agentFinalResponseSummary(routed.result || null, authTokens, a.origins, a.phoneTestCode);
   if (finalResponse) metrics.agentFinalResponses.push({ dispatch: 1, ...finalResponse });
   metrics.timingsMs.agentExploration = Math.max(0, Date.now() - metrics.startedAtMs);

@@ -1,6 +1,7 @@
 'use strict';
 
-// Home's Pinned communities (services/home-pins.js), the account's.
+// The communities a person pinned (services/home-pins.js), the account's:
+// the Pinned group of the Communities tab's page.
 const { Router } = require('express');
 const { getPool } = require('../db/pool');
 const pins = require('../services/home-pins');
@@ -24,8 +25,9 @@ function homePinRoutes(config, { pool = getPool(config) } = {}) {
     }
   };
   router.get('/api/me/home-pins', run((req) => pins.list(pool, req.user.id)));
-  // What Home's community cards say under each pinned community's name:
-  // members, what went live this week and who was there (services/home-pins.js).
+  // What the Communities page's cards say under each community's name, pinned
+  // or joined: members, what went live this week and who was there
+  // (services/home-pins.js).
   router.get('/api/me/home-pins/activity', async (req, res) => {
     try {
       res.json({ activity: await pins.activity(pool, req.user.id) });

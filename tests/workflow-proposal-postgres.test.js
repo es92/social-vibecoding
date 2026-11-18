@@ -20,6 +20,7 @@ const { Pool } = require('pg');
 const { createRuntime } = require('../src/workflow/kernel/index.ts');
 const platform = require('../src/workflow/platform.ts');
 const { proposal, sessionKey, MACHINE, WORK } = require('../src/workflow/proposal/machine.ts');
+const { createChangeClosedNotification } = require('../src/workflow/rules/change-notifications.ts');
 
 const DSN = process.env.TEST_DATABASE_URL || process.env.DATABASE_URL || 'postgres://postgres:postgres@127.0.0.1:5432/postgres';
 const SHA = (c) => c.repeat(40).slice(0, 40);
@@ -586,6 +587,13 @@ test('proposal machine against the full PostgreSQL schema', { timeout: 180000 },
       assert.equal(r.status, 'archived', reason);
       assert.ok(r.archived_at, reason);
       assert.equal(r.approval_epoch, 1, `${reason}: its votes stop counting (Q4, bug 7)`);
+      // #6100: why rides the close, and its author hears, unless the close
+      // was their own.
+      assert.equal(r.close_reason, reason, `${reason}: the close keeps why`);
+      const told = (await pool.query(
+        `SELECT detail FROM notifications WHERE user_id = $1 AND session_id = $2 AND kind = 'change_closed'`, [s.owner.id, s.id])).rows;
+      assert.equal(told.length, reason === 'manual' ? 0 : 1, `${reason}: the author's Closed row`);
+      if (told.length) assert.equal(told[0].detail, `event:${id}`, `${reason}: its detail names the event`);
       assert.equal((await pool.query('SELECT status FROM external_agent_tasks WHERE id = $1', [task.id])).rows[0].status, 'abandoned', reason);
       const decl = (await pool.query('SELECT status, value_enc FROM pending_secret_declarations WHERE session_id = $1', [s.id])).rows[0];
       assert.deepEqual([decl.status, decl.value_enc], ['discarded', null], reason);
@@ -602,6 +610,34 @@ test('proposal machine against the full PostgreSQL schema', { timeout: 180000 },
       else assert.equal(said.length, 0, reason);
       assert.ok(pushed.some((p) => p.data.type === 'issue_update' && p.data.source === 'session_archived' && p.data.appId === s.app_id), reason);
     }
+  });
+
+  await t.test('P13b #6100: the Closed row is written once per close, never for Homeroom bot, and follows the author\'s switch', async () => {
+    defaults();
+    const s = await session({ status: 'promoted', promotedAgo: 0 });
+    const id = await send(s, 'Close', { from: 'promoted', reason: 'stale-pr' });
+    await settle();
+    assert.equal((await outcome(id)).result, 'accepted');
+    const rows = async (u, c) => (await pool.query(
+      `SELECT 1 FROM notifications WHERE user_id = $1 AND session_id = $2 AND kind = 'change_closed'`, [u.id, c.id])).rowCount;
+    assert.equal(await rows(s.owner, s), 1);
+    const again = await createChangeClosedNotification(pool, { userId: s.owner.id, appId: s.app_id, sessionId: s.id, eventId: id });
+    assert.equal(again.length, 0, 'a retried event doubles nothing');
+    const next = await createChangeClosedNotification(pool, { userId: s.owner.id, appId: s.app_id, sessionId: s.id, eventId: `${id}-later` });
+    assert.equal(next.length, 1, 'a later close of the same change is news again');
+    const own = await createChangeClosedNotification(pool, { userId: s.owner.id, appId: s.app_id, sessionId: s.id, eventId: 'own', byOwner: true });
+    assert.equal(own.length, 0, 'nobody is told about a close they made');
+    const muted = await createChangeClosedNotification(pool,
+      { userId: s.owner.id, appId: s.app_id, sessionId: s.id, eventId: 'muted' }, async () => false);
+    assert.equal(muted.length, 0, 'Your proposals switched off');
+
+    const bot = await user({ synthetic: true });
+    const b = await session({ status: 'promoted', promotedAgo: 0, owner: bot });
+    const bId = await send(b, 'Close', { from: 'promoted', reason: 'stale-pr' });
+    await settle();
+    assert.equal((await outcome(bId)).result, 'accepted');
+    assert.equal((await row(b)).close_reason, 'stale-pr');
+    assert.equal(await rows(bot, b), 0, 'a synthetic author gets no bell row');
   });
 
   await t.test('P14 a close a newer move overtook is refused; merging and merged are past closing', async () => {
@@ -635,6 +671,7 @@ test('proposal machine against the full PostgreSQL schema', { timeout: 180000 },
     assert.equal((await outcome(reopen)).result, 'accepted');
     assert.equal((await row(s)).status, 'paused');
     assert.equal((await row(s)).archived_at, null);
+    assert.equal((await row(s)).close_reason, null, '#6100: a reopen clears why it was closed');
     assert.equal((await workOf(s, WORK.reopen)).length, 0, 'the reopen waits for the close under way');
     release();
     await running;

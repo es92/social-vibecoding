@@ -38,8 +38,12 @@ test('storage relays isolate preview rows in PostgreSQL', async (t) => {
     await client.query(`CREATE TABLE app_files (
       id TEXT PRIMARY KEY, app_id INTEGER NOT NULL, user_id INTEGER NOT NULL,
       filename TEXT NOT NULL DEFAULT 'fixture.png', content_type TEXT NOT NULL DEFAULT 'image/png',
-      size_bytes INTEGER NOT NULL, visibility TEXT NOT NULL DEFAULT 'private', staging BOOLEAN NOT NULL DEFAULT FALSE
+      size_bytes INTEGER NOT NULL, visibility TEXT NOT NULL DEFAULT 'private', staging BOOLEAN NOT NULL DEFAULT FALSE,
+      owner TEXT NOT NULL DEFAULT 'user', sha256 TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`);
+    // Each app's file allowance (apps.file_storage_cap_bytes; NULL is the default).
+    await client.query('CREATE TABLE apps (id INTEGER PRIMARY KEY, file_storage_cap_bytes BIGINT)');
+    await client.query('INSERT INTO apps (id) VALUES (7), (8)');
     for (const [letter, app, user, size, staging] of [
       ['a', 7, 5, 10, false], ['b', 7, 5, 20, true], ['c', 7, 6, 30, false],
       ['d', 8, 5, 99, false], ['e', 7, 6, 50, true],

@@ -30,12 +30,12 @@ test('the private member\'s walk: the three cards every newcomer gets, and no wa
   assert.deepEqual(steps.map((s) => s.target), [
     '#app-list .app-card[data-slug="best-brunch"]',
     '#platform-tab-ai',
-    '#home-communities-section [data-home-community="best-brunch"]',
+    '#platform-tab-workshop',
   ]);
   assert.deepEqual(steps.map((s) => [s.title, s.text]), [
     ['Welcome to Homeroom', 'Best Brunch lives here, on Home.'],
     ['Homeroom bot', 'It\'s in the Homeroom bot tab. Ask it to make any changes to Best Brunch.'],
-    ['Communities', 'Best Brunch\'s hub is here. Invite people and decide what changes.'],
+    ['Communities', 'Best Brunch\'s hub is under Communities. Invite people and decide what changes.'],
   ]);
   // The group's app from a ready-made starter: its example on the bot card.
   const fromStarter = homeWalkSteps({ slug: 'best-brunch', name: 'Best Brunch', example: 'add a price range to each place' });
@@ -233,17 +233,24 @@ test('the waitlist card: join, an email, a code, then On the waitlist with "Want
   assert.match(byPhone, /id="home-waitlist-add-email"[^>]*>Add an email too</);
   assert.match(byPhone, new RegExp(`href="#more/${token}"`));
   assert.doesNotMatch(listed, /Add an email too/, 'an email row has nothing to add');
-  // Pinned communities follows the launcher directly (One Home, #6361; it
-  // was Discover, #4937); the waitlist card keeps its place after it.
-  assert.match(read('frontend/src/features/home/index.tsx'), /\{wip \? null : <AppsMore \/>\}\s+<\/WipCard>\s+<\/section>[\s\S]*<PinnedCommunities \/>\s+[\s\S]*<WaitlistCard \/>/);
+  // What a search finds of your communities follows the launcher (it was
+  // Pinned communities, One Home, #6361, and Discover before that, #4937);
+  // the waitlist card keeps its place after it.
+  assert.match(read('frontend/src/features/home/index.tsx'), /\{wip \? null : <AppsMore \/>\}\s+<\/WipCard>\s+<\/section>[\s\S]*<HomeCommunityMatches \/>\s+[\s\S]*<WaitlistCard \/>/);
 });
 
-test('Home for a private member: no New community tile, no Challenges or Create panels', () => {
+test('a private member is offered no New project on Home and no New community on the Communities page, and no Challenges or Create panels', () => {
   const home = read('frontend/src/features/home/home.js');
   assert.match(home, /if \(App\.user\?\.privateMember\) create = null;/);
-  // One Home (#6361): making something is Pinned communities' tile, which a
-  // private member is not offered.
-  assert.match(read('frontend/src/features/home/pinned-communities.tsx'), /const offerCreate = state\.ready && !win\?\.App\?\.user\?\.privateMember;/);
+  // New community is the Communities tab's page's now (it was Pinned
+  // communities' tile on Home, One Home, #6361): the tile at the end of
+  // Joined and the filled button beside search both hang off the one
+  // offer, which a private member is not made.
+  const page = read('frontend/src/features/communities/index.tsx');
+  assert.match(page, /const offerCreate = state\.ready && !win\?\.App\?\.user\?\.privateMember;/);
+  assert.match(page, /const createTile = offerCreate && !q && !editing;/);
+  assert.match(page, /\{kit && offerCreate \? \(\s*<WipCta\s+id="communities-new-top"/);
+  assert.doesNotMatch(read('frontend/src/features/home/pinned-communities.tsx'), /offerCreate|showCreateModal/, 'nothing on Home\'s side of the tiles makes one');
   const panels = read('src/routes/home-panels.js');
   assert.match(panels, /const PRIVATE_MEMBER_PANELS = new Set\(\['discover'\]\);/);
   assert.match(panels, /if \(req\.user\.privateMember && !PRIVATE_MEMBER_PANELS\.has\(panel\.key\)\) continue;/);

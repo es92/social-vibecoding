@@ -1811,7 +1811,7 @@ function ConversationThread({ embedded = false }: { embedded?: boolean } = {}) {
         <JumpToLatestButton shown={unread.jump} dot={unread.arrived > 0} aria-label={jumpLabel(unread.arrived)} title={t('messages:thread.jumpToLatest')} onClick={jumpToLatest} />
       </TranscriptOverlay>
       <ChatStatusLine className="messages-typing">{typingLine(t, typing)}</ChatStatusLine>
-      <MessageComposer />
+      <MessageComposer scroller={scroller} />
       {drop.dragging ? <DropOverlay className="messages-drop-overlay" /> : null}
     </section>
   );
@@ -2406,7 +2406,7 @@ function ReplyThreadPanel({ alone = false, onBack = null }: {
           hides while a thread is open. Under Jump to latest, as in every
           chat (1 Nov 2026). */}
       <ChatStatusLine className="messages-typing">{typingLine(t, threadTyping)}</ChatStatusLine>
-      <MessageComposer threadRootId={rootId} />
+      <MessageComposer threadRootId={rootId} scroller={scroller} />
       {drop.dragging ? <DropOverlay className="messages-drop-overlay" /> : null}
     </aside>
   );

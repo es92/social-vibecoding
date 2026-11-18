@@ -83,6 +83,50 @@
     "text": "{{count}} to vote",
     "description": "Status on a community's row on the Communities screen: how many proposals and group decisions in it are waiting for this person's vote. \"To vote\" means still to be voted on by you."
   },
+  "page.search.placeholder": {
+    "text": "Search your communities",
+    "description": "Placeholder inside the search field at the top of the Communities page (desktop widths), which filters the person's pinned and joined communities by name."
+  },
+  "page.search.label": {
+    "text": "Search your communities",
+    "description": "Accessible name of the search field at the top of the Communities page, which filters the person's pinned and joined communities by name."
+  },
+  "page.pinned": {
+    "text": "Pinned",
+    "description": "Small-caps heading on the Communities page over the communities the person pinned, each a tile that opens its hub. An adjective: these communities are pinned."
+  },
+  "page.joined": {
+    "text": "Joined",
+    "description": "Small-caps heading on the Communities page over the communities the person is a member of but has not pinned. An adjective: communities they have joined."
+  },
+  "page.editLabel": {
+    "text": "Edit your pinned communities",
+    "description": "Accessible name of the Edit button beside a heading on the Communities page: lets the person unpin pinned communities and pin joined ones. \"Edit\" is a verb."
+  },
+  "page.empty": {
+    "text": "You are not in a community yet. Join one from Home, or start your own.",
+    "description": "Line on the Communities page for a person who has pinned no community and joined none. Home is the name of the Home screen, where the communities to join are listed."
+  },
+  "page.noMatch": {
+    "text": "None of your communities match “{{query}}”.",
+    "description": "Line on the Communities page when the search finds none of the person's communities. {{query}} is what they typed."
+  },
+  "page.discover.heading": {
+    "text": "Discover",
+    "description": "Small-caps heading over the last card of the Communities page, which leads to the public communities the person has not joined. A verb used as a section name, the same word as the button's first."
+  },
+  "page.discover.title": {
+    "text": "Find more communities",
+    "description": "Title of the card at the foot of the Communities page, which leads to the public communities the person has not joined."
+  },
+  "page.discover.text": {
+    "text": "Public communities you have not joined yet are on Home, under Communities to join.",
+    "description": "Line under \"Find more communities\" on the Communities page. Home is the name of the Home screen; \"Communities to join\" is the name of the section there, written as that section's heading is."
+  },
+  "page.discover.button": {
+    "text": "Discover communities",
+    "description": "Button on the card at the foot of the Communities page: opens the Home screen at its Communities to join section. \"Discover\" is a verb."
+  },
   "needsYou.filter.label": {
     "text": "Show votes",
     "description": "Accessible name of the row of filter chips above the Needs you feed (All, Votes that decide, Advisory), which narrows the votes waiting on the person to one kind."

@@ -142,6 +142,24 @@ poolMod.getPool = () => ({
       a.db_storage_warned_at = null;
       return { rows: [], rowCount: 1 };
     }
+    // Stored files (services/app-files.js): the allowance and the figures.
+    if (/^UPDATE apps SET file_storage_cap_bytes = \$1 WHERE slug = \$2 AND NOT self_hosted/.test(q)) {
+      const a = bySlug(params[1]);
+      if (!a) return { rows: [] };
+      a.file_storage_cap_bytes = params[0];
+      return { rows: [{ id: a.id, file_storage_cap_bytes: a.file_storage_cap_bytes }] };
+    }
+    if (/^SELECT COALESCE\(SUM\(size_bytes\), 0\)::bigint AS app_bytes/.test(q)) {
+      return { rows: [{ app_bytes: '0', user_bytes: '0', staging_bytes: '0', app_owned_bytes: '0' }] };
+    }
+    if (/^SELECT a.slug, a.file_storage_cap_bytes/.test(q)) {
+      return {
+        rows: apps.filter((a) => !a.self_hosted).map((a) => ({
+          slug: a.slug, file_storage_cap_bytes: a.file_storage_cap_bytes ?? null,
+          file_bytes: a.slug === 'notes' ? String(640 * 1024 * 1024) : '0', app_owned_bytes: '0',
+        })),
+      };
+    }
     return { rows: [] };
   },
 });
@@ -229,7 +247,7 @@ test('GET lists every app biggest first with the defaults and no sweep yet', asy
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.deepEqual(body.apps.map((a) => a.slug), ['big-one', 'notes'], 'the self-hosted row is not an app');
-  assert.deepEqual(body.defaults, { capBytes: 3221225472, warnPercent: 80, sweepIntervalMs: 900000 });
+  assert.deepEqual(body.defaults, { capBytes: 3221225472, warnPercent: 80, sweepIntervalMs: 900000, fileCapBytes: 10 * GIB });
   assert.equal(body.lastSweep, null);
   const big = body.apps[0];
   assert.equal(big.state, 'frozen');
@@ -270,7 +288,7 @@ test('?demo=1 on a staging preview answers with the fixed demo rows, never the r
   assert.ok(body.apps.some((a) => a.state === 'frozen'), 'one row shows the frozen state');
   assert.ok(body.apps.some((a) => a.state === 'warning'), 'one row shows the warning state');
   assert.ok(!body.apps.some((a) => a.slug === 'big-one'), 'the cloned rows are not mixed in');
-  assert.deepEqual(body.defaults, { capBytes: 3221225472, warnPercent: 80, sweepIntervalMs: 900000 });
+  assert.deepEqual(body.defaults, { capBytes: 3221225472, warnPercent: 80, sweepIntervalMs: 900000, fileCapBytes: 10 * GIB });
 });
 
 // ─── Writes ──────────────────────────────────────────────────────────────
@@ -441,4 +459,33 @@ test('POST sweep where no clock runs it (a staging preview) measures on the spot
   } finally {
     clocks.runNow = saved;
   }
+});
+
+test('the list carries each app\'s stored files, and PUT fileCapBytes sets its allowance', async () => {
+  const list = await (await fetch(`${bases.full}/api/admin/storage`)).json();
+  const notes = list.apps.find((a) => a.slug === 'notes');
+  assert.equal(notes.fileBytes, 640 * 1024 * 1024);
+  assert.equal(notes.fileCapBytes, 10 * GIB);
+  assert.equal(notes.fileCapOverrideBytes, null);
+
+  let res = await fetch(`${bases.full}/api/admin/storage/notes`, json({ fileCapBytes: 25 * GIB }));
+  assert.equal(res.status, 200);
+  let row = await res.json();
+  assert.equal(row.slug, 'notes');
+  assert.equal(row.fileCapBytes, 25 * GIB);
+  assert.equal(row.fileCapOverrideBytes, 25 * GIB);
+  assert.equal(row.capBytes, 3221225472, 'the database cap is left alone');
+  assert.equal(apps[0].file_storage_cap_bytes, 25 * GIB);
+
+  res = await fetch(`${bases.full}/api/admin/storage/notes`, json({ fileCapBytes: null }));
+  row = await res.json();
+  assert.equal(row.fileCapBytes, 10 * GIB);
+  assert.equal(apps[0].file_storage_cap_bytes, null);
+
+  for (const bad of [-1, 1.5, '5']) {
+    const r = await fetch(`${bases.full}/api/admin/storage/notes`, json({ fileCapBytes: bad }));
+    assert.equal(r.status, 400, String(bad));
+  }
+  assert.equal((await fetch(`${bases.full}/api/admin/storage/missing`, json({ fileCapBytes: GIB }))).status, 404);
+  assert.equal((await fetch(`${bases.viewonly}/api/admin/storage/notes`, json({ fileCapBytes: GIB }))).status, 403);
 });

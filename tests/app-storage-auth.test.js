@@ -187,3 +187,37 @@ test('a preview identity is rejected even with the production app credential', a
   assert.equal(res.statusCode, 401);
   assert.equal(res.body.code, 'bad_user_token');
 });
+
+// ── The app acting for itself (userOptional routes) ─────────────────
+
+async function runOptional(req) {
+  const res = makeRes();
+  let nexted = false;
+  await appStorageAuth(pool, {}, { userOptional: true })(req, res, () => { nexted = true; });
+  return { res, nexted, req };
+}
+
+test('userOptional: the app token alone passes as the app, with no user', async () => {
+  const { res, nexted, req } = await runOptional(makeReq({}));
+  assert.equal(res.statusCode, 200);
+  assert.equal(nexted, true);
+  assert.deepEqual(req.appStorage, { appId: APP_ID, appSlug: 'demo-app', userId: null });
+});
+
+test('userOptional: a user token that is sent must still be good', async () => {
+  const { res, nexted } = await runOptional(makeReq({ userToken: 'garbage' }));
+  assert.equal(nexted, false);
+  assert.equal(res.statusCode, 401);
+  assert.equal(res.body.code, 'bad_user_token');
+  const ok = await runOptional(makeReq({ userToken: userJwt({ id: 7 }) }));
+  assert.equal(ok.req.appStorage.userId, 7);
+});
+
+test('userOptional: the app token is still required and checked', async () => {
+  const missing = await runOptional(makeReq({ appToken: null }));
+  assert.equal(missing.res.body.code, 'missing_app_token');
+  const unknown = await runOptional(makeReq({ appToken: 'c'.repeat(64) }));
+  assert.equal(unknown.res.body.code, 'bad_app_token');
+  const outside = await runOptional(makeReq({ ip: '8.8.8.8' }));
+  assert.equal(outside.res.body.code, 'forbidden_ip');
+});

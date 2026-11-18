@@ -1900,8 +1900,8 @@
     "description": "Row title in Settings > User guide: the first step for someone new."
   },
   "guide.start.join.body": {
-    "text": "On Home, Communities to join lists the public ones: open one and join it. To make your own, select New community under Pinned communities.",
-    "description": "Paragraph in Settings > User guide. \"Communities to join\", \"New community\" and \"Pinned communities\" are names shown on the Home screen."
+    "text": "On Home, Communities to join lists the public ones: open one and join it. To make your own, select New project on Home, or New community on the Communities tab.",
+    "description": "Paragraph in Settings > User guide. \"Communities to join\" and \"New project\" are names shown on the Home screen; \"New community\" is a name shown on the Communities page; \"Communities\" is the name of a tab in the main navigation."
   },
   "guide.start.open.title": {
     "text": "Open an app and its Homeroom menu",
@@ -1928,16 +1928,16 @@
     "description": "Row title in Settings > User guide, about communities."
   },
   "guide.place.communities.body": {
-    "text": "A community is the people behind a project. It shows as Just you, Private community or Public community, depending on who can open it. Yours are on Home, under Pinned communities and All communities. Each has a hub, a Workshop for the work going on, and channels to talk in. You need to join a community to suggest changes, vote and post there.",
-    "description": "Paragraph in Settings > User guide. \"Just you\", \"Private community\" and \"Public community\" are the names shown on screen for who a community is for. \"Pinned communities\" and \"All communities\" are names shown on the Home screen. \"Workshop\" is the name of a place on a project's page."
+    "text": "A community is the people behind a project. It shows as Just you, Private community or Public community, depending on who can open it. Yours are on the Communities tab: the ones you pinned first, then the others you have joined. Each has a hub, a Workshop for the work going on, and channels to talk in. You need to join a community to suggest changes, vote and post there.",
+    "description": "Paragraph in Settings > User guide. \"Just you\", \"Private community\" and \"Public community\" are the names shown on screen for who a community is for. \"Communities\" is the name of a tab in the main navigation. \"Workshop\" is the name of a place on a project's page."
   },
   "guide.place.apps.title": {
     "text": "Pinned apps",
     "description": "Row title in Settings > User guide, about the Pinned apps section of the home screen. Same words as that section's heading."
   },
   "guide.place.apps.body": {
-    "text": "Pinned apps on Home holds the apps you pin and the ones you help build. Select one to open it. To start your own project, select New community: it asks what the app should do and what to call it, then makes it, just for you until you invite people.",
-    "description": "Paragraph in Settings > User guide. \"Pinned apps\" is a section of the Home screen; \"New community\" is the tile on Home that starts a project."
+    "text": "Pinned apps on Home holds the apps you pin and the ones you help build. Select one to open it. To start your own project, select New project: it asks what the app should do and what to call it, then makes it, just for you until you invite people.",
+    "description": "Paragraph in Settings > User guide. \"Pinned apps\" is a section of the Home screen; \"New project\" is the control on Home that starts a project."
   },
   "guide.place.appMenu.title": {
     "text": "The Homeroom menu",
@@ -2068,7 +2068,7 @@
     "description": "Row title in Settings > User guide: the name of the list of decisions waiting on the person. Same words as on screen."
   },
   "guide.term.needsYou.body": {
-    "text": "Everything waiting on you, such as a vote or a question from Homeroom bot. Home shows a shortcut to it while a vote waits, and each project's page has its own.",
+    "text": "Everything waiting on you, such as a vote or a question from Homeroom bot, across your projects in one place. Each project's page has its own.",
     "description": "Paragraph in Settings > User guide, explaining \"Needs you\"."
   },
   "guide.term.newChat.title": {
@@ -2112,8 +2112,8 @@
     "description": "Row title in Settings > User guide: a question a person might ask."
   },
   "guide.faq.findApp.body": {
-    "text": "Pinned apps holds the apps you pin or help build. For any other app, open its community from Home, under Pinned communities or All communities, and select Open app on its hub. To keep it on Home, open the About entry in its Homeroom menu and choose Pin to Home.",
-    "description": "Paragraph in Settings > User guide. \"Pinned apps\", \"Pinned communities\" and \"All communities\" are names on the Home screen; \"Open app\" and \"Pin to Home\" are the names of buttons. \"The About entry\" is the row of the Homeroom menu that tells about the app."
+    "text": "Pinned apps holds the apps you pin or help build. For any other app, open its community from the Communities tab and select Open app on its hub. To keep it on Home, open the About entry in its Homeroom menu and choose Pin to Home.",
+    "description": "Paragraph in Settings > User guide. \"Pinned apps\" is a name on the Home screen; \"Communities\" is the name of a tab in the main navigation; \"Open app\" and \"Pin to Home\" are the names of buttons. \"The About entry\" is the row of the Homeroom menu that tells about the app."
   },
   "guide.faq.suggestion.title": {
     "text": "My suggestion isn't showing",

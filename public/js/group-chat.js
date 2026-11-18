@@ -3786,15 +3786,43 @@ const GroupChat = {
 
   // ── message editing ─────────────────────────────────────────────────
 
-  // Auto-grow a composer / inline-editor <textarea>: reset to one row then
-  // expand to fit its content, capped at MAX so it scrolls internally
-  // instead of taking over the screen. Idempotent — safe to call on every
-  // input event, draft restore, and after a send (value='' shrinks back).
+  // Auto-grow a composer / inline-editor <textarea>: expand to fit its
+  // content, capped at MAX so it scrolls internally instead of taking over
+  // the screen. Idempotent — safe to call on every input event, draft
+  // restore, and after a send (value='' shrinks back).
+  //
+  // #6810: it used to reset to one row and back on EVERY keystroke. For that
+  // instant the composer below a thread's scroller was one row, so the
+  // scroller was taller by the box's extra lines; a scroller at its bottom
+  // could not stay there and the browser pulled it back a line, while the
+  // height written back left the scroller the size it was — so the
+  // ResizeObserver in `_attachThreadFollow` never followed, the scroll
+  // handler saw a gap, and past THREAD_FOLLOW_PX the thread stopped
+  // following. The measuring is now the React composers' own
+  // (frontend/src/lib/use-auto-grow.ts, published as `UsernodeAutoGrow`): one
+  // read while text is only being inserted, the collapse only after a
+  // deletion, replacement or clear — and a collapse puts a scroller that was
+  // at its bottom back there before the frame is drawn.
   _COMPOSER_MAX_PX: 140, // ~5–6 lines before it scrolls
   _autoGrowTextarea(el) {
     if (!el) return;
+    // The scroller the box takes height from, if any: the thread's transcript
+    // for its composer, the room's list for the general composer. An inline
+    // editor sits INSIDE the transcript, so nothing is kept at its bottom.
+    const scroller = el.id === 'gc-thread-input' ? GroupChat._threadScrollEl()
+      : el.id === 'gc-input' ? document.getElementById('gc-messages')
+        : null;
+    const fit = window.UsernodeAutoGrow && window.UsernodeAutoGrow.fit;
+    if (fit) {
+      fit(el, el.value, { max: GroupChat._COMPOSER_MAX_PX, scroller });
+      return;
+    }
+    // The global arrives with the shell bundle; without it (a sandboxed test,
+    // a bundle that failed) measure the old way, with the same gap kept.
+    const atBottom = !!scroller && scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight <= 1;
     el.style.height = 'auto';
     el.style.height = `${Math.min(el.scrollHeight, GroupChat._COMPOSER_MAX_PX)}px`;
+    if (atBottom) scroller.scrollTop = scroller.scrollHeight;
   },
 
   // Touch devices have no Shift+Enter chord, so Enter inserts a newline and

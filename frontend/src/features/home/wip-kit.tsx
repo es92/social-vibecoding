@@ -54,7 +54,9 @@ export function WipHeadMore({ direction, label, href, onClick, id, expanded, chi
   const Glyph = direction === 'down' ? ChevronDownIcon : direction === 'up' ? ChevronUpIcon : ChevronRightIcon;
   const inner = (
     <>
-      {children}
+      {/* Plain words get a span of their own, so a look can mark the words
+          alone (a count beside them is its caller's own element). */}
+      {typeof children === 'string' ? <span className="wip-head-words">{children}</span> : children}
       <span className="wip-head-chevron" aria-hidden="true">
         <Glyph className="wip-head-chevron-glyph" strokeWidth="2.4" />
       </span>

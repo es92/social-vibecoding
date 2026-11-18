@@ -210,6 +210,20 @@ test('the charter carries what the instructions had to drop', () => {
   );
 });
 
+// What the before & after copies cannot show is said where a connector agent
+// declares visibleChanges (the work order) and here, from the one list the
+// Homeroom bot's build lines read too (18 Nov 2026). Charter-only: it binds a
+// reader who is about to submit, and costs the briefs nothing.
+test('the charter says what the before & after copies cannot show', () => {
+  const copyLimits = require('../src/services/shots-copy-limits');
+  const section = charter.CHARTER_SECTIONS.find((s) => s.id === 'what-the-copies-cannot-show');
+  assert.ok(section, 'the section is there');
+  assert.ok(!section.brief && !charter.BRIEF_ORDER.includes(section.id), 'charter-only');
+  assert.ok(section.text.includes(copyLimits.copyLimitsText({ rule: false })), 'the shared list, whole');
+  assert.match(section.text, /check each declared change against that list/);
+  assert.match(section.text, /one that can be neither reached nor seeded is a blocker to report in your summary/);
+});
+
 // ── 3. The tool that delivers it ───────────────────────────────────────
 
 test('get_connector_guidance is a no-argument read that returns the charter', async () => {

@@ -215,7 +215,15 @@ function locate(screen, crop) {
 // (identical rows in a list), so the caller picks the one where the screens
 // differ.
 function locateAll(screen, crop, limit = 8) {
-  if (!crop || crop.w > screen.w || crop.h > screen.h || crop.w < 3 || crop.h < 3) return [];
+  return searchCrop(screen, crop, limit).boxes;
+}
+
+// locateAll's search, saying also whether it could decide: a crop that does
+// not fit, a search past its budget, or one with too many placements finds
+// nothing, but has not shown the crop is not there.
+function searchCrop(screen, crop, limit = 8) {
+  const undecided = { boxes: [], decided: false };
+  if (!crop || crop.w > screen.w || crop.h > screen.h || crop.w < 3 || crop.h < 3) return undecided;
   const q = (d, i) => ((d[i] >> 4) << 8) | ((d[i + 1] >> 4) << 4) | (d[i + 2] >> 4);
   const counts = new Map();
   for (let i = 0; i < crop.d.length; i += 12) counts.set(q(crop.d, i), (counts.get(q(crop.d, i)) || 0) + 1);
@@ -263,25 +271,120 @@ function locateAll(screen, crop, limit = 8) {
     for (let x = 0; x <= screen.w - crop.w; x += 1) {
       let miss = 0;
       for (const [px, py, ci] of pts) {
-        if (--remaining < 0) return [];
+        if (--remaining < 0) return undecided;
         if (differs(screen.d, ((y + py) * screen.w + x + px) * 4, crop.d, ci) && ++miss > allowed) break;
       }
       if (miss > allowed) continue;
       const off = offShare(x, y);
       // Discard partial search results: a later match could be better.
-      if (off === null) return [];
+      if (off === null) return undecided;
       if (off >= 0.15) continue;
       // A match a pixel or two over from one already kept is the same place:
       // keep whichever of the two matches better.
       const near = found.find((hit) => Math.abs(hit.box[0] - x) <= 2 && Math.abs(hit.box[1] - y) <= 2);
       if (!near) {
-        if (found.length >= MAX_LOCATE_MATCHES) return [];
+        if (found.length >= MAX_LOCATE_MATCHES) return undecided;
         found.push({ box: [x, y, crop.w, crop.h], off });
       }
       else if (off < near.off) { near.box = [x, y, crop.w, crop.h]; near.off = off; }
     }
   }
-  return found.sort((a, b) => a.off - b.off).slice(0, limit).map((hit) => hit.box);
+  return { boxes: found.sort((a, b) => a.off - b.off).slice(0, limit).map((hit) => hit.box), decided: true };
+}
+
+// Whether a dark screen shot is framed as its light one: the same page at
+// the same scroll, only its colours changed. Colours say nothing here (the
+// whole page changed colour), but where text and edges sit does not change
+// with the mode, so each row's count of sharp changes in brightness is
+// compared, at the same place and shifted up or down. A dark shot scrolled
+// to another part of the page (#6787: the light at the top, the dark at the
+// rows under it) lines up better shifted than in place. `light` and `dark`
+// are decoded at one pixel per CSS pixel. Resolves `{ same, reason, shift }`:
+// `same` false only when the framing plainly differs, null when a screen
+// has too little detail to tell.
+const FRAMING_EDGE = 36;
+const FRAMING_MIN_SHIFT = 8;
+function edgeRows(px) {
+  const out = new Float64Array(px.h);
+  const lum = (i) => (px.d[i] * 299 + px.d[i + 1] * 587 + px.d[i + 2] * 114) / 1000;
+  for (let y = 0; y < px.h; y += 1) {
+    let n = 0;
+    const base = y * px.w * 4;
+    for (let x = 0; x + 2 < px.w; x += 2) {
+      if (Math.abs(lum(base + x * 4) - lum(base + (x + 2) * 4)) > FRAMING_EDGE) n += 1;
+    }
+    out[y] = n;
+  }
+  return out;
+}
+
+function shiftedCorrelation(a, b, shift) {
+  // Row y of `a` against row y + shift of `b`.
+  const from = Math.max(0, -shift);
+  const to = Math.min(a.length, b.length - shift);
+  const n = to - from;
+  if (n < 2) return { r: 0, n: 0 };
+  let sa = 0; let sb = 0;
+  for (let y = from; y < to; y += 1) { sa += a[y]; sb += b[y + shift]; }
+  const ma = sa / n; const mb = sb / n;
+  let num = 0; let da = 0; let db = 0;
+  for (let y = from; y < to; y += 1) {
+    const x = a[y] - ma; const z = b[y + shift] - mb;
+    num += x * z; da += x * x; db += z * z;
+  }
+  return { r: da > 0 && db > 0 ? num / Math.sqrt(da * db) : 0, n };
+}
+
+function framing(light, dark) {
+  if (!light || !dark) return { same: null, reason: 'missing', shift: 0 };
+  if (light.w !== dark.w || light.h !== dark.h) return { same: false, reason: 'size', shift: 0 };
+  const a = edgeRows(light);
+  const b = edgeRows(dark);
+  const total = (rows) => rows.reduce((sum, v) => sum + v, 0);
+  // Too little on the page to tell one place from another.
+  const rowsWithDetail = (rows) => rows.reduce((n, v) => n + (v > 0 ? 1 : 0), 0);
+  if (total(a) < light.h || total(b) < dark.h || rowsWithDetail(a) < 24 || rowsWithDetail(b) < 24) {
+    return { same: null, reason: 'plain', shift: 0 };
+  }
+  const inPlace = shiftedCorrelation(a, b, 0).r;
+  let best = { r: -1, shift: 0 };
+  const most = Math.floor(light.h * 0.75);
+  for (let shift = -most; shift <= most; shift += 2) {
+    if (Math.abs(shift) < FRAMING_MIN_SHIFT) continue;
+    const c = shiftedCorrelation(a, b, shift);
+    // A shift that leaves less than a third of the screen to compare
+    // matches by chance.
+    if (c.n < light.h / 3) continue;
+    if (c.r > best.r) best = { r: c.r, shift };
+  }
+  const round = (value) => Math.round(value * 100) / 100;
+  if (best.r > 0.6 && best.r > inPlace + 0.2) {
+    return { same: false, reason: 'scrolled', shift: best.shift, inPlace: round(inPlace), shifted: round(best.r) };
+  }
+  if (inPlace < 0.35) return { same: false, reason: 'different', shift: 0, inPlace: round(inPlace) };
+  return { same: true, reason: 'aligned', shift: 0, inPlace: round(inPlace) };
+}
+
+// What a still is checked for as it is saved (shots-control.saveShot): a
+// dark screen against its light one (framed the same, and whether it looks
+// any different at all), or a change's element shot against its screen shot
+// (whether the element is in it). Each PNG comes with its density, so both
+// are compared at one pixel per CSS pixel.
+function checkSave(job) {
+  if (job?.kind === 'dark') {
+    const light = decode(job.light, job.lightDensity);
+    const dark = decode(job.dark, job.darkDensity);
+    const placed = framing(light, dark);
+    const unchanged = light.w === dark.w && light.h === dark.h && regions(light, dark).length === 0;
+    return { kind: 'dark', ...placed, unchanged };
+  }
+  if (job?.kind === 'element') {
+    const screen = decode(job.screen, job.screenDensity);
+    const element = decode(job.element, job.elementDensity);
+    const search = searchCrop(screen, element, 1);
+    return { kind: 'element', found: search.boxes.length > 0, decided: search.decided };
+  }
+  return null;
 }
 
 function overlaps(box, rect) {
@@ -526,6 +629,8 @@ module.exports = {
   rowHashes,
   align,
   regions,
+  framing,
+  checkSave,
   locate,
   locateAll,
   screensFor,

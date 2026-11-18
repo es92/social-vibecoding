@@ -50,7 +50,7 @@ const nativeJs = fs.readFileSync(
 // your apps is a page in the chip's menu, so it replaces the screen you were
 // on rather than presenting over it, and it takes the navigate/exit pair every
 // other root has.
-const SCREEN_ROOTS = ['app-view', 'home-screen',
+const SCREEN_ROOTS = ['app-view', 'home-screen', 'communities-screen',
   'workshop-screen', 'weekly-digest-screen', 'leaderboard-screen', 'profile-screen', 'admin-screen',
   'settings-screen', 'messages-screen',
   'ai-screen'];

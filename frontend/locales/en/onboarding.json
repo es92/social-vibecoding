@@ -1689,11 +1689,11 @@
   },
   "firstSession.walk.communities.title": {
     "text": "Communities",
-    "description": "Third card of the walk on Home, pointing at the project's community tile under Pinned communities on Home, which opens its hub."
+    "description": "Third card of the walk on Home, pointing at the Communities tab in the main navigation, whose page lists the person's communities, the new project's among them."
   },
   "firstSession.walk.communities.text": {
-    "text": "{{app}}'s hub is here. Invite people and decide what changes.",
-    "description": "Line on the walk's Communities card, which points at the project's community tile on Home: the project's hub page is behind it, where its people are invited and decide together which changes to its app go in. {{app}} is the project's name. \"Invite\" and \"decide\" are verbs."
+    "text": "{{app}}'s hub is under Communities. Invite people and decide what changes.",
+    "description": "Line on the walk's Communities card, which points at the Communities tab: the project's hub page is reached from that tab's page, and it is where its people are invited and decide together which changes to its app go in. {{app}} is the project's name. Communities is the tab's name. \"Invite\" and \"decide\" are verbs."
   },
   "firstSession.walk.goToCommunity": {
     "text": "Go to community",
@@ -1701,11 +1701,11 @@
   },
   "firstSession.tour.look.make.title": {
     "text": "Make something any time",
-    "description": "Card of the short tour a new member is walked through after joining or making a project, for a member who chose to look around first, title: points at the New community tile on Home, which starts a new project."
+    "description": "Card of the short tour a new member is walked through after joining or making a project, for a member who chose to look around first, title: points at the New project control on Home, which starts a new project."
   },
   "firstSession.tour.look.make.text": {
-    "text": "New community starts a community and its app.",
-    "description": "Card of the short tour a new member is walked through after joining or making a project, for a member who chose to look around first: text about the tile on Home labelled \"New community\". Write New community as that tile is named."
+    "text": "New project starts a community and its app.",
+    "description": "Card of the short tour a new member is walked through after joining or making a project, for a member who chose to look around first: text about the control on Home labelled \"New project\". Write New project as that control is named."
   },
   "firstSession.tour.look.discover.title": {
     "text": "Find a community to join",
@@ -1717,11 +1717,11 @@
   },
   "firstSession.tour.look.communities.title": {
     "text": "Communities you join show up here",
-    "description": "Card of the short tour a new member is walked through after joining or making a project, for a member who chose to look around first, title: points at Pinned communities on Home, where a community goes when you join it."
+    "description": "Card of the short tour a new member is walked through after joining or making a project, for a member who chose to look around first, title: points at the Communities tab in the main navigation, whose page lists a community once you join it."
   },
   "firstSession.tour.look.communities.text": {
     "text": "Each one has its own hub and discussion.",
-    "description": "Card of the short tour a new member is walked through after joining or making a project, for a member who chose to look around first: text about Pinned communities on Home. \"Each one\" is a community; its hub is its main page."
+    "description": "Card of the short tour a new member is walked through after joining or making a project, for a member who chose to look around first: text about the Communities tab. \"Each one\" is a community; its hub is its main page."
   },
   "firstSession.tour.look.bot.title": {
     "text": "Homeroom bot has its own tab",
@@ -1761,19 +1761,19 @@
   },
   "tour.step.communities.title": {
     "text": "Communities",
-    "description": "Title of the first card of the welcome tour on the Home screen, started from Settings: points at Home's Pinned communities, where the communities the person is in are."
+    "description": "Title of the first card of the welcome tour on the Home screen, started from Settings: points at the Communities tab in the main navigation, whose page lists the communities the person is in."
   },
   "tour.step.communities.body": {
     "text": "Communities here build apps together. Anyone can propose a change, and the community votes on it. Find yours here.",
-    "description": "Text of the first card of the welcome tour on the Home screen, started from Settings, pointing at Home's Pinned communities. \"change\" is a noun: a change to an app. \"here\" in \"Find yours here\" is that section of Home."
+    "description": "Text of the first card of the welcome tour on the Home screen, started from Settings, pointing at the Communities tab. \"change\" is a noun: a change to an app. \"here\" in \"Find yours here\" is that tab."
   },
   "tour.step.apps.title": {
     "text": "Pinned apps",
     "description": "Title of the second card of the welcome tour on the Home screen, started from Settings: points at the section of Home with this heading, the person's own shortcuts to apps."
   },
   "tour.step.apps.body": {
-    "text": "Open the apps you pin here, in one tap. To start your own, select New community.",
-    "description": "Text of the second card of the welcome tour on the Home screen, started from Settings, about the Pinned apps section. \"New community\" is the label of the last tile under Pinned communities; write New community as that tile is named."
+    "text": "Open the apps you pin here, in one tap. To start your own, select New project.",
+    "description": "Text of the second card of the welcome tour on the Home screen, started from Settings, about the Pinned apps section. \"New project\" is the label of the control on Home that starts one (the last tile of Pinned apps, or the button beside search); write New project as that control is named."
   },
   "tour.step.appMenu.title": {
     "text": "The Homeroom menu",

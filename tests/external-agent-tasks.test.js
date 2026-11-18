@@ -39,6 +39,7 @@ const svc = require('../src/services/external-agent-tasks');
 // each test's own fakes (tests/lib/submission-here.js).
 require('./lib/submission-here').submissionsHere();
 const shotsContract = require('../src/services/visible-changes');
+const copyLimits = require('../src/services/shots-copy-limits');
 const shotsFixture = require('./fixtures/shots');
 
 const SRC = fs.readFileSync(
@@ -3042,6 +3043,12 @@ test('the work order explains declared changes for before/after shots, and nothi
     assert.match(order, /seed(?:ed)? (?:it )?in this\s+change[\s\S]{0,120}the seed reaches the after copy, the side a new\s+state\s+needs/,
       `${label}: a state the copies lack is seeded in the same change`);
     assert.match(order, /neither reached nor seeded/, `${label}: only then is it a blocker`);
+    // What the copies cannot do at all, from the list the bot's build lines
+    // and the charter read too (shots-copy-limits.js, 18 Nov 2026).
+    const flat = order.replace(/\s+/g, ' ');
+    assert.ok(flat.includes(copyLimits.copyLimitsText({ rule: false })), `${label}: the copies' limits, whole`);
+    assert.ok(!flat.includes(copyLimits.COPY_LIMITS_RULE), `${label}: AGENTS.md's blocker rule, not the bot's`);
+    assert.match(flat, /Check each state you declare against that list first\./, `${label}: and to check against it`);
     assert.match(order, /one to three(\s+)declared(\s+)changes/, `${label}: declared changes`);
     assert.match(order, /intent\.controlledFailurePath/, `${label}: the controlled failure stays`);
     assert.match(order, /"Controlled test: deliberately block the declared API GET on\s+both revisions\."/);

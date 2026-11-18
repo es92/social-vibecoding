@@ -1,11 +1,13 @@
 /**
- * HOME'S PINNED COMMUNITIES (One Home, #6361): what the grid draws, and the
- * reads behind it.
+ * THE COMMUNITIES YOU PINNED AND THE ONES YOU ARE IN (One Home, #6361): what
+ * the Communities tab's page draws (../communities/), and the reads behind
+ * it. Home drew them, as Pinned communities, until the tab came back; Home
+ * still reads this store for what its search finds.
  *
  *   pins    GET /api/me/home-pins (src/services/home-pins.js), the account's
  *           list in its order. A community can be pinned without joining.
  *   joined  GET /api/apps?scope=joined, the communities the viewer is in, for
- *           the All communities tile (the ones in it but not pinned).
+ *           the page's Joined group (the ones in it but not pinned).
  *   owed    GET /api/workshop/counts, each community's votes waiting on the
  *           viewer, for the tiles' blue number. An automatic membership the
  *           viewer never took part in (`unchosen`) owes nothing, as on the
@@ -156,11 +158,12 @@ export async function refreshHomePins({ force = false }: { force?: boolean } = {
 }
 
 /**
- * WHAT IS GOING ON IN EACH PINNED COMMUNITY (Drea's review of #6699), for
- * the cards Pinned communities draws on a wide screen in the default look:
+ * WHAT IS GOING ON IN EACH OF YOUR COMMUNITIES (Drea's review of #6699), for
+ * the cards the Communities page draws on a wide screen in the brand look:
  * GET /api/me/home-pins/activity (services/home-pins.js `activity`), keyed
- * by slug. Read only where the cards are drawn, so a phone asks for nothing
- * it does not show; quiet on failure, when each card draws its name alone.
+ * by slug, for the ones you pinned and the others you are in. Read only
+ * where the cards are drawn, so a phone asks for nothing it does not show;
+ * quiet on failure, when each card draws its name alone.
  */
 export interface PinActivity {
   members: number;

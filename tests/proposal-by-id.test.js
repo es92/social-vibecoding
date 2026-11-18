@@ -201,6 +201,43 @@ test('#6287: the row carries the viewer\'s vote on an earlier version', async ()
   assert.deepEqual(q.params, [1, 7, 4242], 'app_id, userId, id bound');
 });
 
+// #6814: a change that alters nothing on screen falls back to "What it
+// touches" where its page said "Nothing you can see changes". The page reads
+// it from this route, which shows it only for the head it was read at, as the
+// board rows do.
+test('#6814: the page carries "What it touches" for the change\'s current head', async () => {
+  const head = 'a'.repeat(40);
+  const touches = { version: 1, files: 2, areas: [{ key: 'server', label: 'Server', files: 2, lines: 7 }] };
+  const row = { id: 4242, pr_number: 88, status: 'promoted', reviewed_head_sha: head };
+  const { routes, captured } = loadVotes({
+    row,
+    db: (sql) => (/SELECT pr_diagram, pr_diagram_source, pr_touches, pr_touches_sha/.test(sql)
+      ? [{ pr_diagram: null, pr_diagram_source: null, pr_touches: touches, pr_touches_sha: head }] : undefined),
+  });
+  const { payload, statusCode } = await callById(routes, { id: 4242 });
+  assert.equal(statusCode, 200);
+  assert.deepEqual(payload.proposal.touches, touches, 'read for this head');
+  const q = captured.calls.find((c) => /pr_diagram, pr_diagram_source, pr_touches, pr_touches_sha/.test(c.sql));
+  assert.ok(q, 'the #4490 read selects the picture and the head it was read at');
+  assert.ok(!('pr_touches' in payload.proposal) && !('pr_touches_sha' in payload.proposal),
+    'the raw columns stay out of the row');
+});
+
+test('#6814: a moved head has no "What it touches", so the page keeps its box', async () => {
+  const row = { id: 4242, pr_number: 88, status: 'promoted', reviewed_head_sha: 'a'.repeat(40) };
+  const { routes } = loadVotes({
+    row,
+    db: (sql) => (/SELECT pr_diagram, pr_diagram_source, pr_touches, pr_touches_sha/.test(sql)
+      ? [{
+        pr_diagram: null, pr_diagram_source: null,
+        pr_touches: { version: 1, files: 1, areas: [{ key: 'server', label: 'Server', files: 1, lines: 3 }] },
+        pr_touches_sha: 'b'.repeat(40),
+      }] : undefined),
+  });
+  const { payload } = await callById(routes, { id: 4242 });
+  assert.equal(payload.proposal.touches, null, 'a picture read at another head is not shown');
+});
+
 test('unknown id 404s', async () => {
   const { routes } = loadVotes({ row: null });
   const { payload, statusCode } = await callById(routes, { id: 999999 });

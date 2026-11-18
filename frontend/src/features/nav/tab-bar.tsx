@@ -71,7 +71,6 @@ import {
   CogIcon,
   HomeIcon,
   HomeroomBotIcon,
-  Squares2X2Icon,
   UserGroupIcon,
   UserIcon,
 } from '@/components/ui/icons';
@@ -79,13 +78,10 @@ import {
 import { useMessages } from '../../lib/i18n/react';
 import { t as translate } from '../../lib/i18n/runtime';
 import { useClassToggle, useHiddenClass } from '../../lib/legacy-dom';
-import { useCommunityColor } from '../../lib/community-color';
 import { useStoreState } from '../../lib/use-store-state';
 import { useVisibility } from '../../lib/visibility-store';
-import { AppIconContent, appIconKind } from '../apps/app-card-view';
 import {
-  communityScopeStore, goToCommunity, hydrateCommunityScope, tabVotes, warmCommunities,
-  type CommunityInfo,
+  communityScopeStore, goToCommunity, hydrateCommunityScope, openCommunitiesPage, warmCommunities,
 } from '../workshop/community-scope';
 import { CommunitySwitcher } from '../workshop/community-switcher';
 import { pressLitTab } from '../workshop/tab-ladder';
@@ -93,43 +89,39 @@ import { botTabAddress } from '../ai/filter-address';
 import { navStore } from './nav-store.js';
 import { runningAppStore } from './parked-store.js';
 import { SideApps } from './side-apps';
-import { RAIL_COMMUNITIES, RailCommunities, useRailCommunities } from './rail-communities';
+import { RailCommunities, useRailCommunities } from './rail-communities';
 import { RailPinned } from './rail-pinned';
 import { useSidebarRows } from './sidebar-rows';
 import { clearPeekTimer, clearPeekTimerByMouse, enterPeekByMouse, leavePeekByMouse } from './rail-peek';
 import { schedulePress, type PendingPress } from './tab-press';
 
 /**
- * The tabs, in the DESKTOP RAIL's order: the markup is that order.
+ * The tabs, in the DESKTOP SIDEBAR's order: the markup is that order.
  *
- * WHY THESE, and why in this order (#6019, decided 29 Oct 2026): Home is the
- * launcher, Communities is the ones you are in, AI is your chat with the
- * Homeroom bot, Messages is the people and agents you talk to, and Me is
- * your own account. Challenges, Settings, Wallet, Validator and Admin are
- * all reached from Me, which is why five is enough on a phone — a sixth tab
- * there would be a section nobody visits daily.
+ * WHY THESE, and why in this order: Home is the launcher, AI is your chat
+ * with the Homeroom bot, Messages is the people and agents you talk to,
+ * Communities is the ones you are in, and You is your own account.
+ * Challenges, Settings, Wallet, Validator and Admin are all reached from
+ * You, which is why five is enough on a phone.
  *
- * TWO ORDERS, ONE MARKUP (Evan, 29 Oct 2026). The desktop rail reads Home,
- * Discover, Messages, AI, Communities, then you at its foot; the phone's bar
- * reads Home · Communities · AI · Messages · You. The markup is the RAIL's
- * order, so a keyboard's focus order on a desktop is the order on screen,
- * and app.css lays the phone's five cells out with `order` ("TWO ORDERS,
- * ONE MARKUP" there). The rail's nested groups keep their places in it:
- * your conversations under Messages, your communities just above
- * Communities.
+ * TWO ORDERS, ONE MARKUP (Evan, 29 Oct 2026). The desktop sidebar reads
+ * Home, Homeroom bot, Messages, Communities, then Recents (the communities
+ * you pinned and the ones you opened last) and you at its foot; the phone's
+ * bar reads Home · Communities · Homeroom bot · Messages · You. The markup
+ * is the SIDEBAR's order, so a keyboard's focus order on a desktop is the
+ * order on screen, and app.css lays the phone's five cells out with `order`
+ * ("TWO ORDERS, ONE MARKUP" there).
  *
- * DISCOVER IS A TAB ON THE RAIL AND A PAGE OF HOME'S ON A PHONE. The rail
- * has room for it, so it sits under Home there and is lit on its own screen.
- * The phone's bar has five cells and the fifth went to AI, the one
- * conversation everybody has (it used to be the first row of Messages):
- * there app.css hides the Discover tab, Home's Discover block opens the
- * page, Back returns to Home and Home stays lit on it (nav-store.js
- * tabForScreen, App._backSlotFor). Communities' key is still
- * `workshop`: the key names the screen (`#workshop-screen`) and the
- * declared checks select on `#platform-tab-workshop`, while the words a
- * person sees are Communities and `#communities` (AGENTS.md, "Communities
- * own projects"). Inside a project, "Workshop" is the build tab beside its
- * hub — the one place that word is shown now.
+ * THE COMMUNITIES TAB IS BACK (18 Nov 2026). One Home (#6361) had drawn it
+ * on neither bar and kept your communities on Home, as Pinned communities.
+ * It is a tab again, under Messages on the sidebar and next to Home on the
+ * phone's bar, and its page (`#communities`, ../communities/) lists the
+ * communities you pinned and the others you are in; Home no longer does.
+ * Its key is still `workshop`: the declared checks select on
+ * `#platform-tab-workshop`, while the words a person sees are Communities
+ * and `#communities` (AGENTS.md, "Communities own projects"). It is lit on
+ * its page and on a community's own page. Inside a project, "Workshop" is
+ * the build tab beside its hub, the one place that word is shown.
  *
  * Discover was a compass tab until One Home (#6361) retired its screen:
  * Home's Communities to join is the directory now.
@@ -199,26 +191,17 @@ export function tabLabel(
 }
 
 /**
- * The Communities tab's accessible name (#3709).
+ * The Communities tab's accessible name (#3709, #5040).
  *
- * THE WORD STAYS "Communities" WHEREVER THE TAB IS. It used to take the
- * community it was on as its label, "Recipe Box" under the tile, which made
- * the fourth tab read as one project rather than the place all of yours are,
- * and the owner asked for the word back, on the phone's bar and the desktop
- * rail alike. The tile still says which community the tab is on, so only the
- * spoken name has to add it: it starts with the visible word, for the reason
- * tabLabel gives, and names the community after it. On All communities the
- * word is the whole of it, and the anchor carries no label of its own, as
- * the prerender ships it.
+ * THE WORD IS "Communities" AND THE GLYPH IS THE PEOPLE, WHEREVER YOU ARE.
+ * The tab once took the community it was on as its face, and named it
+ * ("Communities, on Recipe Box"); it is a plain door to its page now (18 Nov
+ * 2026), so the anchor's text is its name, as the prerender ships it. Only
+ * the blue number adds to it: said in words after the tab's own word, which
+ * comes first so a voice command that says what is on screen still finds it.
  */
-export function communitiesAriaLabel(scoped: { name: string } | null, votes = 0): string | undefined {
-  // #5040: the blue number is said in words too, after the tab's own name.
-  if (votes > 0) {
-    return scoped
-      ? translate('core:tabs.communitiesOnVotes', { community: scoped.name, count: votes })
-      : translate('core:tabs.communitiesVotes', { count: votes });
-  }
-  return scoped ? translate('core:tabs.communitiesOn', { community: scoped.name }) : undefined;
+export function communitiesAriaLabel(votes = 0): string | undefined {
+  return votes > 0 ? translate('core:tabs.communitiesVotes', { count: votes }) : undefined;
 }
 
 /**
@@ -242,86 +225,28 @@ function onHomeClick(event: React.MouseEvent<HTMLAnchorElement>): void {
 }
 
 /**
- * The Workshop tab's plain click: back to the app Workshop you left (#2776).
+ * The Communities tab's plain click: its page, `#communities`.
  *
- * The router decides (App.resumeWorkshopView, public/js/app.js): when this
- * device remembers an app's Workshop view and you are not already in one, it
- * takes you there and says so, and the href's navigation is stopped. Every
- * other time — nothing remembered, or already inside an app's Workshop,
- * where the tab pops to the selector as it always did — it answers false and
- * the href does exactly what it did before. A modified click is left alone,
- * as Home's is.
- *
- * ON A PHONE THE HREF IS NOT WHAT IT DID BEFORE (#5581). `#communities` is
- * the full-screen Communities page, with the header's "Communities ⌄" and
- * the list drawn as a page; the list on a phone is the drawer's own level 0
- * (../nav-drawer/), as the lit tab already opens it from a community's page.
- * So the tab takes the switcher's "All communities" door instead
- * (../workshop/community-scope.ts `goToCommunity`), which opens the drawer's
- * list over a community. A new account with no community to show it over
- * still lands on the page, which is where Join and Start are.
+ * The tab is a plain door at every width since it came back (18 Nov 2026):
+ * the page lists every community you are in, so there is nothing to resume.
+ * It used to reopen the Workshop view you left (#2776) and, on a phone, open
+ * the drawer's list (#5581); both went with the list that was the drawer's.
+ * A modified click is left alone, as Home's is.
  */
 function onWorkshopClick(event: React.MouseEvent<HTMLAnchorElement>): void {
   const nav = (window as unknown as { NavLink?: { isNativeClick?: (e: unknown) => boolean } }).NavLink;
   if (nav?.isNativeClick?.(event)) return;
-  const app = (window as unknown as { App?: { resumeWorkshopView?: () => boolean } }).App;
-  if (app?.resumeWorkshopView?.()) { event.preventDefault(); return; }
-  if (wideWindow()) return;
   event.preventDefault();
-  goToCommunity(null);
-}
-
-/** The desktop's sidebar, where the tab's href (the full-screen list) is right. */
-function wideWindow(): boolean {
-  try { return !window.matchMedia || window.matchMedia('(min-width: 768px)').matches; } catch { return true; }
+  openCommunitiesPage();
 }
 
 /**
- * THE COMMUNITIES TAB'S FACE: the community it is on, or All communities.
- * Only the glyph changes: the tab's label says Communities either way
- * (#3709, communitiesAriaLabel).
- *
- * On the phone's bar, a square ring, the shape of an app's own tile, around
- * either that community's tile, in its colour (features/workshop/
- * community-scope.ts says which; lib/community-color.ts what colour), or, on
- * All communities, the tab's own people glyph. The ring says which community
- * the tab is on; switching is the drawer's list. Holding the tab no longer
- * opens "Your communities" (18 Oct 2026): that was the old switcher, which
- * the drawer replaced on a phone. The desktop rail draws no ring (app.css):
- * the header's name is the switcher there.
- *
- * All communities is THE PRERENDER: the scope arrives from localStorage in
- * an effect flushed with the hydration (before the first paint) and from
- * app.js, so the shipped markup and the first client render are both this
- * branch.
- */
-function CommunityTabFace({ info }: { info: CommunityInfo | null }) {
-  const color = useCommunityColor(info
-    ? { color: info.iconColor, iconUrl: info.iconUrl, iconEmoji: info.iconEmoji, key: info.slug }
-    : null);
-  if (!info) {
-    return (
-      <span className="platform-tab-ring platform-tab-ring-all" aria-hidden="true">
-        <UserGroupIcon className="platform-tab-glyph" aria-hidden="true" />
-      </span>
-    );
-  }
-  const app = { slug: info.slug, name: info.name, icon_url: info.iconUrl, icon_emoji: info.iconEmoji };
-  return (
-    <span className="platform-tab-ring" style={{ ['--ring' as string]: color }} aria-hidden="true">
-      <span className="app-icon-tile platform-tab-tile" data-icon={appIconKind(app as never)}>
-        <AppIconContent app={app as never} />
-      </span>
-    </span>
-  );
-}
-
-/**
- * The votes the tab's community is waiting on you for (All communities: all
- * of them, less an unchosen community's: ../workshop/community-scope.ts
- * `tabVotes`), in the accent, because it asks for you. Only above zero, and
- * never in the prerender (the store starts empty). While it shows, app.css
- * hides the quiet unread-channels count beside it: one number per glyph.
+ * Every vote waiting on you (../workshop/community-scope.ts `badgeNeeds`,
+ * which leaves an unchosen community's out), on the Communities tab, in the
+ * accent, because it asks for you. Only above zero, and never in the
+ * prerender (the store starts empty). While it shows, app.css hides the
+ * quiet unread-channels count beside it: one number per glyph. A look whose
+ * Home already says it with the Needs you card draws neither (app.css).
  */
 function VotesBadge({ count }: { count: number }) {
   const t = useMessages();
@@ -815,22 +740,20 @@ function useTabMarker(
 
 /**
  * A tab's navigation, run by a press after the pill has started (#3259). The
- * same three roads the bar's clicks take at once: Home through the router
- * (onHomeClick), Communities back to the Workshop you left when there is one
- * (onWorkshopClick), and otherwise the tab's own href.
+ * same roads the bar's clicks take at once: Home through the router
+ * (onHomeClick), Communities to its page (onWorkshopClick), and otherwise
+ * the tab's own href.
  */
 function goToTab(key: string, href: string): void {
   const app = (window as unknown as {
-    App?: { navigateHome?: (opts?: { viaTab?: boolean }) => void; resumeWorkshopView?: () => boolean };
+    App?: { navigateHome?: (opts?: { viaTab?: boolean }) => void };
   }).App;
   if (key === 'home' && app?.navigateHome) {
     app.navigateHome({ viaTab: true });
     return;
   }
-  if (key === 'workshop' && app?.resumeWorkshopView?.()) return;
-  // #5581: on a phone the list is the drawer's, not the page the href names.
-  if (key === 'workshop' && !wideWindow()) {
-    goToCommunity(null);
+  if (key === 'workshop') {
+    openCommunitiesPage();
     return;
   }
   window.location.assign(href);
@@ -850,38 +773,12 @@ function tabHref(key: string, href: string): string {
 }
 
 /**
- * The Communities destination that always lands (#5730): the All communities
- * page, at `#communities`.
- *
- * A press on Communities from Me or Discover can reveal nothing. Its resume
- * (`App.resumeWorkshopView`) hands off to `navigateToApp`, which gives up
- * quietly when its record does not land, and the phone's list over it
- * (`goToCommunity(null)`) needs a community to open it over. The router then
- * never lights `workshop`, and the bar slid the pill back to the tab the
- * press left.
- *
- * So the page, which is an ordinary address: the hashchange routes through
- * `restoreFromHash` to `navigateToWorkshop`, which reveals `#workshop-screen`
- * and lights the tab. The remembered view is forgotten first, as choosing
- * All communities does, so the next press does not try the same dead resume;
- * that also clears `currentApp`, which is what makes a `navigateToApp` still
- * waiting from the first attempt drop itself. Deliberately not
- * `goToCommunity(null)`: its phone road is the drawer's list, the one that
- * just failed to show anything.
- */
-function openCommunitiesPage(): void {
-  try { (window as unknown as { App?: { _forgetWorkshopView?: () => void } }).App?._forgetWorkshopView?.(); }
-  catch { /* nothing stored to forget */ }
-  if (window.location.hash !== '#communities') window.location.hash = '#communities';
-}
-
-/**
  * THE PHONE'S BAR IS READ IN THE ORDER IT IS SEEN (audit N01, 1 Nov 2026).
  *
  * The markup is the rail's order (TWO ORDERS, ONE MARKUP above), and the
  * declared checks pin that sibling chain, so the phone's five cells are laid
- * out with `order`. A screen reader followed the markup: Home, Messages,
- * Homeroom bot, Communities, You, against Home, Communities, Homeroom bot,
+ * out with `order`. A screen reader followed the markup: Home, Homeroom bot,
+ * Messages, Communities, You, against Home, Communities, Homeroom bot,
  * Messages, You on screen. Below 768px `aria-owns` hands the five tabs to
  * the accessibility tree in the bar's order; the DOM, and so the chain the
  * checks select on, is untouched. Off the phone the attribute goes, and the
@@ -901,10 +798,11 @@ function openCommunitiesPage(): void {
  * The Duo's side strip is left alone: its Apps section is the bar's first
  * child, which this list would not reach.
  */
-// ONE HOME (#6361): four tabs, in the markup's own order now; the
-// Communities tab (#platform-tab-workshop) is drawn on neither bar.
+// Five tabs, in the bar's drawn order: Communities is second, next to Home,
+// though it follows Messages in the markup (the sidebar's order).
 export const PHONE_TAB_ORDER = [
   'platform-tab-home',
+  'platform-tab-workshop',
   'platform-tab-ai',
   'platform-tab-messages',
   'platform-tab-me',
@@ -986,21 +884,12 @@ export function PlatformTabs() {
   // read at once rather than a moment after sign-in.
   const sidebarRows = useSidebarRows();
   useEffect(() => (viewer ? warmCommunities(sidebarRows ? 0 : undefined) : undefined), [viewer, sidebarRows]);
-  const scoped = scope.slug ? scope.info[scope.slug] || null : null;
-  // Less an unchosen community's votes: the one every account is put in,
-  // until you have taken part there (tabVotes says why).
-  const votes = tabVotes(scope);
-  // THE SIDEBAR OF ROWS (./sidebar-rows.ts, from 768px): the five
-  // communities it lists (./rail-communities.tsx), and on its All row every
-  // vote waiting on you, the tab's own figure (#18 of the 19 Oct polish
-  // board). It was the votes in the communities the rows above did not
-  // list, which read as a total and was not one: 67 there while Needs you
-  // said 93.
+  // Every vote waiting on you, less an unchosen community's (the one every
+  // account is put in, until you have taken part there): the one count the
+  // tab carries, on the phone's bar and the sidebar alike.
+  const votes = Number(scope.badgeNeeds) || 0;
+  // The sidebar's own rows under Recents (./rail-communities.tsx).
   const railShown = useRailCommunities();
-  const allVotes = Number(scope.badgeNeeds) || 0;
-  const allCount = scope.list ? scope.list.length : 0;
-  // #5040: the blue number the tab shows at this width, which its tooltip names.
-  const titleVotes = sidebarRows ? allVotes : votes;
   // TWO WAYS TO HAVE NO RAIL, and they are not the same fact. The ROUTE can
   // say there is none (an app, chromeless, signed out) and the VIEWER can
   // fold the one there is (../header/../nav/sidebar-toggle.tsx). The peek
@@ -1051,20 +940,15 @@ export function PlatformTabs() {
       return;
     }
     // THE LIT COMMUNITIES TAB GOES UP A LEVEL (#3701), the same on the
-    // phone's bar and the desktop rail: from a page below a community's tabs
-    // back to the community, then to the top, then to All communities, whose
-    // own press only scrolls (../workshop/tab-ladder.ts). It used to open
-    // "Your communities" on a phone and go to All communities on the rail.
-    // On a wide window the switcher is the header's name; a phone has the
-    // drawer's list, and holding the tab opens nothing (18 Oct 2026).
-    // v3: IN THE SIDEBAR OF ROWS THE TAB IS "All 13 communities", and goes
-    // there, from a community's page too: a community's own row is the way
-    // up its page, and resuming the last one (App.resumeWorkshopView) is the
-    // strip's tab, whose face is that community. On the list itself it only
-    // scrolls, as before.
-    if (key === 'workshop' && sidebarRows) {
+    // phone's bar and the sidebar: from a page below a community's places
+    // back to the community, then to the top, then to the Communities page,
+    // whose own press only scrolls (../workshop/tab-ladder.ts).
+    // IN THE SIDEBAR OF ROWS a community's own row is the way up its page,
+    // so the tab goes straight to the Communities page from there. On the
+    // page itself it only scrolls, as before.
+    if (key === 'workshop' && sidebarRows && lit === 'workshop') {
       event.preventDefault();
-      if (screen === 'workshop-screen') pressLitTab(screen);
+      if (screen === 'communities-screen') pressLitTab(screen);
       else goToCommunity(null);
       return;
     }
@@ -1073,10 +957,7 @@ export function PlatformTabs() {
       pressLitTab(screen);
       return;
     }
-    // A press from another tab always resumes the view left, whatever the
-    // blue number says (#5708): the Needs you detour overwrote the place.
-    // Communities is the one press that can reveal nothing (#5730 — from Me
-    // or Discover), so it carries the page as its fallback, and only while
+    // Communities carries its page as a fallback (#5730), and only while
     // the screen it left is still the one on show: a Back or another
     // navigation during the wait is never overridden.
     const left = navStore.get().screen;
@@ -1189,17 +1070,6 @@ export function PlatformTabs() {
         } : undefined}
       />
       {TABS.flatMap(({ key, label, href, Icon }) => [
-        // 18 Oct 2026: THE COMMUNITIES YOU PINNED, under their heading,
-        // above your communities (./rail-pinned.tsx). Each community's app
-        // is the first row under it now, so the apps the strip listed apart
-        // from them (#4417, Pinned and Recent apps) have no section of their
-        // own. From 768px only; app.css keeps it off the phone's bar.
-        key === 'workshop' ? <RailPinned key="pinned" /> : null,
-        // D (18 Oct 2026): YOUR COMMUNITIES, under their heading, just above
-        // the Communities tab, which the sidebar of rows draws as their
-        // "All 13 communities" row. From 768px only; app.css keeps it off
-        // the strip and the phone's bar.
-        key === 'workshop' ? <RailCommunities key="communities" shown={railShown} /> : null,
         <a
           key={key}
           id={`platform-tab-${key}`}
@@ -1213,27 +1083,17 @@ export function PlatformTabs() {
           // router's tab, except for the moment between a press and its route
           // landing, when it is the tab pressed (useTabMarker, #3259).
           aria-current={lit === key ? 'page' : undefined}
-          // Beside the sidebar's list the tab is its All row, and named by
-          // the words it shows ("All 13 communities"), not the community.
+          // #5040: the blue number is said in words too, after the tab's name.
           aria-label={key === 'workshop'
-            ? (sidebarRows ? undefined : communitiesAriaLabel(scoped, votes))
+            ? communitiesAriaLabel(votes)
             : tabLabel(key, t(label), viewer).ariaLabel}
-          // #5040: pointed at, the tab says what its blue number counts (on
-          // the sidebar's All row, every vote waiting on you). None at zero,
-          // as the prerender ships it.
-          title={key === 'workshop' && titleVotes > 0 ? t('core:tabs.votesWaiting', { count: titleVotes }) : undefined}
+          // Pointed at, the tab says what its blue number counts. None at
+          // zero, as the prerender ships it.
+          title={key === 'workshop' && votes > 0 ? t('core:tabs.votesWaiting', { count: votes }) : undefined}
           onClick={(event) => onTabClick(event, key, href)}
         >
           <span className="platform-tab-mark">
-            {key === 'workshop'
-              ? <CommunityTabFace info={scoped} />
-              : <Icon className="platform-tab-glyph" aria-hidden="true" />}
-            {/*
-                THE ALL ROW'S GLYPH, in the sidebar of rows (D): the grid,
-                drawn in the ring's place there, as the screen it opens is
-                every community at once. app.css shows one of the two.
-            */}
-            {key === 'workshop' ? <Squares2X2Icon className="platform-tab-glyph platform-tab-all-glyph" aria-hidden="true" /> : null}
+            <Icon className="platform-tab-glyph" aria-hidden="true" />
             {/*
                 THE SECOND BADGE IN THE SHELL, and the first one that is not
                 the bell's. #1443 argued the platform should carry exactly
@@ -1284,30 +1144,16 @@ export function PlatformTabs() {
             {key === 'workshop' ? <VotesBadge count={votes} /> : null}
           </span>
           <span className="platform-tab-label">{tabLabel(key, t(label), viewer).text}</span>
-          {/*
-              THE ALL ROW'S WORDS AND COUNT, in the sidebar of rows (D): how
-              many communities you are in, so the row says there are more than
-              the five above it, and every vote waiting on you (#18). Blue
-              wins its seat: the grey count of unread channels gives way
-              while a vote is owed (app.css), one number per row.
-              app.css shows these instead of the label and the tab's own
-              badge there; a hidden element is not in the accessible name, so
-              each width's name is what it shows.
-              Overnight audit Y04: the count is said only when it IS more
-              than the rows above list. "All 2 communities" under the same
-              two rows (or "All 1 community") said nothing but a stray number.
-          */}
-          {key === 'workshop' ? (
-            <span className="platform-tab-all-label">
-              {allCount > RAIL_COMMUNITIES ? t('core:rail.all', { count: allCount }) : t('core:rail.allPlain')}
-            </span>
-          ) : null}
-          {key === 'workshop' && allVotes > 0 ? (
-            <span className="platform-tab-all-votes" aria-label={t('core:tabs.votesWaiting', { count: allVotes })}>
-              {allVotes > 99 ? '99+' : String(allVotes)}
-            </span>
-          ) : null}
         </a>,
+        // RECENTS, under the Communities row: THE COMMUNITIES YOU PINNED
+        // to the sidebar (./rail-pinned.tsx; each community's app is the
+        // first row under it), then the five you opened last
+        // (./rail-communities.tsx). From 768px only; app.css keeps both off
+        // the strip and the phone's bar. They followed Messages and stood
+        // above the Communities row while it was their "All 13 communities"
+        // row (18 Oct 2026); the row is the tab again and opens its page.
+        key === 'workshop' ? <RailPinned key="pinned" /> : null,
+        key === 'workshop' ? <RailCommunities key="communities" shown={railShown} /> : null,
         // Messages nested its five most recent conversations under its row
         // here (v3, 18 Oct 2026) until the sidebar kept its nesting for
         // communities alone (7 Nov 2026): the inbox draws its own list

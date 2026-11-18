@@ -97,6 +97,63 @@ const NON_SECRET_APP_COLUMNS = [
   'offline_cache_off_sha',
 ];
 
+// ── #6794: what the apps LIST reads ────────────────────────────────────
+//
+// GET /api/apps answers every app the viewer can see (213 on production,
+// 743 KB), and it selected and sent every column above for each. Three
+// things are different for the list; one app's own read (GET
+// /api/apps/:slug) keeps every column, whole.
+//
+// 1. Four columns are not selected at all: nothing in the list reads them,
+//    on the server or in a client.
+const APP_LIST_UNSELECTED_COLUMNS = ['main_check_detail', 'release_run', 'release_stall', 'demo_prev_approvals'];
+// 2. Two JSON columns are trimmed by Postgres before they are sent: the
+//    manifest without its declared tests and platform env (the two blocks
+//    summarizeManifestSnapshot drops, 240 KB on the platform's own row),
+//    and of the last failure only its reason and time, never the boot log.
+const APP_LIST_TRIMMED_COLUMNS = {
+  manifest_snapshot: (col) => `CASE WHEN jsonb_typeof(${col}) = 'object'
+            THEN ${col}${MANIFEST_SERVER_ONLY_KEYS.map((key) => ` - '${key}'`).join('')} ELSE ${col} END AS manifest_snapshot`,
+  last_failure: (col) => `CASE WHEN jsonb_typeof(${col}) = 'object'
+            THEN jsonb_build_object('reason', ${col}->'reason', 'at', ${col}->'at') ELSE ${col} END AS last_failure`,
+};
+// 3. These are selected, because the handler derives what it sends from
+//    them (`version`, `directory`, `deployProgress`, `offline_cache`), and
+//    then left out of the answer: no client reads them off a list row (the
+//    shell, the admin console, the connector, the CLI and the mobile app
+//    were all searched, 18 Nov 2026).
+const APP_LIST_UNSENT_KEYS = [
+  'main_check_state', 'main_check_sha', 'main_check_at', 'main_check_resumed_sha', 'main_check_paused_sha',
+  'db_size_bytes', 'db_size_measured_at', 'db_storage_cap_bytes', 'db_storage_frozen_at',
+  'db_storage_warned_at', 'db_storage_warn_level', 'db_storage_grace_until',
+  'directory_review_status', 'directory_reviewed_at', 'directory_reviewed_sha',
+  'offline_cache_off_sha', 'screenshot_device_scale',
+  'deploy_state', 'deploy_started_at', 'deploy_from_sha',
+  'demo_partner_id', 'demo_base_sha', 'container_id', 'retry_count', 'community_id',
+];
+
+// The list's SELECT columns, for `apps` under `alias`.
+function appListColumnList(alias) {
+  return NON_SECRET_APP_COLUMNS
+    .filter((c) => !APP_LIST_UNSELECTED_COLUMNS.includes(c))
+    .map((c) => (APP_LIST_TRIMMED_COLUMNS[c] ? APP_LIST_TRIMMED_COLUMNS[c](`${alias}.${c}`) : `${alias}.${c}`))
+    .join(', ');
+}
+
+// A list row's copy of the manifest: its one line, the only part a client
+// reads (the launcher card's sentence, the About sheet's tagline). Anything
+// that is not a plain object comes back unchanged.
+function listManifestSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) return snapshot;
+  return typeof snapshot.description === 'string' ? { description: snapshot.description } : {};
+}
+
+// A serialized list row without the keys nothing reads.
+function withoutUnsentListKeys(row) {
+  for (const key of APP_LIST_UNSENT_KEYS) delete row[key];
+  return row;
+}
+
 // `NON_SECRET_APP_COLUMNS` rendered as a bare comma-joined column list
 // (for `SELECT <cols> FROM apps`) or, with a table alias, prefixed for
 // use in a joined query (`SELECT <cols> FROM apps a JOIN ...`).
@@ -484,6 +541,11 @@ module.exports = {
   stripAppSecrets,
   MANIFEST_SERVER_ONLY_KEYS,
   summarizeManifestSnapshot,
+  appListColumnList,
+  listManifestSnapshot,
+  withoutUnsentListKeys,
+  APP_LIST_UNSELECTED_COLUMNS,
+  APP_LIST_UNSENT_KEYS,
   nonSecretAppColumnList,
   isCollaborator,
   checkAppAccess,

@@ -4616,16 +4616,16 @@
     "description": "The same row once the app is pinned: takes the app's tile off Home's Pinned apps. Membership does not change."
   },
   "menu.homeCommunity.add": {
-    "text": "Pin community to Home",
-    "description": "Row in a project's ⋯ menu on its hub: puts the community among Home's Pinned communities, where its tile opens this hub. Pinning does not join."
+    "text": "Pin community",
+    "description": "Row in a project's ⋯ menu on its hub: puts the community in the Pinned group of the Communities page, where its tile opens this hub. Pinning does not join."
   },
   "menu.homeCommunity.sub": {
     "text": "Its tile opens this hub",
-    "description": "Second line under Pin community to Home in the project's ⋯ menu, saying what the pinned tile does."
+    "description": "Second line under Pin community in the project's ⋯ menu, saying what the pinned tile does."
   },
   "menu.homeCommunity.remove": {
-    "text": "Unpin community from Home",
-    "description": "The same row once the community is pinned: takes its tile off Home's Pinned communities. Membership does not change."
+    "text": "Unpin community",
+    "description": "The same row once the community is pinned: takes its tile out of the Pinned group of the Communities page. Membership does not change."
   },
   "menu.appSettings.title": {
     "text": "App settings",

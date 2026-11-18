@@ -693,13 +693,17 @@ test('the strip\'s tabs: one capsule at the foot, the apps above it', () => {
     'the lit state is drawn once, by the pill');
   assert.match(block, /html\[data-side-strip\] #platform-tabs::before \{\s*content: none;/,
     'no fake glass behind the capsule');
-  assert.match(block, /html\[data-side-strip\] \.platform-tab\[aria-current="page"\],[^{]*\{\s*background: var\(--lit-tint\);\s*box-shadow: inset 0 0 0 1px var\(--lit-line\);/,
+  assert.match(block, /html\[data-side-strip\] \.platform-tab\[aria-current="page"\] \{\s*background: var\(--lit-tint\);\s*box-shadow: inset 0 0 0 1px var\(--lit-line\);/,
     'the place you are on is filled from the bar\'s lit tokens');
-  assert.match(block, /html\[data-side-strip\] \.platform-tab\[aria-current="page"\] \.platform-tab-mark,[^{]*\{\s*color: var\(--lit-ink\);/);
+  assert.match(block, /html\[data-side-strip\] \.platform-tab\[aria-current="page"\] \.platform-tab-mark \{\s*color: var\(--lit-ink\);/);
   // Icons only, as the system's side tabs: the words stay for a screen
   // reader and the declared checks, clipped rather than removed.
   assert.match(block, /html\[data-side-strip\] :is\(\.platform-tab, \.platform-side-app\) \.platform-tab-label \{\s*position: absolute;\s*width: 1px;\s*height: 1px;\s*overflow: hidden;\s*clip-path: inset\(50%\);/);
   assert.doesNotMatch(block, /\.platform-tab-label \{[^}]*display: none/, 'never removed');
+  // A community's page lights Communities, which is drawn on the strip
+  // again (18 Nov 2026), so Home no longer stands in for it.
+  assert.doesNotMatch(APP_CSS, /:has\(#platform-tab-workshop\[aria-current="page"\]\) #platform-tab-home/);
+  assert.doesNotMatch(APP_CSS, /#platform-tab-workshop \{ display: none/, 'nothing hides the tab');
   // The strip still measures the marker (tab-bar.tsx), and the phone's bar
   // still draws it with its own 16px radius.
   assert.match(APP_CSS, /\.platform-tabs-marker \{[^}]*border-radius: 16px;/);

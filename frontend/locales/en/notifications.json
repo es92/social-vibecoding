@@ -1838,5 +1838,13 @@
   "row.chat.changeReplyPr": {
     "text": "Replied on change PR {{number}}",
     "description": "First line of a notification: somebody posted in the discussion of a change on a project whose code is on GitHub, where a change's number is written PR, not #. The viewer built it, voted on it or posted in it. {{number}} is the change's number. \"Change\" is a noun. The message is on the line below."
+  },
+  "row.changeClosed.label": {
+    "text": "Closed",
+    "description": "First line of a notification telling the viewer that a change they made was closed without going live. An adjective describing the change. The change's title is on the line below, followed by one sentence saying why."
+  },
+  "row.changeClosed.yourChange": {
+    "text": "your change",
+    "description": "Second line of a notification that the viewer's change was closed, when the change has no title. Lower case: it stands where the title would."
   }
 }

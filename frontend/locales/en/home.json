@@ -703,6 +703,14 @@
     "text": "{{count}} contributors",
     "description": "Small line at the bottom of an app's card in Home's Discover communities rail. {{count}} is how many people have contributed to the app."
   },
+  "challenges.scrollOn": {
+    "text": "More challenges",
+    "description": "Accessible name of the arrow button at the end of the row of challenges on Home (the Standard (WIP) look), shown when the row holds more than fit: scrolls the row on to the next ones."
+  },
+  "challenges.scrollBack": {
+    "text": "Earlier challenges",
+    "description": "Accessible name of the arrow button at the start of the row of challenges on Home (the Standard (WIP) look), shown once the row has been scrolled: scrolls it back toward the first ones."
+  },
   "challenges.heading": {
     "text": "Challenges",
     "description": "Heading of the section of Home about challenges (tasks that earn points), while it loads and when it shows one line because no challenge is open."
@@ -893,83 +901,87 @@
   },
   "communities.heading": {
     "text": "Pinned communities",
-    "description": "Heading over the grid of community tiles on Home, under Pinned apps. A community's tile opens its hub."
+    "description": "Heading over the grid of pinned community tiles: on Home for a visitor who is not signed in (the communities pinned on this device), and on Home under a look of the frame. A community's tile opens its hub."
+  },
+  "communities.matches": {
+    "text": "Your communities",
+    "description": "Heading on Home over the person's own communities that match what they typed in Home's search field. Shown only while searching: the communities themselves are listed on the Communities page. A community's tile opens its hub."
   },
   "communities.editLabel": {
     "text": "Edit Pinned communities",
-    "description": "Accessible name of the Edit button beside the Pinned communities heading on Home. \"Edit\" is a verb."
+    "description": "Accessible name of the Edit button beside the Pinned communities heading on Home under a look of the frame. \"Edit\" is a verb."
   },
   "communities.all": {
     "text": "All communities",
-    "description": "Tile at the end of Pinned communities on Home. Pressing it also shows the communities the viewer is in but has not pinned; pressing it again hides them."
+    "description": "Tile at the end of Pinned communities on Home under a look of the frame. Pressing it also shows the communities the viewer is in but has not pinned; pressing it again hides them."
   },
   "communities.new": {
     "text": "New community",
-    "description": "Tile at the end of Pinned communities on Home that starts making a new project and its community."
+    "description": "The control that starts making a new project and its community: the last tile of Joined on the Communities page, and the filled button beside that page's search field on a wide screen."
   },
   "communities.newTip": {
     "text": "Start a community and its app",
-    "description": "Tooltip of the New community tile at the end of Pinned communities on Home."
+    "description": "Tooltip of the New community control on the Communities page."
   },
   "communities.newLocked": {
     "text": "New community. View app quota. {{hint}}",
-    "description": "Tooltip and accessible name of the New community tile on Home when the viewer cannot make another project right now. {{hint}} is one whole sentence saying what pressing it does ('View your app allowance or request more slots.')."
+    "description": "Tooltip and accessible name of the New community control on the Communities page when the viewer cannot make another project right now. {{hint}} is one whole sentence saying what pressing it does ('View your app allowance or request more slots.')."
   },
   "communities.pinNamed": {
-    "text": "Pin {{community}} to Home",
-    "description": "Accessible name of the + on a community's tile shown under All communities on Home. {{community}} is the project's name."
+    "text": "Pin {{community}}",
+    "description": "Accessible name of the + on a joined community's tile while the Communities page is being edited: pins it, which moves it to the page's Pinned group. {{community}} is the project's name. \"Pin\" is a verb."
   },
   "communities.unpinNamed": {
-    "text": "Unpin {{community}} from Home",
-    "description": "Accessible name of the remove badge on a community's tile while Pinned communities is being edited. {{community}} is the project's name."
+    "text": "Unpin {{community}}",
+    "description": "Accessible name of the remove badge on a pinned community's tile while the Communities page is being edited. {{community}} is the project's name. \"Unpin\" is a verb."
   },
   "communities.pinned": {
-    "text": "{{community}} pinned to Home",
-    "description": "Brief notice after the viewer pinned a community to Home. {{community}} is the project's name."
+    "text": "{{community}} pinned to Communities",
+    "description": "Brief notice after the viewer pinned a community: it is now in the Pinned group of the Communities page. {{community}} is the project's name; Communities is that page's name."
   },
   "communities.unpinned": {
     "text": "Unpinned {{community}}. You're still a member if you were.",
-    "description": "Brief notice after the viewer took a community off Home; it does not leave the community. {{community}} is the project's name."
+    "description": "Brief notice after the viewer unpinned a community from the Communities page; it does not leave the community. {{community}} is the project's name."
   },
   "communities.failed": {
-    "text": "Couldn't update your Home: {{reason}}",
-    "description": "Brief notice when pinning or unpinning a community on Home failed. {{reason}} is the server's explanation."
+    "text": "Couldn't update your pins: {{reason}}",
+    "description": "Brief notice when pinning or unpinning a community failed. {{reason}} is the server's explanation."
   },
   "communities.needs": {
     "text": "Needs you",
-    "description": "Name under the tile in Home's Pinned communities that opens Needs you, the page of every vote and decision waiting on the viewer across their projects. Shown only while something waits."
+    "description": "Name under the tile on the Communities page that opens Needs you, the page of every vote and decision waiting on the viewer across their projects. Shown only while something waits."
   },
   "communities.needsNamed_one": {
     "text": "Needs you: {{count}} vote waiting on you",
-    "description": "Accessible name of the Needs you tile on Home, with how many votes wait on the viewer across their projects. Singular."
+    "description": "Accessible name of the Needs you tile on the Communities page, with how many votes wait on the viewer across their projects. Singular."
   },
   "communities.needsNamed_other": {
     "text": "Needs you: {{count}} votes waiting on you",
-    "description": "Accessible name of the Needs you tile on Home, with how many votes wait on the viewer across their projects. Plural."
+    "description": "Accessible name of the Needs you tile on the Communities page, with how many votes wait on the viewer across their projects. Plural."
   },
   "communities.members_one": {
     "text": "{{formatted}} member",
-    "description": "Line under a community's name on its card in Home's Pinned communities (wide screens), after a people glyph: how many people are in the community. {{formatted}} is that number written with digit grouping, for example 1,284; {{count}} is the same number and only selects the plural form."
+    "description": "Line under a community's name on its card on the Communities page (wide screens, in the brand look), after a people glyph: how many people are in the community. {{formatted}} is that number written with digit grouping, for example 1,284; {{count}} is the same number and only selects the plural form."
   },
   "communities.members_other": {
     "text": "{{formatted}} members",
-    "description": "Line under a community's name on its card in Home's Pinned communities (wide screens), after a people glyph: how many people are in the community. {{formatted}} is that number written with digit grouping, for example 1,284; {{count}} is the same number and only selects the plural form."
+    "description": "Line under a community's name on its card on the Communities page (wide screens, in the brand look), after a people glyph: how many people are in the community. {{formatted}} is that number written with digit grouping, for example 1,284; {{count}} is the same number and only selects the plural form."
   },
   "communities.liveWeek_one": {
     "text": "{{count}} change went live",
-    "description": "Small pill on a community's card in Home's Pinned communities (wide screens): how many changes to the community's project were voted in and went live in the last seven days. Shown only when there is at least one."
+    "description": "Small pill on a community's card on the Communities page (wide screens, in the brand look): how many changes to the community's project were voted in and went live in the last seven days. Shown only when there is at least one."
   },
   "communities.liveWeek_other": {
     "text": "{{count}} changes went live",
-    "description": "Small pill on a community's card in Home's Pinned communities (wide screens): how many changes to the community's project were voted in and went live in the last seven days. Shown only when there is at least one."
+    "description": "Small pill on a community's card on the Communities page (wide screens, in the brand look): how many changes to the community's project were voted in and went live in the last seven days. Shown only when there is at least one."
   },
   "communities.activeWeek_one": {
     "text": "{{formatted}} active this week",
-    "description": "Last line of a community's card in Home's Pinned communities (wide screens), beside the faces of a few of them: how many people took part in the community in the last seven days (talked in its channel, started a change or voted). {{formatted}} is the number with digit grouping; {{count}} selects the plural form."
+    "description": "Last line of a community's card on the Communities page (wide screens, in the brand look), beside the faces of a few of them: how many people took part in the community in the last seven days (talked in its channel, started a change or voted). {{formatted}} is the number with digit grouping; {{count}} selects the plural form."
   },
   "communities.activeWeek_other": {
     "text": "{{formatted}} active this week",
-    "description": "Last line of a community's card in Home's Pinned communities (wide screens), beside the faces of a few of them: how many people took part in the community in the last seven days (talked in its channel, started a change or voted). {{formatted}} is the number with digit grouping; {{count}} selects the plural form."
+    "description": "Last line of a community's card on the Communities page (wide screens, in the brand look), beside the faces of a few of them: how many people took part in the community in the last seven days (talked in its channel, started a change or voted). {{formatted}} is the number with digit grouping; {{count}} selects the plural form."
   },
   "join.heading": {
     "text": "Communities to join",
@@ -1048,8 +1060,8 @@
     "description": "Line under the last card in Communities to join when a kind is chosen."
   },
   "membership.joinedPinned": {
-    "text": "Joined {{community}} · pinned to Home",
-    "description": "Brief notice after the viewer joined a community; joining also pins the community to Home. {{community}} is the project's name."
+    "text": "Joined {{community}} · pinned to Communities",
+    "description": "Brief notice after the viewer joined a community; joining also pins the community, so it is in the Pinned group of the Communities page. {{community}} is the project's name; Communities is that page's name."
   },
   "membership.pinAppToo": {
     "text": "Pin its app too",

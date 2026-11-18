@@ -364,13 +364,6 @@ function PinnedCommunities({ query }: { query: string }) {
   const needs = Math.max(0, Number(badgeNeeds) || 0);
   const [editing, setEditing] = useState(false);
   const [showAll, setShowAll] = useState(false);
-  // "All communities" anywhere else (the sidebar's row, the switcher) opens
-  // this section's (Home.showCommunities).
-  useEffect(() => {
-    const open = () => setShowAll(true);
-    document.addEventListener('home:show-all-communities', open);
-    return () => document.removeEventListener('home:show-all-communities', open);
-  }, []);
   useEffect(() => { if (query) setEditing(false); }, [query]);
 
   const pinned = useMemo(() => state.pins.filter((p) => matchesQuery(query, p.name, p.slug)), [state.pins, query]);

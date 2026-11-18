@@ -59,19 +59,20 @@ const community = (over = {}) => ({
   ...over,
 });
 
-test('the rail reads Home, AI, Messages, you, and so does the phone\'s bar; Communities is drawn on neither and Discover is gone (#6019, One Home #6361)', () => {
+test('the sidebar reads Home, AI, Messages, Communities, you; the phone\'s bar puts Communities next to Home; Discover is gone (#6019, One Home #6361)', () => {
   // A tab's label is a message id; the word is what the English catalog holds for it.
   const order = [...TABS.matchAll(/\{ key: '([a-z]+)' as const, label: '(core:tabs\.[A-Za-z]+)'/g)].map((m) => [m[1], message(m[2])]);
   // The markup is the desktop rail's order (Evan, 29 Oct 2026), the bot
   // above Messages since One Home (#6361).
   assert.deepEqual(order.map((o) => o[0]), ['ai', 'messages', 'workshop', 'me'],
     'after Home, whose entry is written across lines; Discover\'s tab is gone');
-  // app.css lays the phone's four out with `order`, and hides the
-  // Communities tab on both bars: Home holds your communities now.
+  // app.css lays the phone's five out with `order`: Communities, fourth in
+  // the markup, is second on the bar. The tab is drawn on both bars again
+  // (18 Nov 2026): its page holds your communities, not Home.
   const css = read('public/css/app.css');
   const phone = css.slice(css.indexOf('/* TWO ORDERS, ONE MARKUP'));
-  assert.match(phone, /#platform-tab-home \{ order: -4; \}\s*#platform-tab-ai \{ order: -3; \}\s*#platform-tab-messages \{ order: -2; \}/);
-  assert.match(phone, /#platform-tab-workshop \{ display: none !important; \}/);
+  assert.match(phone, /#platform-tab-home \{ order: -5; \}\s*#platform-tab-workshop \{ order: -4; \}\s*#platform-tab-ai \{ order: -3; \}\s*#platform-tab-messages \{ order: -2; \}/);
+  assert.doesNotMatch(css, /#platform-tab-workshop \{ display: none/, 'nothing hides the tab');
   assert.doesNotMatch(TABS, /key: 'discover'/);
   assert.deepEqual(order.find((o) => o[0] === 'ai'), ['ai', 'Homeroom bot'], 'the bot\'s own name (Evan, 29 Oct 2026)');
   assert.deepEqual(order.find((o) => o[0] === 'workshop'), ['workshop', 'Communities'],

@@ -669,7 +669,7 @@ test('the conversation opens at the line, draws it once, and measures after its 
   // @/components/ui/chat): it rises with the transcript when a name appears.
   // #6426: Main Chat's Welcome back card sits between the typing line and
   // the message box; nothing else changed about the order.
-  assert.match(THREAD, /<\/div>\s*\{\/\*[\s\S]*?\*\/\}\s*<TranscriptOverlay edge="foot">\s*<JumpToLatestButton shown=\{unread\.jump\}[^\n]*\/>\s*<\/TranscriptOverlay>\s*<ChatStatusLine className="messages-typing">\{typingLine\(t, typing\)\}<\/ChatStatusLine>\s*(?:\{mainChat && botDm && conversationId \? <WelcomeBack[^\n]*\/> : null\}\s*)?<MessageComposer \/>/,
+  assert.match(THREAD, /<\/div>\s*\{\/\*[\s\S]*?\*\/\}\s*<TranscriptOverlay edge="foot">\s*<JumpToLatestButton shown=\{unread\.jump\}[^\n]*\/>\s*<\/TranscriptOverlay>\s*<ChatStatusLine className="messages-typing">\{typingLine\(t, typing\)\}<\/ChatStatusLine>\s*(?:\{mainChat && botDm && conversationId \? <WelcomeBack[^\n]*\/> : null\}\s*)?<MessageComposer scroller=\{scroller\} \/>/,
     'the button hangs between the transcript and the typing line');
   // A linked window's latest is not drawn: the button goes to the present.
   assert.match(THREAD, /if \(snap\.nextAfter\) \{ pinned\.current = true; jumpToPresent\(\); return; \}\s*toLatest\(\);/);
@@ -738,7 +738,7 @@ test('Jump to latest alone: hidden until the reader is up the transcript, and a 
   assert.doesNotMatch(SOURCE, /data-transcript-strip/);
   assert.doesNotMatch(SOURCE, /docked = false|docked\?: boolean/, 'and no prop to ask for one');
 
-  assert.match(THREAD, /<\/div>\s*<JumpToLatest scroller=\{scroller\} \/>\s*\{\/\*[\s\S]*?\*\/\}\s*<ChatStatusLine className="messages-typing">\{typingLine\(t, threadTyping\)\}<\/ChatStatusLine>\s*<MessageComposer threadRootId=\{rootId\} \/>/, 'a reply thread beside a conversation');
+  assert.match(THREAD, /<\/div>\s*<JumpToLatest scroller=\{scroller\} \/>\s*\{\/\*[\s\S]*?\*\/\}\s*<ChatStatusLine className="messages-typing">\{typingLine\(t, threadTyping\)\}<\/ChatStatusLine>\s*<MessageComposer threadRootId=\{rootId\} scroller=\{scroller\} \/>/, 'a reply thread beside a conversation');
 });
 
 test('the group chat\'s channel and threads get it beside their scrollers, at their own allowances', () => {

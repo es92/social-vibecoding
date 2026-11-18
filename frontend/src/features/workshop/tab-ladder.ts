@@ -50,11 +50,11 @@
  * ── The blue number is a count (#5708) ────────────────────────────────
  *
  * The tab's blue number is the votes waiting on you (./community-scope.ts
- * `tabVotes`), and that is all it is. #5040 made a press from another tab
+ * `badgeNeeds`), and that is all it is. #5040 made a press from another tab
  * open Needs you while the number showed, and that detour also wrote Needs
  * you over the place remembered for the next return, so an account that
  * always had votes waiting always came back to Needs you. A press from
- * another tab now returns to the view left, whatever the number says.
+ * another tab opens the tab's own page, whatever the number says.
  *
  * ── Who knows where you are ───────────────────────────────────────────
  *
@@ -206,8 +206,11 @@ export function upToCommunity(slug: string): void {
  * taking the root step to All communities: the sidebar's All row is that.
  */
 export function pressLitTab(screen: string | null, { stopAtCommunity = false }: { stopAtCommunity?: boolean } = {}): Rung {
-  if (screen === 'workshop-screen') {
-    const el = scrollerOf(document.getElementById('workshop-screen'));
+  // The tab's root: the Communities page (`#communities`). It was
+  // `#workshop-screen` while that held the list; that root is Needs you now,
+  // a page under Home, and lights Home.
+  if (screen === 'communities-screen') {
+    const el = scrollerOf(document.getElementById('communities-screen'));
     const rung = rungFor('root', isScrolled(el));
     if (rung === 'top') toTop(el);
     return rung;

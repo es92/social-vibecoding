@@ -34,9 +34,11 @@ import { createStore } from '../../lib/plain-store.js';
  *   open: boolean, urlLabel: string, background: string, solo: boolean,
  *   clockLabel: string, clockAsNow: boolean,
  *   loaderVisible: boolean, loaderTitle: string | null, loaderSub: string, loaderRetry: boolean, loaderRetryLabel: string | null,
+ *   loaderShots: boolean,
  *   testBtnHidden: boolean, testBtnTitle: string, testPanelHidden: boolean,
  *   testHtml: string,
- *   changeTitle: string, changeNumber: number, appName: string, appTile: string, appTileImage: string, selfHosted: boolean,
+ *   changeTitle: string, changeNumber: number, changePending: boolean,
+ *   appName: string, appTile: string, appTileImage: string, selfHosted: boolean,
  *   vote: PreviewVote | null, shotsHtml: string, view: 'preview' | 'shots',
  *   placement: 'full' | 'column' | 'panel', rect: PreviewRect | null, expanded: boolean, wide: boolean,
  *   beside: 'app' | null, liveSpot: { left: number, top: number } | null, noteSeen: boolean,
@@ -81,6 +83,13 @@ export const stagingStore = createStore(/** @type {StagingState} */ ({
   /** #3413: "Retry preview" after a failed build; the shipped markup's text otherwise. */
   /** @type {string | null} */
   loaderRetryLabel: null,
+  /**
+   * The loader is a wait or a dead end (not running, a failure, a rebuild),
+   * where "See the before & after instead" is offered when the change has
+   * verified shots. False for the moment a preview opens, which is too short
+   * to offer anything.
+   */
+  loaderShots: false,
   testBtnHidden: true,
   testBtnTitle: '',
   testPanelHidden: true,
@@ -94,6 +103,12 @@ export const stagingStore = createStore(/** @type {StagingState} */ ({
    */
   changeTitle: '',
   changeNumber: 0,
+  /**
+   * The change's name is still being looked up (the page held no row of it):
+   * the title is drawn as a placeholder rather than the project's name, which
+   * the change's own would replace a moment later.
+   */
+  changePending: false,
   /** The project's name, which the line under the title carries in the whole window. */
   appName: '',
   appTile: '',

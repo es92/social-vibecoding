@@ -44,6 +44,8 @@ function getPool(config) {
       }
       log.error('db', 'Unexpected pool error', { message: err.message });
     });
+    // Each request's queries are counted for its Server-Timing header.
+    require('../middleware/server-timing').instrumentPool(pool);
   }
   return pool;
 }

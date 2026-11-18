@@ -1,15 +1,17 @@
 'use strict';
 
-// THE COMMUNITIES A PERSON PINNED TO HOME (One Home, #6361): Home's
-// "Pinned communities" grid, the account's, in their order (schema:
-// one-home-pins.sql, home_community_pins).
+// THE COMMUNITIES A PERSON PINNED (One Home, #6361): the "Pinned" group of
+// the Communities tab's page, the account's, in their order (schema:
+// one-home-pins.sql, home_community_pins). They were Home's "Pinned
+// communities" grid until the Communities tab came back; the table and the
+// routes keep the name.
 //
 // Separate from two neighbours on purpose:
 //   - app_favorites is Home's "Pinned apps": an app pin opens the app.
 //   - community_pins is the desktop sidebar's four (services/community-pins.js),
 //     a member's only.
 // A community pin here needs no membership: a person can follow a community
-// from Home before joining it, signed in or (on the device) signed out.
+// before joining it, signed in or (on the device) signed out.
 // Joining writes one (communities.join), leaving removes it
 // (communities.leave), and its app's pin stays either way.
 
@@ -20,7 +22,7 @@ const PINS_MAX = 200;
 
 const fail = (status, body) => { throw Object.assign(new Error(body.error), { status, body }); };
 
-/** The pins, in order, as Home draws them. */
+/** The pins, in order, as the Communities page draws them. */
 async function list(db, userId) {
   const { rows } = await db.query(
     `SELECT slug, name, icon_image_id, icon_emoji, icon_color, is_member FROM (
@@ -152,13 +154,14 @@ function importPins(pool, user, slugs) {
   });
 }
 
-/** How many faces a pinned community's card shows. */
+/** How many faces a community's card shows. */
 const ACTIVITY_FACES = 3;
 
 /**
- * WHAT IS GOING ON IN EACH PINNED COMMUNITY (Drea's review of #6699): the
- * facts Home's community cards print under each name, for every community
- * `list` returns, in one read:
+ * WHAT IS GOING ON IN EACH OF A PERSON'S COMMUNITIES (Drea's review of
+ * #6699): the facts the Communities page's cards print under each name, for
+ * every community `list` returns and every other one the viewer is a member
+ * of (the page's Pinned and Joined groups), in one read:
  *   members      how many are in it (community_members, as the app list
  *                counts them);
  *   live_week    changes that went live in the last seven days (merged and
@@ -171,23 +174,27 @@ const ACTIVITY_FACES = 3;
  *                (communities.activitySummary);
  *   people       up to ACTIVITY_FACES of them, the most recently active
  *                first, each with their picture when they have one.
- * The pins are the ones `list` shows (the same filters, written out again
- * so the query stays one static statement), so this never says anything
- * about a community the viewer cannot see. Keyed by slug.
+ * The pinned ones are those `list` shows (the same filters, written out
+ * again so the query stays one static statement), and a membership is the
+ * viewer's own, so this never says anything about a community the viewer
+ * cannot see. Keyed by slug.
  */
 async function activity(db, userId) {
   const { rows } = await db.query(
     `WITH pins AS (
-       SELECT DISTINCT ON (p.community_id) p.community_id, a.id AS app_id, a.slug
-         FROM home_community_pins p
-         JOIN apps a ON a.community_id = p.community_id
-        WHERE p.user_id = $1
-          AND NOT EXISTS (SELECT 1 FROM user_app_blocks b WHERE b.user_id = p.user_id AND b.app_id = a.id)
+       SELECT DISTINCT ON (c.community_id) c.community_id, a.id AS app_id, a.slug
+         FROM (
+           SELECT p.community_id FROM home_community_pins p WHERE p.user_id = $1
+           UNION
+           SELECT m.community_id FROM community_members m WHERE m.user_id = $1
+         ) c
+         JOIN apps a ON a.community_id = c.community_id
+        WHERE NOT EXISTS (SELECT 1 FROM user_app_blocks b WHERE b.user_id = $1 AND b.app_id = a.id)
           AND a.moderation_suspended_at IS NULL
           AND (a.view_visibility = 'public'
                OR EXISTS (SELECT 1 FROM community_members m
-                           WHERE m.community_id = p.community_id AND m.user_id = p.user_id))
-        ORDER BY p.community_id, a.id
+                           WHERE m.community_id = c.community_id AND m.user_id = $1))
+        ORDER BY c.community_id, a.id
      ),
      who AS (
        SELECT m.app_id, m.user_id, m.created_at AS at

@@ -630,14 +630,28 @@ test('coming back from an app re-reveals the screen', () => {
     'entering an app must not clear _inWorkshop — the way back reads it');
 });
 
-test('#needs is the Needs you page; #communities and #workshop land on Home, or here with ?ws=needs (One Home, #6361)', () => {
+test('#needs is the Needs you page; #communities is the Communities tab\'s page, #workshop lands on it, and ?ws=needs lands here', () => {
   assert.match(appJs, /if \(parts\[0\] === 'needs'\) \{[\s\S]*?App\.navigateToWorkshop\(\);\s*return;\s*\}/);
   const old = /if \(parts\[0\] === 'communities' \|\| parts\[0\] === 'workshop'\) \{([\s\S]*?)\n      \}\n/.exec(appJs);
-  assert.ok(old, 'the old addresses are still read');
+  assert.ok(old, 'both addresses are read by one branch');
   assert.match(old[1], /new URLSearchParams\(location\.search\)\.get\('ws'\) === 'needs'\s*\|\| new URLSearchParams\(fragQuery\)\.get\('ws'\) === 'needs';/);
   assert.match(old[1], /history\.replaceState\(null, '', App\._rootUrl\('#needs'\)\);[\s\S]*?App\.navigateToWorkshop\(\);\s*return;/,
     'rewritten in place, so no Back step is added');
-  assert.match(old[1], /history\.replaceState\(null, '', App\._rootUrl\(''\)\);[\s\S]*?App\.navigateHome\(\);\s*return;/);
+  // One Home (#6361) sent both to Home, whose Pinned communities held your
+  // communities. The tab and its page are back (18 Nov 2026): `#communities`
+  // is the page's own address, and `#workshop`, the tab's older one, is
+  // rewritten to it in place.
+  assert.match(old[1], /if \(parts\[0\] === 'workshop'\) \{\s*try \{ history\.replaceState\(null, '', App\._rootUrl\('#communities'\)\); \} catch \(err\) \{ \/\* non-fatal \*\/ \}\s*\}\s*App\.navigateToCommunities\(\);\s*return;/);
+  assert.doesNotMatch(old[1], /App\.navigateHome\(\)/, 'neither lands on Home any more');
+  const toPage = appJs.slice(appJs.indexOf('  navigateToCommunities() {'), appJs.indexOf('  navigateToAi() {'));
+  assert.match(toPage, /App\._showOnlyScreen\('communities-screen'\);/);
+  assert.match(toPage, /App\.setHeaderTitle\(PlatformI18n\.t\('shell:title\.communities'\)\);/);
+  assert.equal(message('shell:title.communities'), 'Communities');
+  assert.match(toPage, /window\.UsernodeReact\?\.communities\?\.open\?\.\(\);/, 'the page reads its lists again on each visit');
+  assert.match(appJs, /case 'communities': return 'communities-screen';/, 'a cold boot paints the page it will land on');
+  // A tab root: no back control, and its tab is Communities (key `workshop`).
+  assert.match(appJs, /'communities-screen': \['none'\],/);
+  assert.match(read('frontend/src/features/nav/nav-store.js'), /'communities-screen': 'workshop',/);
   assert.match(appJs, /case 'needs': return 'workshop-screen';/, 'a cold boot paints the page it will land on');
   assert.match(appJs, /navigateToWorkshop\(\) \{/);
   assert.match(appJs, /_exitWorkshop\(\) \{[\s\S]*?App\._inWorkshop = false;/);
@@ -646,10 +660,14 @@ test('#needs is the Needs you page; #communities and #workshop land on Home, or 
   // A page under Home: its tab is Home's, and the header's arrow goes up to it.
   assert.match(appJs, /'workshop-screen': \['arrow', '\/'\],/);
   assert.match(read('frontend/src/features/nav/nav-store.js'), /'workshop-screen': 'home',/);
-  // The vote digest opens it, and Home's tile does while a vote waits.
+  // The vote digest opens it, and so does the Communities page's Needs you
+  // tile while a vote waits, in a look whose Home has no Needs you card.
   assert.match(read('frontend/src/features/notifications/notifications.js'),
     /item\.kind === 'vote_digest' && !item\.appSlug\) \{[\s\S]{0,200}window\.location\.hash = '#needs';/);
-  assert.match(read('frontend/src/features/home/pinned-communities.tsx'), /href="#needs"\s+id="home-needs-tile"/);
+  assert.match(read('frontend/src/features/home/pinned-communities.tsx'), /href="#needs"\s+id="communities-needs-tile"/);
+  const page = read('frontend/src/features/communities/index.tsx');
+  assert.match(page, /const needsTile = !kit && needs > 0 && !q && !editing;/);
+  assert.match(page, /\{needsTile \? <NeedsTile count=\{needs\} \/> : null\}/);
   // The app menu keeps the SCOPED entrance, the project's own hub (#2761).
   assert.match(sheetTsx, /communityRowHref\(slug: string \| null \| undefined, owed: number \| null\): string \{[\s\S]*?: `#app\/\$\{encodeURIComponent\(slug\)\}\/dev\/hub`;[\s\S]*?href=\{communityRowHref\(slug, owed\)\}/,
     "and the app's menu links out to it, scoped");
@@ -773,10 +791,12 @@ test('the app\'s own Workshop switches communities through Your communities, the
   assert.match(ws, /name=\{app\.name \|\| undefined\}/);
 
   // ALL COMMUNITIES IS THE WAY BACK UP, and the page the tab reopened is
-  // forgotten. One Home (#6361): it is Home's, Pinned communities with its
-  // All communities open, where the Communities screen's list was.
-  assert.match(scope, /if \(!slug\) \{\s*setScope\(null\);\s*try \{ app\?\._forgetWorkshopView\?\.\(\); \}[\s\S]{0,200}home\.showCommunities\(\{ all: true \}\);/);
-  assert.doesNotMatch(scope, /openDrawerList|requestOuter/);
+  // forgotten. It is the Communities tab's page, `#communities`, which lists
+  // every community you are in (it was Home's Pinned communities with its
+  // All communities open while Home listed them, One Home, #6361).
+  assert.match(scope, /if \(!slug\) \{\s*setScope\(null\);\s*openCommunitiesPage\(\);\s*return;\s*\}/);
+  assert.match(scope, /export function openCommunitiesPage\(\): void \{\s*try \{ \(window as unknown as \{ App\?: \{ _forgetWorkshopView\?: \(\) => void \} \}\)\.App\?\._forgetWorkshopView\?\.\(\); \}\s*catch \{[^}]*\}\s*if \(window\.location\.hash !== '#communities'\) window\.location\.hash = '#communities';\s*\}/);
+  assert.doesNotMatch(scope, /showCommunities|openDrawerList|requestOuter/);
   // The community you are already on goes nowhere: re-navigating to the
   // current route would throw the page's scroll away, and it stays on the
   // place it shows. Another one opens on the place you were on, when it has

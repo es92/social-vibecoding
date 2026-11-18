@@ -874,7 +874,7 @@ test('the short story heads Discover: the headline, the Wikipedia line on two li
   // The frame and the email step read the same switch (one `waitlist`
   // reader here: the landing's frame; the gated frame is gone with looks v2).
   assert.equal([...read(LANDING).matchAll(/waitlist=\{accountsWait\}/g)].length, 1);
-  assert.match(read('frontend/src/features/auth/login.tsx'), /const accountsWait = newAccountsWait\(useWaitlistOptions\(\)\);/);
+  assert.match(read('frontend/src/features/auth/login.tsx'), /const accountsWait = newAccountsWait\(useWaitlistOptions\(mounted\)\);/);
   assert.match(read('frontend/src/features/auth/login.tsx'), /\{accountsWait \? t\('auth:login\.otp\.lead'\) : t\('auth:login\.otp\.leadOpen'\)\}/);
   assert.doesNotMatch(message('auth:login.otp.leadOpen'), /waitlist/i);
   assert.doesNotMatch(read(LANDING), /<GuestDiscover[^>]*\bwaitlist=/, 'the card that read it is gone');

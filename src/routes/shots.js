@@ -5,6 +5,7 @@ const { getPool } = require('../db/pool');
 const appAccess = require('../services/app-access');
 const appAdmins = require('../services/app-admins');
 const log = require('../services/logger');
+const { parseRange } = require('../services/byte-range');
 const shots = require('../services/shots-files');
 const plan = require('../services/visible-changes');
 const state = require('../services/shots-state');
@@ -21,7 +22,11 @@ function sessionId(value) {
   return Number.isSafeInteger(id) && id > 0 && id <= 2147483647 ? id : null;
 }
 
-async function loadContext(pool, slug, id, user, level = 'view') {
+// `columns` is what a route reads off the change. An image or a picture
+// reads only that it exists in this app (#6793): each one used to read the
+// change's whole row, plan and check results included.
+const CONTEXT_ONLY = 'cs.id, cs.app_id';
+async function loadContext(pool, slug, id, user, level = 'view', columns = 'cs.*') {
   const app = await appAccess.getAppForUser(
     pool,
     slug,
@@ -31,10 +36,20 @@ async function loadContext(pool, slug, id, user, level = 'view') {
   );
   if (!app) return null;
   const { rows } = await pool.query(
-    `SELECT cs.* FROM chat_sessions cs WHERE cs.id = $1 AND cs.app_id = $2`,
+    `SELECT ${columns} FROM chat_sessions cs WHERE cs.id = $1 AND cs.app_id = $2`,
     [id, app.id]
   );
   return rows[0] ? { app, session: { ...rows[0], app_slug: app.slug } } : null;
+}
+
+// Does an If-None-Match header name this image? Tags are compared weakly
+// (a `W/` prefix is ignored), and `*` matches whatever is stored.
+function matchesEtag(header, sha256) {
+  if (typeof header !== 'string' || !header.trim() || !sha256) return false;
+  return header.split(',').some((part) => {
+    const tag = part.trim().replace(/^W\//, '');
+    return tag === '*' || tag === `"${sha256}"`;
+  });
 }
 
 function sendError(res, err) {
@@ -56,26 +71,6 @@ const REFUSALS = new Map([
 function refused(res, reason) {
   const code = String(reason || 'shots_refused');
   return res.status(code === 'not_authorized' ? 403 : 409).json({ error: code, message: REFUSALS.get(code) || 'The before & after shots could not do that now.' });
-}
-
-function parseRange(header, total) {
-  if (!header) return null;
-  const match = /^bytes=(\d*)-(\d*)$/.exec(String(header).trim());
-  if (!match || (!match[1] && !match[2])) return false;
-  let start;
-  let end;
-  if (!match[1]) {
-    const suffix = Number(match[2]);
-    if (!Number.isSafeInteger(suffix) || suffix <= 0) return false;
-    start = Math.max(0, total - suffix);
-    end = total - 1;
-  } else {
-    start = Number(match[1]);
-    end = match[2] ? Number(match[2]) : total - 1;
-  }
-  if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end)
-      || start < 0 || end < start || start >= total) return false;
-  return { start, end: Math.min(end, total - 1) };
 }
 
 const LEGACY_PATH_RE = /^(\/api\/apps\/[^/?]+\/proposals\/[^/?]+\/)evidence(?=[/?]|$)/;
@@ -247,7 +242,7 @@ function shotsRoutes(config, { store = mediaStore.getStore(config) } = {}) {
     const id = sessionId(req.params.sessionId);
     if (!id) return res.status(404).json({ error: 'Picture not found' });
     try {
-      const ctx = await loadContext(pool, req.params.slug, id, req.user, 'view');
+      const ctx = await loadContext(pool, req.params.slug, id, req.user, 'view', CONTEXT_ONLY);
       if (!ctx) return res.status(404).json({ error: 'Picture not found' });
       const pictures = require('../services/change-pictures');
       const row = await pictures.pictureForSession(pool, { sessionId: id, appId: ctx.app.id, pictureId: req.params.pictureId });
@@ -272,7 +267,7 @@ function shotsRoutes(config, { store = mediaStore.getStore(config) } = {}) {
       return res.status(404).json({ error: 'Shots artifact not found' });
     }
     try {
-      const ctx = await loadContext(pool, req.params.slug, id, req.user, 'view');
+      const ctx = await loadContext(pool, req.params.slug, id, req.user, 'view', CONTEXT_ONLY);
       if (!ctx) return res.status(404).json({ error: 'Shots artifact not found' });
       // A dense still (services/shots-density.js) at its own address, for an
       // account in the New Needs you experiment; anyone else asking for it
@@ -287,23 +282,42 @@ function shotsRoutes(config, { store = mediaStore.getStore(config) } = {}) {
            JOIN shot_runs r ON r.id = a.run_id
            JOIN chat_sessions s ON s.id = r.session_id
           WHERE a.id = $1 AND s.id = $2 AND s.app_id = $3
-            AND s.shots_run_id = r.id
-            AND s.shots_state = 'verified' AND r.state = 'verified'
-            AND r.head_sha = COALESCE(
-                  s.shots_detail->>'headSha',
-                  CASE WHEN s.source = 'imported'
-                    THEN s.imported_pr_head_sha
-                    ELSE s.reviewed_head_sha
-                  END,
-                  s.checks_commit_sha,
-                  s.handoff_head_sha
-                )`,
+            AND ((s.shots_run_id = r.id
+              AND s.shots_state = 'verified' AND r.state = 'verified'
+              AND (r.head_sha = COALESCE(
+                    s.shots_detail->>'headSha',
+                    CASE WHEN s.source = 'imported'
+                      THEN s.imported_pr_head_sha
+                      ELSE s.reviewed_head_sha
+                    END,
+                    s.checks_commit_sha,
+                    s.handoff_head_sha
+                  )
+                -- Shots carried across a clean merge of main were taken on
+                -- the head it left (the shots machine's carry).
+                OR r.head_sha = s.shots_detail->>'carriedFrom'))
+              -- The previous version's shots, which the card keeps while this
+              -- version's are taken (shots_detail.previous).
+              OR (r.id = s.shots_detail->'previous'->>'runId'
+                AND s.shots_state IS DISTINCT FROM 'verified'
+                AND r.state IN ('verified', 'stale')))`,
         [req.params.artifactId, id, ctx.app.id, dense === true]
       );
       const artifact = rows[0];
       // A close-up (services/shots-closeups.js) is only ever shown to an
       // account in the experiment, at its own address.
       if (!artifact || (artifact.variant === 'closeup' && !dense)) return res.status(404).json({ error: 'Shots artifact not found' });
+      // #6793: the browser already has this exact image. Answered only after
+      // the lookup above, so a stale or hidden one is still a 404, and
+      // before the media store is opened.
+      if (matchesEtag(req.headers['if-none-match'], artifact.sha256)) {
+        res.set({
+          'Cache-Control': 'private, max-age=31536000, immutable',
+          ETag: `"${artifact.sha256}"`,
+          Vary: 'Cookie, Authorization',
+        });
+        return res.status(304).end();
+      }
       const size = Number(artifact.bytes);
       const range = parseRange(req.headers.range, size);
       res.set({

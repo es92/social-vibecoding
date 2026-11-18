@@ -1,21 +1,22 @@
 'use strict';
 
-// #3709 — the Communities tab keeps the word "Communities" wherever it is.
+// #3709 — the Communities tab says "Communities" wherever you are.
 //
 // #852 (#3455) made the fourth tab a community: its tile in a ring, and, as
 // its label, the community's own name cut short ("Recipe Box"). The owner
-// asked for the word back. The tile still says which community the tab is
-// on; the label under it, on the phone's bar and on the desktop rail (one
-// anchor, which app.css lays out for both), always says Communities.
+// asked for the word back (#3709), and the ring kept saying which community
+// the tab was on. One Home (#6361) then drew the tab on neither bar. It is
+// back (18 Nov 2026) as a plain door to its page, `#communities`: the people
+// glyph and the word, on the phone's bar and the desktop sidebar (one
+// anchor, which app.css lays out for both), whatever community you were on.
 //
 // Pinned, each a way the tab can be quietly wrong again:
 //
-//   1. ON A COMMUNITY, THE LABEL IS STILL "Communities", and the ring still
-//      holds that community's tile, so nothing about WHICH one is lost.
-//   2. THE SPOKEN NAME STARTS WITH THE WORD ON SCREEN and names the community
-//      after it, so a voice command that says "Communities" still finds it.
-//   3. ON ALL COMMUNITIES NOTHING CHANGED: the people glyph, the word, and no
-//      label of its own, exactly as the prerender ships it.
+//   1. WITH A COMMUNITY CHOSEN, THE TAB IS STILL THE GLYPH AND THE WORD: no
+//      tile, no ring, no name.
+//   2. THE SPOKEN NAME IS THE WORD ON SCREEN, and only the votes waiting add
+//      to it, after the word.
+//   3. WITH NONE CHOSEN it is the same tab, exactly as the prerender ships it.
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -52,53 +53,53 @@ const workshopTab = (html) => {
 const labelOf = (tab) => (tab.match(/<span class="platform-tab-label">([^<]*)<\/span>/) || [])[1];
 const openTag = (tab) => tab.slice(0, tab.indexOf('>') + 1);
 
-// ── 1. On a community ─────────────────────────────────────────────────
+// ── 1. With a community chosen ───────────────────────────────────────
 
-test('on a community the tab still says Communities, under that community\'s tile', () => {
+test('with a community chosen the tab is still the people glyph and the word', () => {
   const tab = workshopTab(render('recipes'));
   assert.equal(labelOf(tab), 'Communities', 'the word, not the community\'s name');
-  assert.doesNotMatch(tab, /class="platform-tab-label">Recipe/, 'no part of the name is the label');
-  assert.match(tab, /<span class="platform-tab-ring" style="--ring:[^"]+" aria-hidden="true"><span class="app-icon-tile platform-tab-tile"/,
-    'the ring still holds the community\'s own tile, so the tab still says which one');
-  assert.doesNotMatch(tab, /platform-tab-ring-all/, 'and not the All communities glyph');
+  assert.doesNotMatch(tab, /Recipe/, 'no part of the name is on the tab');
+  assert.match(tab, /<span class="platform-tab-mark"><svg[^>]* class="platform-tab-glyph"/, 'its own glyph, as every tab\'s is');
+  assert.doesNotMatch(tab, /platform-tab-ring|platform-tab-tile|app-icon-tile/, 'no ring and no community\'s tile');
+  assert.doesNotMatch(TAB_BAR, /CommunityTabFace/, 'the face that named a community is gone');
 });
 
 // ── 2. The spoken name ────────────────────────────────────────────────
 
-test('its accessible name starts with the word on screen and names the community after it', () => {
+test('its accessible name is its text, and names no community', () => {
   const tab = workshopTab(render('recipes'));
-  assert.match(openTag(tab), /aria-label="Communities, on Recipe Box of the Week"/,
-    'the whole name is spoken, since nothing is cut for room there');
-  assert.equal(ui.communitiesAriaLabel({ name: 'Garden' }), 'Communities, on Garden');
-  assert.equal(ui.communitiesAriaLabel(null), undefined);
+  assert.doesNotMatch(openTag(tab), /aria-label=/, 'its text is its name');
+  assert.equal(ui.communitiesAriaLabel(), undefined);
+  assert.equal(ui.communitiesAriaLabel(0), undefined, 'at zero, as the prerender ships it');
 });
 
 test('#5040: with votes waiting, the spoken name says what the blue number counts', () => {
-  assert.equal(ui.communitiesAriaLabel({ name: 'Garden' }, 5), 'Communities, on Garden, 5 votes waiting on you');
-  assert.equal(ui.communitiesAriaLabel({ name: 'Garden' }, 1), 'Communities, on Garden, 1 vote waiting on you');
-  assert.equal(ui.communitiesAriaLabel(null, 1), 'Communities, 1 vote waiting on you');
-  assert.equal(ui.communitiesAriaLabel(null, 7), 'Communities, 7 votes waiting on you');
-  assert.equal(ui.communitiesAriaLabel(null, 0), undefined, 'at zero, as the prerender ships it');
+  assert.equal(ui.communitiesAriaLabel(1), 'Communities, 1 vote waiting on you');
+  assert.equal(ui.communitiesAriaLabel(7), 'Communities, 7 votes waiting on you');
   const before = ui.communityScopeStore.get();
-  ui.communityScopeStore.set({ slug: 'recipes', info: { recipes: { ...RECIPES, needs: 3 } } });
+  ui.communityScopeStore.set({ slug: 'recipes', info: { recipes: { ...RECIPES, needs: 3 } }, badgeNeeds: 5 });
   let tab;
   try {
     tab = workshopTab(renderToHtml(createElement(ui.PlatformTabs, {})));
   } finally {
     ui.communityScopeStore.set(before);
   }
-  assert.match(openTag(tab), /aria-label="Communities, on Recipe Box of the Week, 3 votes waiting on you"/);
-  assert.match(openTag(tab), /title="3 votes waiting on you"/, 'pointed at, it says the same');
+  // Every vote waiting on you, not the chosen community's alone: the tab is
+  // the door to all of them.
+  assert.match(openTag(tab), /aria-label="Communities, 5 votes waiting on you"/);
+  assert.match(openTag(tab), /title="5 votes waiting on you"/, 'pointed at, it says the same');
+  assert.match(tab, /<span class="platform-tab-votes" aria-label="5 votes waiting on you">5<\/span>/, 'the one number, at both widths');
+  assert.doesNotMatch(tab, /platform-tab-all-votes|platform-tab-all-label/, 'the sidebar\'s All row is gone with its own count');
   assert.doesNotMatch(openTag(workshopTab(render('recipes'))), /title=/, 'no votes, no tooltip');
 });
 
-// ── 3. All communities ────────────────────────────────────────────────
+// ── 3. With none chosen ───────────────────────────────────────────────
 
-test('on All communities the tab is unchanged: the glyph, the word, and the shipped markup', () => {
+test('with no community chosen the tab is the same: the glyph, the word, and the shipped markup', () => {
   const tab = workshopTab(render(null));
   assert.equal(labelOf(tab), 'Communities');
-  assert.match(tab, /platform-tab-ring platform-tab-ring-all/, 'the people glyph in its ring');
   assert.doesNotMatch(openTag(tab), /aria-label=/, 'its text is its name');
+  assert.equal(tab, workshopTab(render('recipes')), 'the community chosen changes nothing on it');
   // The first client render is the shipped document's, or hydration fails.
   assert.equal(tab, workshopTab(HTML).replace(/ aria-current="page"/, ''),
     'the store\'s INITIAL renders exactly the shipped tab');
@@ -107,11 +108,9 @@ test('on All communities the tab is unchanged: the glyph, the word, and the ship
 test('nothing in the tab bar puts a community\'s name in a label any more', () => {
   assert.doesNotMatch(TAB_BAR, /shortName\(/, 'the cut-down name is gone from the bar');
   // The declared check on a community's page: the checks run at 1280px,
-  // where One Home (#6361) draws no Communities tab at all, so it pins the
-  // community's own row in Recents, lit; the phone's "Communities, on …" is
-  // communitiesAriaLabel's, pinned above, for the node that stays.
+  // where the sidebar lights the community's own row in Recents rather than
+  // the Communities row, so it pins that row.
   const check = DAPP.tests.find((t) => /^On a wide window the sidebar's Recents lists your communities/.test(t.name));
   assert.ok(check, 'the declared check for a community\'s row is still there');
   assert.match(check.expectSelector, /\.platform-rail-row\[data-rail-row="usernode-2d5619"\] > a\.platform-rail-community\[aria-current="page"\]/);
-  assert.doesNotMatch(check.expectSelector, /#platform-tab-workshop/, 'the tab is drawn on neither bar');
 });

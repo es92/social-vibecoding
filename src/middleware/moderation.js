@@ -20,8 +20,17 @@ function moderationGuard(config, { pool = getPool(config) } = {}) {
       }
       const appPath = req.path.match(/^\/api\/(?:public\/)?apps\/([^/]+)(?:\/|$)/i);
       if (appPath) {
-        const result = await pool.query('SELECT id, moderation_suspended_at FROM apps WHERE slug = $1', [decodeURIComponent(appPath[1])]);
-        if (await require('../services/app-blocks').isBlocked(pool, req.user?.id, result.rows[0]?.id)) {
+        // One round trip for the app and the viewer's block on it (#6796):
+        // every /api/apps/:slug/* call passes here, and the block was a
+        // second query behind the first (app-blocks.js isBlocked's rule).
+        const userId = Number.isInteger(Number(req.user?.id)) && req.user?.id != null ? Number(req.user.id) : null;
+        const result = await pool.query(
+          `SELECT a.id, a.moderation_suspended_at,
+                  ($2::int IS NOT NULL AND EXISTS (
+                     SELECT 1 FROM user_app_blocks b WHERE b.user_id = $2::int AND b.app_id = a.id)) AS blocked
+             FROM apps a WHERE a.slug = $1`,
+          [decodeURIComponent(appPath[1]), userId]);
+        if (result.rows[0]?.blocked === true) {
           return res.status(403).json({ error: 'You blocked this app. Unblock it in Settings → Blocked apps.', code: 'app_blocked' });
         }
         if (result.rows[0]?.moderation_suspended_at) return res.status(403).json({ error: 'App suspended by moderation', code: 'app_suspended' });

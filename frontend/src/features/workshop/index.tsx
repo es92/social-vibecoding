@@ -7,12 +7,13 @@
  * This root was the Communities screen: the list of every community you
  * are in, under a search and audience chips, with a Needs you row at its
  * top that opened the cross-project feed as a page of its own. One Home
- * made Home the one page of apps and communities (its Pinned communities
- * and their All communities tile are the list now), and the list went. The
- * feed stays, as its own page: the vote digest's notification opens it, and
- * so does Home's Needs you tile, which carries the number of votes waiting.
- * `#communities` and `#workshop`, the screen's addresses, land on Home; with
- * `?ws=needs` they land here (public/js/app.js restoreFromHash).
+ * (#6361) took the list to Home, and it is the Communities tab's page now
+ * (../communities/, `#communities`, 18 Nov 2026). The feed stays here, as
+ * its own page: the vote digest's notification opens it, and so do the
+ * Needs you tile on the Communities page and Home's Needs you card, each
+ * with the number of votes waiting. `#communities` and `#workshop`, the
+ * old screen's addresses, open the Communities page; with `?ws=needs` they
+ * land here (public/js/app.js restoreFromHash).
  *
  * The header names the page and holds the way back, an arrow up to Home
  * (App._BACK_SLOT): the page is a level under Home, as Challenges is under

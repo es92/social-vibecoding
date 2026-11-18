@@ -34,7 +34,10 @@ const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
 const SHEET_CONTROLLER = read('frontend/src/lib/sheet-controller.js');
 
 function makeSandbox(panelIds) {
-  const panels = Object.fromEntries(panelIds.map((id) => [id, { id }]));
+  const panels = Object.fromEntries(panelIds.map((id) => [
+    id,
+    { id, contains: (el) => !!el && el.__inPanel === id },
+  ]));
   const sandbox = {
     console,
     Promise,
@@ -43,6 +46,7 @@ function makeSandbox(panelIds) {
     location: { search: '' },
     URLSearchParams,
     document: {
+      activeElement: null,
       getElementById: (id) => panels[id] || null,
       addEventListener: () => {},
     },
@@ -100,7 +104,7 @@ function loadSheetController(kitSurface) {
     tail: 'window.__make = createSheetController;',
   });
   const controller = sandbox.__make({ elementId: 'test-sheet', store });
-  return { controller, store, log, back };
+  return { controller, store, log, back, sandbox };
 }
 
 test('touch: adopted is published with open, and the present sees open first', () => {
@@ -225,6 +229,76 @@ test('every sheet overlay derives data-open from open && !adopted', () => {
       /\{\.\.\.\(open && !adopted \? \{ 'data-open': '' \} : \{\}\)\}/,
       `${file}'s overlay stays down while the kit presents the surface`,
     );
+  }
+});
+
+// ── #6813: opening a sheet puts away the keyboard of a field behind it ──
+//
+// iOS keeps focus on a text field when a button is tapped, so opening the
+// bell while typing left the keyboard up; the kit rides every sheet on the
+// keyboard, so the sheet came up with its title, tabs, search and close above
+// the top of the screen. `open()` now blurs a focused TEXT field outside the
+// sheet — never one inside it (the sheet's own search) and never a button,
+// menu or checkbox, so a sheet opened from another keeps that control.
+
+/** A focusable stand-in for a DOM element, recording its blurs. */
+function element(over = {}) {
+  return {
+    tagName: 'DIV',
+    blurred: 0,
+    blur() { this.blurred += 1; },
+    getAttribute: () => null,
+    ...over,
+  };
+}
+
+test('#6813: a focused text field outside the sheet loses focus when it opens', () => {
+  const { controller, sandbox } = loadSheetController(DESKTOP);
+  const textarea = element({ tagName: 'TEXTAREA' });
+  sandbox.document.activeElement = textarea;
+  controller.open();
+  assert.equal(textarea.blurred, 1, 'the keyboard goes away with the focus');
+});
+
+test('#6813: a text input and editable text behind the sheet are blurred too', () => {
+  const input = element({ tagName: 'INPUT', getAttribute: (n) => (n === 'type' ? 'search' : null) });
+  const { controller, sandbox } = loadSheetController(DESKTOP);
+  sandbox.document.activeElement = input;
+  controller.open();
+  assert.equal(input.blurred, 1);
+
+  const editable = element({ isContentEditable: true });
+  const second = loadSheetController(DESKTOP);
+  second.sandbox.document.activeElement = editable;
+  second.controller.open();
+  assert.equal(editable.blurred, 1, 'a contenteditable holds a keyboard up too');
+});
+
+test('#6813: a field inside the sheet keeps its focus', () => {
+  const { controller, sandbox } = loadSheetController(DESKTOP);
+  const search = element({ tagName: 'INPUT', __inPanel: 'test-sheet' });
+  sandbox.document.activeElement = search;
+  controller.open();
+  assert.equal(search.blurred, 0,
+    'the sheet\'s own search box is the one field it must not take focus from');
+});
+
+test('#6813: a button, menu or checkbox behind the sheet is left alone', () => {
+  for (const [tagName, type] of [
+    ['BUTTON', null],
+    ['INPUT', 'checkbox'],
+    ['INPUT', 'radio'],
+    ['INPUT', 'range'],
+    ['SELECT', null],
+  ]) {
+    const { controller, sandbox } = loadSheetController(DESKTOP);
+    const el = element({
+      tagName,
+      getAttribute: (n) => (n === 'type' ? type : null),
+    });
+    sandbox.document.activeElement = el;
+    controller.open();
+    assert.equal(el.blurred, 0, `${tagName}[${type || ''}] is not holding a keyboard up`);
   }
 });
 

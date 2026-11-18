@@ -145,3 +145,22 @@ test('a hosted build declares its diagram beside its visible changes, on its own
   // asked too, is retired), never drawn by the bot on its own.
   assert.match(read('src/services/homeroom-bot-live.js'), /'declare_diagram once with that kind \(rename, flow, changes or numbers\)/);
 });
+
+// #6815: with nothing visible, the diagram is the only picture voters get, so
+// every builder is asked for one rather than told it is optional.
+test('declare_diagram is expected, not optional, for a change declared impact none', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const read = (rel) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+  const worker = read('worker/visible-changes-mcp.js');
+  const at = worker.indexOf("server.registerTool('declare_diagram'");
+  assert.ok(at > 0);
+  const block = worker.slice(at, worker.indexOf('inputSchema:', at));
+  assert.doesNotMatch(block, /'Optional\./, 'the description no longer opens by calling it optional');
+  assert.match(block, /Expected for every change you declared with declare_visible_changes impact "none"/);
+  assert.match(block, /Call declare_visible_changes first\. Calling again replaces the diagram\./,
+    'the kind rules and limits are kept');
+  assert.match(worker, /After impact none, call declare_diagram: it is the only picture voters get\./);
+  assert.match(read('src/services/homeroom-bot-live.js'),
+    /'If you declared impact "none", always call declare_diagram: it is the only picture voters get\.'/);
+});

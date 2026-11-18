@@ -87,23 +87,13 @@ function appGroupRoutes(config, deps = {}) {
 
   router.get('/api/app-groups', async (req, res) => {
     try {
-      const { rows } = await pool.query(
-        `SELECT g.id, g.key, g.name, g.reported_at,
-                COUNT(m.user_id)::int AS size
-           FROM app_groups g
-           LEFT JOIN app_group_members m ON m.group_id = g.id
-          WHERE g.app_id = $1
-          GROUP BY g.id
-          ORDER BY g.name`,
-        [req.appGroup.appId]
-      );
+      // #6811: the query lives once, in governance.listAppGroups; this route
+      // adds whether a rule already names each group.
+      const groups = await governance.listAppGroups(pool, req.appGroup.appId);
       const named = await readNamedKeys(pool, req.appGroup.appId);
       res.json({
         ok: true,
-        groups: rows.map((r) => ({
-          name: r.name, key: r.key, size: r.size,
-          reportedAt: r.reported_at, named: named.has(r.key),
-        })),
+        groups: groups.map((g) => ({ ...g, named: named.has(g.key) })),
       });
     } catch (err) {
       log.error('app-groups', 'List failed', { err: err.message });

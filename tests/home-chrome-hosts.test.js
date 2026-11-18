@@ -359,7 +359,7 @@ test('nothing on the home screen is an innerHTML host any more', () => {
   // empty <section> left for a module to find by id and fill.
   const island = read('frontend/src/features/home/index.tsx');
   for (const tag of ['<AppGrid />', '<AppsMore />', '<WidgetStrip />',
-    '<PinnedCommunities />', '<ChallengesSection />', '<HomeJoin />']) {
+    '<HomeCommunityMatches />', '<ChallengesSection />', '<HomeJoin />']) {
     assert.ok(island.includes(tag), `the island mounts ${tag}`);
   }
   // One Home (#6361): Discover's lane and the continue card left Home; its

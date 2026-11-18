@@ -92,6 +92,8 @@ class RunControl {
     this.lastToolFailure = null;
     // The slots saved by the call being applied, written back after it.
     this.dirty = new Set();
+    // The slots it removed: a dark shot whose light one was taken again.
+    this.dropped = new Set();
   }
 
   assertLive() {
@@ -177,7 +179,7 @@ class RunControl {
   // One file the agent saved: a screen or element shot, or a clip. Saving the
   // same slot again replaces it, so the agent can retake a poor shot, and
   // saving for a change it skipped takes that skip back.
-  saveShot(rawTarget, buffer) {
+  saveShot(rawTarget, buffer, { check = null } = {}) {
     try {
       this.assertOpen();
       const target = shots.shotTarget(this.intent, rawTarget);
@@ -201,9 +203,13 @@ class RunControl {
       // A dark shot identical to its light one is not kept (#4459): there
       // would be nothing to switch to, and the answer tells the agent this
       // app does not change with the mode, so it can stop taking dark shots.
+      // A dark shot taken where the light one stands may differ from it by
+      // a pixel or two of noise (a caret, a fading toast): the check says
+      // whether there is anything to outline between them (saveChecksFor).
       if (target.theme === 'dark') {
         const light = this.saved.get(shots.slotKey({ ...target, theme: 'light' }));
-        if (light && light.sha256 === sha256) {
+        const darkCheck = check?.kind === 'dark' ? check : null;
+        if (light && (light.sha256 === sha256 || darkCheck?.unchanged === true)) {
           return {
             saved: false,
             change: target.storyId,
@@ -214,6 +220,17 @@ class RunControl {
             hint: 'This screen looks the same in dark mode as in light, so the dark shot was not kept. '
               + 'This app does not change with the mode: leave out the rest of the dark shots.',
           };
+        }
+        // The card shows a dark shot in its light one's frame, outlined and
+        // cropped where the light pair differs (#6787: a light shot at the
+        // top of a page and a dark one scrolled down showed the wrong part
+        // of the page in dark mode). One framed otherwise is refused.
+        if (light && darkCheck?.same === false) {
+          throw new ShotsControlError('dark_not_framed_like_light', darkCheck.reason === 'size'
+            ? 'This dark shot is not the size of its light one. Take it in the same browser at the same screen size.'
+            : `This dark shot does not show the page where its light one does (${darkCheck.reason === 'scrolled'
+              ? 'it is scrolled to another part of the page' : 'it shows another state'}). Take it of the same state, `
+              + 'scrolled to the same place as the light shot, or leave it out.', 400);
         }
       }
       shots.checkElementSize(
@@ -226,8 +243,20 @@ class RunControl {
         ? shots.stored(target, flatBuffer, flat, { density, data: buffer, ...info })
         : shots.stored(target, buffer, info);
       entry.publicSafe = publicSafeOf(rawTarget?.showsPrivate);
+      // A light screen taken again in another state leaves its dark shot
+      // showing the old one: it goes, and is taken again with the new one.
+      const previous = this.saved.get(slot);
+      const darkSlot = target.variant === 'context' && target.theme !== 'dark'
+        ? shots.slotKey({ ...target, theme: 'dark' }) : null;
+      const darkDropped = !!darkSlot && !!previous && previous.sha256 !== sha256 && this.saved.has(darkSlot);
+      if (darkDropped) {
+        this.saved.delete(darkSlot);
+        this.dirty.delete(darkSlot);
+        this.dropped.add(dbSlot({ ...target, theme: 'dark' }));
+      }
       this.saved.set(slot, entry);
       this.dirty.add(slot);
+      this.dropped.delete(dbSlot(target));
       this.skipped.delete(target.storyId);
       this.failed.delete(target.storyId);
       // The same image on the other side says the two sides were not shot
@@ -237,6 +266,9 @@ class RunControl {
         ? this.saved.get(shots.slotKey({ ...target, side: target.side === 'base' ? 'head' : 'base' }))
         : null;
       const sameAsOtherSide = !!otherSide && otherSide.sha256 === sha256;
+      // The element shot leads the change on the card and places its
+      // outline, so it must be part of the screen shot of the same state.
+      const elementMissing = check?.kind === 'element' && check.decided === true && check.found === false;
       return {
         saved: true,
         change: target.storyId,
@@ -252,6 +284,13 @@ class RunControl {
             + 'again. If these copies cannot show the change, call note_change to say what the shots leave out, '
             + 'or skip_change.',
         } : {}),
+        ...(elementMissing ? {
+          elementNotInScreen: true,
+          elementWarning: 'The element shot is not part of this change\'s screen shot on this side: the page moved '
+            + 'between the two (it scrolled, a hover opened something, or the state changed). Take the screen shot '
+            + 'and the element shot again in the same state and save them together.',
+        } : {}),
+        ...(darkDropped ? { darkDropped: true } : {}),
         progress: this.progress(),
       };
     } catch (error) {
@@ -498,6 +537,11 @@ async function load(db, runId, { lock = false } = {}) {
 }
 
 async function persist(db, control, store) {
+  if (control.dropped.size) {
+    await db.query('DELETE FROM shot_run_files WHERE run_id = $1 AND slot = ANY($2::text[])',
+      [control.runId, [...control.dropped]]);
+    control.dropped.clear();
+  }
   const dirty = [...control.dirty].map((key) => control.saved.get(key));
   // Serialize retakes of existing slots before taking shared registry
   // keys, so concurrent saves keep the same row/key lock order.
@@ -716,6 +760,46 @@ async function wantedCloseups(db, control) {
   }));
 }
 
+// What a still is checked against as it is saved (saveShot's `check`): a
+// dark screen against the light screen of the same change, screen and side,
+// and a change's element shot against its screen shot. Run off the request's thread (shots-diff-worker), and
+// left out, never waited on, when it cannot run: a busy process, a bad
+// image or a slow search saves the still unchecked, as before. Read inside
+// withControl (`db` its transaction).
+async function saveChecksFor(db, control, rawTarget, buffer, { checker = comparison.checkSave } = {}) {
+  try {
+    const target = shots.shotTarget(control.intent, rawTarget);
+    if (target.media !== 'png' || !['context', 'focus'].includes(target.variant)) return null;
+    const deviceDensity = control.agent?.deviceDensity === true;
+    const info = shots.inspectImage(buffer, deviceDensity ? { maxBytes: shots.MAX_DENSE_IMAGE_BYTES } : {});
+    const density = control.stillDensity(target, info, rawTarget?.density, deviceDensity);
+    let job = null;
+    if (target.variant === 'context' && target.theme === 'dark') {
+      const light = { ...target, theme: 'light' };
+      if (!control.saved.has(shots.slotKey(light))) return null;
+      const [file] = await filesFor(db, control.runId, [dbSlot(light)]);
+      if (file?.data) job = { kind: 'dark', light: file.data, lightDensity: 1, dark: buffer, darkDensity: density };
+    } else if (target.variant === 'focus') {
+      // Against the screen shot saved for the same side: the bridge uploads
+      // a call's screen shots before its element shots, so that is the
+      // screen of the same state.
+      const screen = { ...target, theme: 'light', variant: 'context' };
+      if (!control.saved.has(shots.slotKey(screen))) return null;
+      const [file] = await filesFor(db, control.runId, [dbSlot(screen)]);
+      if (!file?.data) return null;
+      // A stored still is its 1x copy; an element shot is saved at its
+      // screen's density.
+      job = { kind: 'element', screen: file.data, screenDensity: 1, element: buffer, elementDensity: density };
+    }
+    return job ? await checker(job) : null;
+  } catch (error) {
+    log.warn('shots', 'A saved still could not be checked', {
+      runId: control.runId, code: error?.code, error: String(error?.message || error).slice(0, 300),
+    });
+    return null;
+  }
+}
+
 // The 1x copies of a change's before and after screen shots on one screen,
 // for a close-up's check.
 async function stillsFor(db, control, { change, screen }) {
@@ -737,6 +821,7 @@ module.exports = {
   read,
   filesFor,
   wantedCloseups,
+  saveChecksFor,
   stillsFor,
   remove,
   summaryFor,

@@ -997,8 +997,10 @@ test('the card ends the transcript where the answer lands, in Main Chat and in a
   assert.match(screen, /\}\)\}\n\s+\{threadWorking \? <BotWorkingCard typist=\{threadWorking\} \/> : null\}\n\s+\{privateRoot && privateMine && root \? \(/);
   // The foot is as #6091 left it: the status line still follows Jump to
   // latest, and #6426's Welcome back card sits between it and the box.
-  assert.match(screen, /<\/TranscriptOverlay>\n\s*<ChatStatusLine className="messages-typing">\{typingLine\(t, typing\)\}<\/ChatStatusLine>\n\s*(?:\{mainChat && botDm && conversationId \? <WelcomeBack[^\n]*\/> : null\}\n\s*)?<MessageComposer \/>/);
-  assert.match(screen, /<ChatStatusLine className="messages-typing">\{typingLine\(t, threadTyping\)\}<\/ChatStatusLine>\n\s*<MessageComposer threadRootId=\{rootId\} \/>/);
+  // #6810 hands the box the scroller it sits under, so a collapse it forces
+  // keeps a followed conversation at its newest line; the order is unchanged.
+  assert.match(screen, /<\/TranscriptOverlay>\n\s*<ChatStatusLine className="messages-typing">\{typingLine\(t, typing\)\}<\/ChatStatusLine>\n\s*(?:\{mainChat && botDm && conversationId \? <WelcomeBack[^\n]*\/> : null\}\n\s*)?<MessageComposer scroller=\{scroller\} \/>/);
+  assert.match(screen, /<ChatStatusLine className="messages-typing">\{typingLine\(t, threadTyping\)\}<\/ChatStatusLine>\n\s*<MessageComposer threadRootId=\{rootId\} scroller=\{scroller\} \/>/);
   // An island's first render is the empty transcript: the card waits for the store.
   const card = read('frontend/src/features/messages/bot-working.tsx');
   assert.doesNotMatch(card, /useEffect|fetch\(/);

@@ -45,7 +45,11 @@ const { sameOriginBrowserOnly } = require('../middleware/same-site-browser');
 // owner/shared visibility query has selected which rows the viewer may see.
 // The opened detail uses the same public projection for any visible change;
 // `all` is set only AFTER the per-session privacy gate, never on a board list.
-async function enrichImportedUnderwaySessions(pool, sessions, viewerUserId, { all = false } = {}) {
+//
+// `results` (#6793) is the SELECT fragment for the check results: the stored
+// column by default, or a list's own form (list-test-results.js
+// resultsSelect), which Postgres trims before anything is sent.
+async function enrichImportedUnderwaySessions(pool, sessions, viewerUserId, { all = false, results = 'cs.test_results' } = {}) {
   const list = Array.isArray(sessions) ? sessions : [];
   const ids = list
     .filter((s) => s && (all || (s.source === 'imported'
@@ -64,7 +68,7 @@ async function enrichImportedUnderwaySessions(pool, sessions, viewerUserId, { al
             cs.external_agent,
             cs.merge_conflict_state, cs.behind_main, cs.conflict_files,
             cs.conflict_checked_at, cs.console_check_state, cs.console_errors,
-            cs.console_checked_at, cs.check_state, cs.test_results,
+            cs.console_checked_at, cs.check_state, ${results},
             cs.checks_checked_at, cs.checks_commit_sha, cs.checks_base_sha,
             cs.checks_base_verdict, cs.checks_base_behind_by,
             cs.mergeability, cs.mergeability_files,
@@ -95,6 +99,9 @@ async function enrichImportedUnderwaySessions(pool, sessions, viewerUserId, { al
         AND cs.status IN ('active', 'paused')))`,
     [ids, all]
   );
+  // The list form's fields; the unit suite's own row is the server's alone.
+  listTestResults.unpackListed(rows);
+  for (const row of rows) delete row.test_results_unit_row;
 
   const rowsByApp = new Map();
   for (const row of rows) {
@@ -1358,7 +1365,16 @@ function sessionRoutes(config) {
                 cs.staging_url, cs.imported_pr_author, cs.imported_pr_head_repo,
                 cs.imported_pr_head_sha, cs.reviewed_head_sha, a.repo_url,
                 cs.check_state, cs.check_phase, cs.check_error_detail,
-                cs.test_results, cs.spec_md,
+                -- #6793: only what this list reads. The checks that did not
+                -- pass, and only for a failing run (summarizeFailingChecks);
+                -- the plan, only where sessionAwaitsInput would read it.
+                CASE WHEN cs.check_state = 'failing' AND jsonb_typeof(cs.test_results) = 'array'
+                     THEN (SELECT COALESCE(jsonb_agg(e.v ORDER BY e.n)
+                                    FILTER (WHERE (e.v->>'status' = 'pass') IS NOT TRUE), '[]'::jsonb)
+                             FROM jsonb_array_elements(cs.test_results) WITH ORDINALITY AS e(v, n))
+                     ELSE '[]'::jsonb END AS failing_results,
+                CASE WHEN lt.role = 'assistant' AND lt.asks IS NOT TRUE AND cs.pr_number IS NULL
+                     THEN cs.spec_md END AS spec_md,
                 cs.agent_backend, cs.agent_model, cs.external_agent, cs.build_venue,
                 GREATEST(cs.created_at, COALESCE(m.last_message_at, cs.created_at)) AS last_activity_at,
                 lt.role AS last_turn_role, lt.asks AS last_turn_asks,
@@ -1427,7 +1443,9 @@ function sessionRoutes(config) {
             : {}),
         };
       });
-      sessions = await enrichImportedUnderwaySessions(pool, sessions, req.user.id);
+      sessions = await enrichImportedUnderwaySessions(pool, sessions, req.user.id, {
+        results: listTestResults.resultsSelect(req, 'cs'),
+      });
       // #6042: a merging or merged row holds no slot — the caps count work
       // that can be paused or withdrawn, and a merged change is neither —
       // so the reduce names them explicitly instead of letting the `else`
@@ -1514,7 +1532,10 @@ function sessionRoutes(config) {
       // so this summary could be built, so it goes back off the wire.
       for (const row of sessions) {
         if (!row) continue;
-        const summary = summarizeFailingChecks(row.check_state, row.test_results);
+        // #6793: summarised from the failing rows the query kept (with their
+        // excerpts), which then go back off the wire.
+        const summary = summarizeFailingChecks(row.check_state, row.failing_results);
+        delete row.failing_results;
         if (row.source !== 'imported') delete row.test_results;
         if (summary.total) row.failing_checks = summary;
       }
@@ -1857,7 +1878,9 @@ function sessionRoutes(config) {
         ...s,
         busy: workedOn === true || isSessionBusy(s.id),
       }));
-      sessions = await enrichImportedUnderwaySessions(pool, sessions, req.user?.id || null);
+      sessions = await enrichImportedUnderwaySessions(pool, sessions, req.user?.id || null, {
+        results: listTestResults.resultsSelect(req, 'cs'),
+      });
 
       // Staging-only demo rows (?demo=1): read-only visual states a boot
       // seed can't hold live (busy spinner, Preview pill). Fake ids in the
@@ -1927,6 +1950,7 @@ function sessionRoutes(config) {
                 cs.source, cs.imported_pr_head_sha, cs.reviewed_head_sha,
                 cs.shots_state, cs.shots_run_id,
                 cs.shots_detail, cs.shots_updated_at,
+                cs.close_reason,
                 cs.app_id, a.slug AS app_slug
            FROM chat_sessions cs
            JOIN apps a ON a.id = cs.app_id

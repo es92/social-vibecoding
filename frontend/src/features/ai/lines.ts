@@ -50,6 +50,8 @@ export interface Line {
   lit?: boolean;
   /** #6262: someone has written in its thread since you last opened it. */
   fresh?: boolean;
+  /** 18 Nov 2026: it moved while the page was up (./model.ts movedSince), so it is not folded. */
+  moved?: boolean;
   open: () => void;
   /** #6159: a private thread's row: its ⋯ has Mark done. */
   done?: { rootId: number; mark: () => void } | null;
@@ -274,6 +276,7 @@ export function useAiLines({
     // is where you are while it is in the column.
     lit: !!lit && rowKey(th) === lit,
     fresh: (th.unread || 0) > 0,
+    moved: th.moved === true,
     open: () => openThread(th),
     at: th.at,
   });

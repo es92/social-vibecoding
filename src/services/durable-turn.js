@@ -196,6 +196,12 @@ async function release(worker, sessionId, ids) {
  *   fullBudgetAgain  a turn started again after its record was lost gets its
  *     whole clock, not what was left of it (a read, which a restart cannot
  *     observe on a branch and which a minute of clock cannot finish)
+ *   prepare()    readies what a turn about to be started runs on (its
+ *     worker), before its clock starts: the time it takes is not the turn's.
+ *     Not called for a turn a restart caught, which is running already. A
+ *     prepare that fails says so through what dispatch then does (the
+ *     shots' records the error and its dispatch returns it); one that throws
+ *     is the dispatch failing.
  *
  * Resolves { routed, stopped, stoppedBy, followed }: `stoppedBy` is a Stop
  * asked of the turn on its record (a person's, or its machine's), read as
@@ -204,7 +210,7 @@ async function release(worker, sessionId, ids) {
  */
 async function runTurn(steps, key, {
   pool, session, mode, budgetMs, dispatch, stop = null, head = null, observe = null, onProgress = null, deps = {},
-  owner = null, fullBudgetAgain = false,
+  owner = null, fullBudgetAgain = false, prepare = null,
 }) {
   const worker = deps.worker || require('./worker');
   const k = `turn:${key}`;
@@ -226,8 +232,9 @@ async function runTurn(steps, key, {
   const turnOwner = owner || steps?.turnOwner || null;
   const ownerExtra = turnOwner ? { owner: turnOwner } : {};
   if (!steps.active) {
-    arm(budgetMs);
     try {
+      if (typeof prepare === 'function') await prepare();
+      arm(budgetMs);
       return { routed: await dispatch({ ...ownerExtra }), stopped, followed: false };
     } catch (err) {
       // The dispatch failing is the turn failing, as a durable step reads it.
@@ -319,6 +326,16 @@ async function runTurn(steps, key, {
     deadlineAt = Number(saved.deadlineAt) || null;
   }
 
+  // What it runs on, first: off its clock, which has not started.
+  if (typeof prepare === 'function') {
+    try {
+      await steps.race(Promise.resolve().then(prepare));
+    } catch (err) {
+      durableSteps.rethrowStop(err, `turn ${key}`);
+      if (err?.retainActiveTurn) throw err;
+      return finish({ routed: { error: `dispatch: ${err.message}` }, stopped: false, followed: false }, null);
+    }
+  }
   // Start it (or start it again): on what is left of its clock, if it had one.
   const left = deadlineAt && !fullBudgetAgain ? Math.max(MIN_REDISPATCH_MS, deadlineAt - now()) : budgetMs;
   const headBefore = typeof head === 'function' ? await head().catch(() => null) : null;
