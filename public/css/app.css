@@ -29453,7 +29453,13 @@ body:has(#ai-screen:not(.hidden)) .side-panel[data-thread-pill] > .side-panel-di
 }
 html:is(:not([data-skin]), [data-skin="brand"]) .side-panel-divider::after { display: none; }
 @media (hover: hover) {
-  :is(.split-handle, .side-panel-divider):hover::before { opacity: .5; }
+  :is(.split-handle[data-armed], .side-panel-divider):hover::before { opacity: .5; }
+}
+/* A finger never hovers: on a touch screen the grip is drawn at rest, as
+   the side panel's own divider already drew it (its coarse-pointer rule
+   above, which this block's opacity would otherwise put out). */
+@media (pointer: coarse) {
+  :is(.split-handle, .side-panel-divider)::before { opacity: .5; }
 }
 :is(.split-handle, .side-panel-divider):focus-visible::before,
 html.side-panel-resizing :is(.split-handle, .side-panel-divider)::before { opacity: .9; background: var(--accent); }

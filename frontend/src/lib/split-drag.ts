@@ -55,6 +55,29 @@ export function splitKey(key: string, step: number, drag: SplitDrag): boolean {
   return true;
 }
 
+/**
+ * THE GRIP SHOWS ONLY FOR A POINTER THAT CAME TO IT (18 Nov 2026). A handle
+ * can arrive under a pointer that is not moving: pressing a row opens the
+ * Workshop's panel, the list narrows, and the line between them lands where
+ * the press was, so `:hover` lit the grip with nobody reaching for it. The
+ * handle is armed by a real move over it (the browser's own re-hover after a
+ * layout reports no movement) and disarmed when the pointer leaves; app.css
+ * shows the grip on hover only while armed. Returns the cleanup.
+ */
+export function armOnMove(el: HTMLElement | null): () => void {
+  if (!el) return () => {};
+  const move = (e: PointerEvent) => {
+    if (e.movementX || e.movementY) el.setAttribute('data-armed', '');
+  };
+  const leave = () => el.removeAttribute('data-armed');
+  el.addEventListener('pointermove', move);
+  el.addEventListener('pointerleave', leave);
+  return () => {
+    el.removeEventListener('pointermove', move);
+    el.removeEventListener('pointerleave', leave);
+  };
+}
+
 /** A stored width, or null when there is none (or storage is refused). */
 export function readSplitWidth(key: string, min: number): number | null {
   try {

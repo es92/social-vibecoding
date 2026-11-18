@@ -68,7 +68,7 @@ import { useEffect, useRef, type RefObject } from 'react';
 
 import { ChatComposerBar } from '@/components/ui/chat';
 import { useMessages } from '../../lib/i18n/react';
-import { readSplitWidth, splitKey, startSplitDrag, writeSplitWidth, type SplitDrag } from '../../lib/split-drag';
+import { armOnMove, readSplitWidth, splitKey, startSplitDrag, writeSplitWidth, type SplitDrag } from '../../lib/split-drag';
 import { JumpToLatest } from '../messages/jump-to-latest';
 import { ComposerForm, ComposerSlots, StatusLine } from './composer';
 
@@ -99,11 +99,14 @@ function RailDivider({ sheet }: { sheet: RefObject<HTMLElement | null> }) {
     return rail ? rail.getBoundingClientRect().width : 332;
   };
   const drag: SplitDrag = { start: now, apply, done: () => writeSplitWidth(RAIL_W_KEY, now()), trailing: true };
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     apply(readSplitWidth(RAIL_W_KEY, RAIL_MIN));
+    return armOnMove(ref.current);
   }, []);
   return (
     <div
+      ref={ref}
       className="dev-request-rail-divider split-handle"
       role="separator"
       aria-orientation="vertical"

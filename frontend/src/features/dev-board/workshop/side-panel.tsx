@@ -43,7 +43,7 @@ import { ArrowRightIcon, XIcon } from '@/components/ui/icons';
 
 import { useMessages } from '../../../lib/i18n/react';
 import { dirSign } from '../../../lib/i18n/direction';
-import { readSplitWidth, splitKey, startSplitDrag, writeSplitWidth, type SplitDrag } from '../../../lib/split-drag';
+import { armOnMove, readSplitWidth, splitKey, startSplitDrag, writeSplitWidth, type SplitDrag } from '../../../lib/split-drag';
 import { callAppView } from '../card/fold';
 import { DetailSlot } from '../../detail/detail-slot';
 import { setWorkshopSideActions } from './side-actions';
@@ -196,7 +196,8 @@ function SideDivider(): ReactNode {
     place();
     const late = window.setTimeout(place, 600);
     window.addEventListener('resize', place);
-    return () => { window.clearTimeout(late); window.removeEventListener('resize', place); };
+    const disarm = armOnMove(ref.current);
+    return () => { window.clearTimeout(late); window.removeEventListener('resize', place); disarm(); };
   }, []);
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => startSplitDrag(e, LIST_DRAG);
   const onKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
