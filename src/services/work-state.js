@@ -422,7 +422,15 @@ function deriveFacts(row, { now = new Date() } = {}) {
   // read "Ready to build · Number 1 in line" beside Let the bot build it
   // now. `ready` says a build is waiting behind the hold (botWorkOf).
   if (planHeld && out && out.stage === 'building' && READY.has(out.line?.code)) return planning({ ready: true });
-  if (out) return out;
+  // 19 Nov 2026 (#6864): a plan waiting for Build it is no longer the
+  // requester's move once somebody's own change for the request is under
+  // way, up for a vote or merged (the lc join: a closed one is not): the
+  // request stands where that change does, below. It read "Review plan" in
+  // Needs you beside a change up for a vote, on a page with no Build it to
+  // press. A change of the bot's own (`status`) is never beside a waiting
+  // plan, and a closed change of somebody's leaves the plan waiting again.
+  const planOvertaken = !!out && out.stage === 'waiting_for_you' && out.why === 'plan' && !status && !!row.lc_status;
+  if (out && !planOvertaken) return out;
 
   // A change somebody made for it, when Homeroom bot has none of its own:
   // that is where it stands, whatever an older look of the bot's said.

@@ -204,6 +204,23 @@ test('the requester\'s move is always waiting_for_you, with why', () => {
   assert.equal(blocked.why, 'needs_detail');
 });
 
+// 19 Nov 2026 (#6864): the bot's plan waited for Build it, and its requester
+// built the request themselves. Needs you still said "Review plan" beside
+// their change, on a page with no Build it to press.
+test('a plan waiting for Build it gives way to somebody\'s own change for the request', () => {
+  const plan = { verdict: 'ready', build_ok: null, plan_waiting_at: ago(90) };
+  const checking = derive({ ...plan, lc_status: 'promoted', lc_by: 'evan', lc_promoted_at: ago(10), lc_check_state: 'pending' });
+  assert.equal(checking.stage, 'checking', 'their change is up and being checked');
+  assert.notEqual(checking.why, 'plan');
+  const building = derive({ ...plan, lc_status: 'active', lc_by: 'evan', lc_last_activity_at: ago(5) });
+  assert.deepEqual([building.stage, building.line, building.whoseMove], ['building', { code: 'claimed', by: 'evan' }, 'builder']);
+  const live = derive({ ...plan, lc_status: 'merged', lc_by: 'evan', lc_merged_at: ago(5), lc_live_at: ago(4) });
+  assert.equal(live.stage, 'live');
+  // Without a change of somebody's (a closed one is not read), it still waits.
+  const waits = derive(plan);
+  assert.deepEqual([waits.stage, waits.why], ['waiting_for_you', 'plan']);
+});
+
 test('a change\'s stages: checking, up for a vote, going live, live; a first version goes live without a vote', () => {
   const change = { proposal_session_id: 50, proposal_at: ago(60), checks_sha: 'a', reviewed_head_sha: 'a', verdict: 'ready', build_ok: true };
   assert.equal(derive({ ...change, proposal_status: 'promoted', check_state: 'pending' }).stage, 'checking');
