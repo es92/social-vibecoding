@@ -6119,6 +6119,42 @@
     "text": "That didn't work. Try again in a moment.",
     "description": "Line on a thread's live draft bar when opening, proposing or closing the draft failed for a reason the server did not say."
   },
+  "liveDraft.foot.title": {
+    "text": "Live preview",
+    "description": "Headline of the foot on a private thread's opening card while its live preview is open (Show preview, Close draft beside it)."
+  },
+  "liveDraft.foot.none": {
+    "text": "Tell Homeroom bot what to change.",
+    "description": "Under \"Live preview\" on a private thread's opening card, before any change has been made in the preview."
+  },
+  "liveDraft.foot.edits_one": {
+    "text": "{{count}} change so far",
+    "description": "Under \"Live preview\" on a private thread's opening card: how many changes Homeroom bot has made in the preview (one)."
+  },
+  "liveDraft.foot.edits_other": {
+    "text": "{{count}} changes so far",
+    "description": "Under \"Live preview\" on a private thread's opening card: how many changes Homeroom bot has made in the preview (several)."
+  },
+  "liveDraft.foot.starting": {
+    "text": "Starting. The first one takes a minute or two.",
+    "description": "Under \"Live preview\" on a private thread's opening card while the preview starts for the first time."
+  },
+  "liveDraft.foot.rebuilding": {
+    "text": "Building it again for that change. This takes a minute or two.",
+    "description": "Under \"Live preview\" on a private thread's opening card while the preview is rebuilt after a change."
+  },
+  "liveDraft.foot.failed": {
+    "text": "The preview couldn't start",
+    "description": "Headline of the foot on a private thread's opening card when its live preview failed to start."
+  },
+  "liveDraft.foot.failedSub": {
+    "text": "A problem on Homeroom's side, not your app. Close the draft and ask Homeroom bot to open it again in a few minutes.",
+    "description": "Under \"The preview couldn't start\" on a private thread's opening card."
+  },
+  "liveDraft.foot.proposed": {
+    "text": "Put up for a vote",
+    "description": "Headline of the foot on a private thread's opening card once its live preview's changes were proposed; an Open change link sits beside it."
+  },
   "newThread.starts.live.label": {
     "text": "I want to change an app live<0>…</0>",
     "description": "A pill in a new thread with Homeroom bot, shown once a project is picked: Homeroom bot opens a live preview of a draft of the project's app beside the chat and changes it as the person talks. Tapping it writes the same words (without the \"…\") into the message box for the person to finish. <0> is the \"…\", drawn fainter."

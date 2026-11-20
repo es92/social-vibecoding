@@ -19508,6 +19508,26 @@ html:is(:not([data-skin]), [data-skin="brand"]) #ai-screen .dev-private-thread .
    author row gives way, as the card's does: `.dev-thread-card
    .messages-message-head`). */
 html:is(:not([data-skin]), [data-skin="brand"]) #ai-screen .dev-private-thread [data-thread-page-post] .messages-message { padding: 0; }
+/* THE OPENING CARD HOLDS ONLY WHERE THE THREAD STANDS when there is no
+   opening line to show (a thread begun from New chat: its first line is the
+   bot's "New thread.", which is not drawn). The card's foot is then the
+   whole card, a band from its top to its rounded end, as Filed or the live
+   preview. With nothing to hold, the card is not drawn, and the replies'
+   card is the first on the page; the page is still drawn as cards, which
+   the rules read off the card being there. */
+html:is(:not([data-skin]), [data-skin="brand"]) #ai-screen .dev-private-thread [data-thread-page-post]:has(> .dev-thread-card:empty) { display: none; }
+html:is(:not([data-skin]), [data-skin="brand"]) #ai-screen .dev-private-thread [data-thread-page-post]:has(> .dev-thread-card:empty) + [data-thread-page-replies] { margin-top: 0; }
+html:is(:not([data-skin]), [data-skin="brand"]) #ai-screen .dev-private-thread [data-thread-page-post]:has(> .dev-thread-card > :first-child:not(.min-w-0)) { padding-top: 0; }
+html:is(:not([data-skin]), [data-skin="brand"]) #ai-screen .dev-private-thread .dev-request-root.dev-thread-card:has(> :first-child:not(.min-w-0)) { padding-top: 0; }
+html:is(:not([data-skin]), [data-skin="brand"]) #ai-screen .dev-private-thread .dev-thread-card > .dev-thread-foot:first-child { display: flex; }
+html:is(:not([data-skin]), [data-skin="brand"]) #ai-screen .dev-private-thread .dev-thread-card > [data-live-draft-foot]:first-child { display: block; }
+html:is(:not([data-skin]), [data-skin="brand"]) #ai-screen .dev-private-thread .dev-thread-card > .dev-thread-foot:first-child,
+html:is(:not([data-skin]), [data-skin="brand"]) #ai-screen .dev-private-thread .dev-thread-card > [data-live-draft-foot]:first-child > .dev-thread-foot {
+  margin-top: 0;
+  border-top: 0;
+  border-start-start-radius: var(--thread-card-r);
+  border-start-end-radius: var(--thread-card-r);
+}
 html:is(:not([data-skin]), [data-skin="brand"]) #ai-screen .dev-private-thread [data-thread-page-post] .messages-message > :first-child:not(.min-w-0) { display: none; }
 html:is(:not([data-skin]), [data-skin="brand"]) #ai-screen .dev-private-thread [data-thread-page-post] .messages-message-image { max-width: min(240px, 100%); }
 /* The replies card's rows are a public thread's: face, name and time on the

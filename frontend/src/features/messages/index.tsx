@@ -2439,18 +2439,21 @@ function ReplyThreadPanel({ alone = false, onBack = null }: {
             </>
           )}
         >
-          {rootRow || footShown ? (
-            <div className="dev-thread-page-post" data-thread-page-post="">
-              <div className="dev-request-root dev-thread-card" data-thread-card="">
-                {rootRow ? <div className="min-w-0">{rootRow}</div> : null}
-                {footShown ? (
-                  <PrivateThreadFoot where={privateWhere} rootId={privateRoot}
-                    onChanged={(state) => { if (privateWhere) setPrivateWhere({ ...privateWhere, state }); }} />
-                ) : null}
-              </div>
+          {/* The opening card is always drawn, as a public page's is, so the
+              page is always drawn as cards (app.css reads the card). A thread
+              begun from New chat shows no opening line (the bot's "New
+              thread.", above), so its card holds only where the thread stands,
+              and with nothing to hold it is not drawn at all. */}
+          <div className="dev-thread-page-post" data-thread-page-post="">
+            <div className="dev-request-root dev-thread-card" data-thread-card="">
+              {rootRow ? <div className="min-w-0">{rootRow}</div> : null}
+              {footShown ? (
+                <PrivateThreadFoot where={privateWhere} rootId={privateRoot}
+                  onChanged={(state) => { if (privateWhere) setPrivateWhere({ ...privateWhere, state }); }} />
+              ) : null}
+              {privateMine && privateRoot && privateWhere?.state === 'open' ? <LiveDraftBar rootId={privateRoot} foot /> : null}
             </div>
-          ) : null}
-          {privateMine && privateRoot && privateWhere?.state === 'open' ? <LiveDraftBar rootId={privateRoot} /> : null}
+          </div>
           <div className="dev-thread-page-replies" data-thread-page-replies="">{repliesPart}</div>
         </ThreadPage>
       ) : (
