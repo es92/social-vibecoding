@@ -30300,7 +30300,6 @@ html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:h
   inset-inline: 0;
   z-index: 6;
   height: auto;
-  margin-inline-end: 0 !important;
   padding-block: var(--pill-top) 0;
   box-shadow: none;
   animation: none;
@@ -30548,25 +30547,17 @@ html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:h
 }
 .dev-thread-float-acts .dev-vote-caret { display: none; }
 @keyframes dev-thread-float-in { from { opacity: 0; transform: translateY(-12px); } }
-/* On a wide page "How it got here" stands beside the card under the header,
-   so while the row is folded in, the timeline steps down by the row's height
-   and eases back when it goes; the replies beside it do not move. */
-.dev-request-rail { transition: top 180ms ease, max-height 180ms ease; }
-@media (min-width: 1180px) {
-  html:is(:not([data-skin]), [data-skin="brand"]):not(.in-side-panel) .gc-tab-body:not(:has(> .gc-spec-side-panel-open)) #dev-topic-thread:not(.dev-ws-side-page) .dev-request:has(.dev-request-rail:not(:empty)):has(.dev-thread-float) .dev-request-rail {
-    top: 64px;
-    max-height: calc(100% - var(--pill-under) - 64px) !important;
-  }
-}
+/* On a wide page the head, and so the row folded into it, ends where the
+   card does: "How it got here" beside them stays where it is when the row
+   comes or goes (it stepped down by the row's height while the head ran on
+   over it, until 20 Nov 2026). */
 @media (prefers-reduced-motion: reduce) {
   .dev-thread-float { animation: none; }
   .dev-request-bar > .messages-thread-header { transition: none; }
-  .dev-request-rail { transition: none; }
 }
 /* Reduce motion setting (#6510): the same, when Settings asks for it. */
 :where(html[data-motion="reduce"]) .dev-thread-float { animation: none; }
 :where(html[data-motion="reduce"]) .dev-request-bar > .messages-thread-header { transition: none; }
-:where(html[data-motion="reduce"]) .dev-request-rail { transition: none; }
 @media (max-width: 520px) {
   .dev-thread-float { gap: 8px; padding-inline-start: 16px; }
   .dev-thread-float-acts { gap: 6px; }
@@ -30732,6 +30723,11 @@ body:has(.dev-ws-side) :is(#dev-main-pause-notice, #dev-release-stall-notice, #d
    timeline's column on a wide page (`--composer-end`), where no card
    covers it.
 
+   Both cuts are the card column's alone. On a wide page the timeline
+   stands beside the head, level with its top (20 Nov 2026, the wide
+   block's "THE TIMELINE STARTS ON THE HEAD'S TOP LINE"), so the third
+   layer shows its column whole.
+
    THE REPLY BOX IS AS WIDE AS THE CARDS (20 Nov 2026). The bar kept the
    chat foot's 12px each side, so the box stood 12px inside the cards over
    it, and the strip above stopped 12px short of their edges: a card going
@@ -30741,12 +30737,16 @@ body:has(.dev-ws-side) :is(#dev-main-pause-notice, #dev-release-stall-notice, #d
 html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:has(.dev-thread-card) .dev-request-sheet > .messages-composer { padding-inline: 0; }
 html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:has(.dev-thread-card) #gc-thread-scroll {
   --pill-cut: calc(var(--pill-top) + 24px);
-  -webkit-mask-image: linear-gradient(to bottom, transparent var(--pill-cut), #000 var(--pill-cut)), linear-gradient(#000, #000);
-  mask-image: linear-gradient(to bottom, transparent var(--pill-cut), #000 var(--pill-cut)), linear-gradient(#000, #000);
-  -webkit-mask-size: 100% calc(100% - var(--composer-tuck, 0px)), calc(100% - var(--composer-end, 0px)) var(--composer-tuck, 0px);
-  mask-size: 100% calc(100% - var(--composer-tuck, 0px)), calc(100% - var(--composer-end, 0px)) var(--composer-tuck, 0px);
-  -webkit-mask-position: 0 0, calc(var(--composer-end, 0px) * (1 - var(--rtl-sign)) / 2) 100%;
-  mask-position: 0 0, calc(var(--composer-end, 0px) * (1 - var(--rtl-sign)) / 2) 100%;
+  /* Where the card column starts, from the scroller's left edge: the
+     timeline's column is at its end, which is the left in a right-to-left
+     page. */
+  --cards-x: calc(var(--composer-end, 0px) * (1 - var(--rtl-sign)) / 2);
+  -webkit-mask-image: linear-gradient(to bottom, transparent var(--pill-cut), #000 var(--pill-cut)), linear-gradient(#000, #000), linear-gradient(#000, #000);
+  mask-image: linear-gradient(to bottom, transparent var(--pill-cut), #000 var(--pill-cut)), linear-gradient(#000, #000), linear-gradient(#000, #000);
+  -webkit-mask-size: calc(100% - var(--composer-end, 0px)) calc(100% - var(--composer-tuck, 0px)), calc(100% - var(--composer-end, 0px)) var(--composer-tuck, 0px), var(--composer-end, 0px) 100%;
+  mask-size: calc(100% - var(--composer-end, 0px)) calc(100% - var(--composer-tuck, 0px)), calc(100% - var(--composer-end, 0px)) var(--composer-tuck, 0px), var(--composer-end, 0px) 100%;
+  -webkit-mask-position: var(--cards-x) 0, var(--cards-x) 100%, calc((1 + var(--rtl-sign)) * 50%) 0;
+  mask-position: var(--cards-x) 0, var(--cards-x) 100%, calc((1 + var(--rtl-sign)) * 50%) 0;
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
 }
@@ -30781,7 +30781,7 @@ html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:h
     display: block;
     position: absolute;
     z-index: 4;
-    top: var(--pill-under);
+    top: var(--pill-top);
     bottom: 24px;
     inset-inline-end: calc(var(--thread-rail-w) + var(--thread-rail-gap) / 2 - 12px);
     width: 24px;
@@ -31003,6 +31003,21 @@ html.in-side-panel.side-panel-beside-ai .dev-thread-kicker { display: none; }
      over the timeline. (19 Nov 2026: it says the title, as it does on every
      page; the card under it starts at the words.) */
   html:is(:not([data-skin]), [data-skin="brand"]):not(.in-side-panel) .gc-tab-body:not(:has(> .gc-spec-side-panel-open)) #dev-topic-thread:not(.dev-ws-side-page) .dev-request:has(.dev-request-rail:not(:empty)) .dev-request-bar { margin-inline-end: calc(var(--thread-rail-w) + var(--thread-rail-gap)); }
+  /* …AND THE TIMELINE STARTS ON THE HEAD'S TOP LINE (20 Nov 2026). From
+     19 Nov the head ran on across both columns, over the timeline, and the
+     timeline waited under where the full head ended: tightened, the head
+     left a band of bare page over it. Now the page is two columns from the
+     top, the thread under its head and how it got here beside them: the
+     timeline rises from the scroller's top padding (the head's height, held
+     for the card) to the head's own line, and sticks there. The scroller's
+     cut at the top is the card column's alone (its mask, below), so the
+     timeline is not cut where it now rises into it. */
+  html:is(:not([data-skin]), [data-skin="brand"]):not(.in-side-panel) .gc-tab-body:not(:has(> .gc-spec-side-panel-open)) #dev-topic-thread:not(.dev-ws-side-page) .dev-request:has(.dev-request-rail:not(:empty)):has(.dev-thread-card) .dev-request-rail {
+    --rail-rise: calc(var(--pill-top) - var(--pill-under));
+    top: var(--rail-rise);
+    margin-top: var(--rail-rise);
+    max-height: calc(100% - var(--pill-top)) !important;
+  }
   html:is(:not([data-skin]), [data-skin="brand"]):not(.in-side-panel) .gc-tab-body:not(:has(> .gc-spec-side-panel-open)) #dev-topic-thread:not(.dev-ws-side-page) .dev-request:has(.dev-request-rail:not(:empty)) .dev-request-sheet > :is(.messages-composer, .messages-jump, .messages-status-line) {
     margin-inline-end: calc(var(--thread-rail-w) + var(--thread-rail-gap));
   }

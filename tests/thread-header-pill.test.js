@@ -174,13 +174,16 @@ test('app.css: the cards go under the pill and under the reply box, and no furth
   const block = CSS.slice(at, at + 6000);
   // The top: cut past the head's upper corners, on the id so the looks' own fade
   // (`html[data-skin] … #gc-thread-scroll`) no longer wins in the brand look.
-  assert.match(block, /\.dev-request:has\(\.dev-thread-card\) #gc-thread-scroll \{\n  --pill-cut: calc\(var\(--pill-top\) \+ 24px\);\n  -webkit-mask-image: linear-gradient\(to bottom, transparent var\(--pill-cut\), #000 var\(--pill-cut\)\), linear-gradient\(#000, #000\);/);
+  assert.match(block, /\.dev-request:has\(\.dev-thread-card\) #gc-thread-scroll \{\n  --pill-cut: calc\(var\(--pill-top\) \+ 24px\);\n[\s\S]{0,300}?  -webkit-mask-image: linear-gradient\(to bottom, transparent var\(--pill-cut\), #000 var\(--pill-cut\)\), linear-gradient\(#000, #000\), linear-gradient\(#000, #000\);/);
   assert.doesNotMatch(block, /transparent 4px/, 'no fade across the gap over the pill');
-  // The foot: the strip under the reply box shows across the cards' column,
-  // the whole scroller less the timeline's (20 Nov 2026: it stopped 12px
-  // short of the cards' edges, with the box).
-  assert.match(block, /mask-size: 100% calc\(100% - var\(--composer-tuck, 0px\)\), calc\(100% - var\(--composer-end, 0px\)\) var\(--composer-tuck, 0px\);/);
-  assert.match(block, /mask-position: 0 0, calc\(var\(--composer-end, 0px\) \* \(1 - var\(--rtl-sign\)\) \/ 2\) 100%;/);
+  // Both cuts are the cards' column's: the top one, and the strip under the
+  // reply box, the whole scroller less the timeline's column (20 Nov 2026:
+  // the strip stopped 12px short of the cards' edges, with the box). The
+  // timeline's column is a third layer, shown whole: it rises to the head's
+  // top line beside it.
+  assert.match(block, /--cards-x: calc\(var\(--composer-end, 0px\) \* \(1 - var\(--rtl-sign\)\) \/ 2\);/);
+  assert.match(block, /\bmask-size: calc\(100% - var\(--composer-end, 0px\)\) calc\(100% - var\(--composer-tuck, 0px\)\), calc\(100% - var\(--composer-end, 0px\)\) var\(--composer-tuck, 0px\), var\(--composer-end, 0px\) 100%;/);
+  assert.match(block, /\bmask-position: var\(--cards-x\) 0, var\(--cards-x\) 100%, calc\(\(1 \+ var\(--rtl-sign\)\) \* 50%\) 0;/);
   // The reply box is as wide as the cards over it: the bar has no side padding.
   assert.match(block, /#dev-topic-thread \.dev-request:has\(\.dev-thread-card\) \.dev-request-sheet > \.messages-composer \{ padding-inline: 0; \}/);
   // The scroller runs on under the card by its corner radius.
@@ -318,6 +321,21 @@ test('the head measures itself while full and tightens once the thread scrolls (
     assert.match(src, /const head = useRef<HTMLElement>\(null\);\s+useThreadHeadFit\(head, !frame\);/);
     assert.match(src, /<header ref=\{head\} className="messages-thread-header">/);
   }
+});
+
+test('on a wide page the head is the thread column\'s, and the timeline stands level with it (20 Nov 2026)', () => {
+  // The head no longer overrides the wide layout's own width for the bar.
+  const one = CSS.slice(CSS.indexOf('ONE THREAD, ONE HEADER (18 Nov 2026)'));
+  const bar = one.match(/#dev-topic-thread \.dev-request:has\(\.dev-thread-card\) \.dev-request-bar \{[^}]*\}/);
+  assert.ok(bar, 'the head\'s bar rule');
+  assert.doesNotMatch(bar[0], /margin-inline-end/, 'the bar takes the wide layout\'s end margin');
+  const scope = 'html:is(:not([data-skin]), [data-skin="brand"]):not(.in-side-panel) .gc-tab-body:not(:has(> .gc-spec-side-panel-open)) #dev-topic-thread:not(.dev-ws-side-page) .dev-request:has(.dev-request-rail:not(:empty))';
+  const esc = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  assert.match(CSS, new RegExp(`${esc(scope)} \\.dev-request-bar \\{ margin-inline-end: calc\\(var\\(--thread-rail-w\\) \\+ var\\(--thread-rail-gap\\)\\); \\}`));
+  // The timeline rises from under the head's height to the head's top line, and sticks there.
+  assert.match(CSS, new RegExp(`${esc(scope)}:has\\(\\.dev-thread-card\\) \\.dev-request-rail \\{\\s+--rail-rise: calc\\(var\\(--pill-top\\) - var\\(--pill-under\\)\\);\\s+top: var\\(--rail-rise\\);\\s+margin-top: var\\(--rail-rise\\);\\s+max-height: calc\\(100% - var\\(--pill-top\\)\\) !important;`));
+  // The grip between the two columns runs from the same top line.
+  assert.match(CSS, /\.dev-request-rail-divider \{\s+display: block;\s+position: absolute;\s+z-index: 4;\s+top: var\(--pill-top\);/);
 });
 
 test('the head eases between its sizes and is measured only once it has settled (20 Nov 2026)', async () => {

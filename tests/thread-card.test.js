@@ -626,7 +626,8 @@ test('a foot with a vote to cast folds into the header once it has gone up behin
   assert.match(change, /const floating = float && footVote \? \{\s*sub: dotLine\(facts\.map\(\(f\) => f\.replace\(\/\[\.\\s\]\+\$\/, ''\)\)\) \|\| null,\s*actions: <>\{failed \? null : testAction\}\{footVote\}<\/>,/);
   // One card: the header's lower corners go square and its drop shadow
   // gives way while the row is there; the row ends the card. On a wide page
-  // the timeline beside the card steps down for it.
+  // the head ends where the card does (20 Nov 2026), so the timeline beside
+  // it no longer steps down for the row.
   const css = read('public/css/app.css');
   const block = css.slice(css.indexOf('THE VOTE FOLDS INTO THE HEADER'), css.indexOf("/* THE PAGE'S WAY BACK, AT THE PILL'S START."));
   assert.ok(block.length > 0, 'the fold sits in the header pill\'s own block');
@@ -635,7 +636,7 @@ test('a foot with a vote to cast folds into the header once it has gone up behin
   assert.match(block, /\.dev-thread-float \{[^}]*border-radius: 0 0 20px 20px;/);
   assert.match(block, /\.dev-request-bar \.messages-thread-header \{\s*position: relative;\s*z-index: 1;\s*\/\* The head's corners, as a length they can ease from\. \*\/\s*border-radius: 20px;/);
   assert.match(block, /\.dev-request-bar > \.messages-thread-header \{ transition: border-radius 180ms ease, padding 180ms ease, box-shadow 180ms ease; \}/);
-  assert.match(block, /:has\(\.dev-thread-float\) \.dev-request-rail \{\s*top: 64px;/);
+  assert.doesNotMatch(css, /:has\(\.dev-thread-float\) \.dev-request-rail \{/, 'the row is in the card\'s column, beside the timeline');
 });
 
 test('the picture\'s chip says what the side is for this change', () => {
