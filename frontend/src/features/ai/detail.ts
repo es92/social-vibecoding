@@ -519,6 +519,20 @@ export function setDetailOwner(owner: string | null): void {
   holder.owner = owner || null;
 }
 
+/**
+ * What opened before the column knew its thread (a reload's preview,
+ * reopened from its address while the page was still drawing) is the
+ * thread's on screen once it is known. Answers whether it claimed one; the
+ * entry is the same object, so a fetch under way for it still lands.
+ */
+export function claimDetail(owner: string | null | undefined): boolean {
+  const entry = holder.state.entry;
+  if (!owner || !entry || entry.owner) return false;
+  entry.owner = owner;
+  remember(entry);
+  return true;
+}
+
 /** Everything opened beside a thread, in the order it was first opened. */
 export function seenDetails(owner: string | null | undefined): DetailEntry[] {
   return owner ? (seenMap().get(owner) || []) : [];

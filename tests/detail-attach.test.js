@@ -87,14 +87,43 @@ test('beside a thread on the bot tab the column is cards: a head card with the p
   const card = read('frontend/src/features/detail/detail-card.tsx');
   assert.match(card, /aria-haspopup="menu"/);
   assert.match(card, /data-detail-picker=""/);
-  assert.match(card, /role="menu" aria-label=\{t\('messages:detail\.picker\.section'\)\} data-detail-menu=""/);
+  assert.match(card, /role="menu"\n\s+aria-label=\{t\('messages:detail\.picker\.section'\)\}/);
+  assert.match(card, /data-detail-menu=""/);
   assert.match(card, /<div className="detail-card-body" data-detail-body=\{entry\.kind\}>/);
-  // The preview's own bar keeps its × (tests/staging-preview-has-an-exit.test.js).
-  assert.match(card, /const closeHere = entry\.kind !== 'preview';/);
+  // A running preview is one card with one head: its own bar, which keeps
+  // its × (tests/staging-preview-has-an-exit.test.js) and draws the picker.
+  assert.match(card, /if \(entry\.kind === 'preview'\) return <div className="detail-card" data-detail-card=\{entry\.kind\}>\{body\}<\/div>;/);
+  const overlay = read('frontend/src/features/staging/staging-overlay.tsx');
+  assert.match(overlay, /const pickHere = placement === 'column' && detail\?\.kind === 'preview' && !!detail\.owner;/);
+  assert.match(overlay, /<DetailPicker entry=\{detail\} label=\{\{ title: title \|\| fallback, line: state\.appName \|\| null \}\} className="staging-titles staging-pick" anchor=\{headRef\}>/);
+  // The list is drawn at the top of the page, over the preview's frame.
+  assert.match(card, /createPortal\(\n\s+<div\n\s+ref=\{list\}\n\s+className="detail-card-menu"/);
+  assert.match(read('public/css/app.css'), /\.detail-card-menu \{ position: fixed; z-index: 60;/);
   assert.match(read('frontend/src/features/ai/index.tsx'), /<DetailPane layout=\{layout\} card \/>/);
   // The column's Escape gives way to the open menu's.
   assert.match(read('frontend/src/features/ai/detail.ts'), /if \(document\.querySelector\('\[data-detail-menu\]'\)\) return;/);
   const css = read('public/css/app.css');
   assert.match(css, /html:is\(:not\(\[data-skin\]\), \[data-skin="brand"\]\) #ai-screen \.ai-preview-pane:has\(> \.detail-card\) \{\n  background: none;\n  border: 0;/);
   assert.match(css, /html:is\(:not\(\[data-skin\]\), \[data-skin="brand"\]\) #ai-screen \.ai-preview-pane :is\(\.detail-card-head, \.detail-card-body\) \{\n  border-radius: 20px;/);
+});
+
+test('a preview reopened from its address before the page knew its thread is claimed by it, not closed', () => {
+  const d = fresh();
+  d.setDetailOwner(null);
+  d.openDetail({ kind: 'shots', ref: { changeId: 41 } });
+  const entry = d.detailEntry();
+  assert.equal(entry.owner, null);
+  assert.equal(d.claimDetail('private:7'), true);
+  assert.equal(d.detailEntry(), entry, 'the same entry, so what is loading for it still lands');
+  assert.equal(entry.owner, 'private:7');
+  assert.equal(d.claimDetail('private:8'), false, 'once owned, it stays its thread\'s');
+  const ai = read('frontend/src/features/ai/index.tsx');
+  assert.match(ai, /if \(claimDetail\(owner\)\) claimed\(\(n\) => n \+ 1\);/);
+  assert.match(ai, /if \(!shown\) return;/, 'no column yet: nothing is closed for want of one');
+});
+
+test('with three columns up the list gives up the room both take (its lane was the thread column\'s alone)', () => {
+  const css = read('public/css/app.css');
+  assert.match(css, /#ai-screen\[data-ai-docked\]\[data-ai-open\]\[data-ai-preview="three"\] \{\n  padding-inline-end: calc\(var\(--ai-col-w\) \+ var\(--ai-preview-w\)\);\n\}/);
+  assert.ok(css.indexOf('#ai-screen[data-ai-docked][data-ai-open][data-ai-preview="three"]') > css.indexOf('#ai-screen[data-ai-docked][data-ai-open] { padding-inline-end: var(--ai-main-w); }'));
 });

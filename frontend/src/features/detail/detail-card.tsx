@@ -19,7 +19,7 @@
  * another thread is opened and shows it again on the way back.
  */
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 
 import {
@@ -122,40 +122,63 @@ function useThreadHas(owner: string | null, seq: number): { design: DesignThread
   return { design, live };
 }
 
-export function DetailCard({ entry, layout, children }: {
+/**
+ * The picker (20 Nov 2026): what shows now, as a button, and the list of
+ * everything this thread can show here. The list is drawn at the top of the
+ * page, under its anchor, so nothing beside it covers it: a running
+ * preview's frame stands over the column, above the column's own layers.
+ * Drawn in the head card, and in a running preview's own bar, which is that
+ * preview's head (../staging/staging-overlay.tsx).
+ */
+export function DetailPicker({ entry, label, className, anchor, children }: {
   entry: DetailEntry;
-  layout: DetailLayout;
+  /** What shows now, for the button's name and its row in the list. */
+  label: DetailLabel | null;
+  className: string;
+  /** What the list hangs under: the head card, or the preview's bar. */
+  anchor?: RefObject<HTMLElement | null>;
   children: ReactNode;
 }): ReactNode {
   const t = useMessages('messages');
-  const [actions, setActions] = useState<HTMLElement | null>(null);
-  const [label, setLabel] = useState<DetailLabel | null>(null);
   const [menu, setMenu] = useState(false);
-  const head = useRef<HTMLDivElement>(null);
-  const picker = useRef<HTMLButtonElement>(null);
-  const say = useCallback((next: DetailLabel | null) => {
-    setLabel((had) => (had?.title === next?.title && had?.line === next?.line ? had : next));
-  }, []);
-  // A new thing open: its words come from its own pane.
-  useEffect(() => { setLabel(null); setMenu(false); }, [entry.seq]);
+  const [at, setAt] = useState<{ start: number; top: number; width: number; rtl: boolean } | null>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+  useEffect(() => { setMenu(false); }, [entry.seq]);
   useEffect(() => { if (label) noteDetailLabel(entry, label); }, [entry, label]);
-
   const has = useThreadHas(entry.owner, entry.seq);
   const rows = useMemo(() => pickRows(entry, has, t), [entry, has, t, label]);
 
-  // The menu closes on a press outside it, and on Escape (before the
-  // column's own Escape, which would close the column).
+  // Under its anchor's start edge, as wide as it up to 420px, kept there as
+  // the window moves.
+  useLayoutEffect(() => {
+    if (!menu) return undefined;
+    const place = () => {
+      const box = (anchor?.current || trigger.current)?.getBoundingClientRect();
+      if (!box) return;
+      const rtl = document.documentElement.dir === 'rtl';
+      setAt({ start: rtl ? window.innerWidth - box.right : box.left, top: box.bottom + 8, width: Math.min(420, box.width), rtl });
+    };
+    place();
+    window.addEventListener('resize', place);
+    return () => window.removeEventListener('resize', place);
+  }, [menu, anchor]);
+
+  // The list closes on a press outside it and its button, and on Escape
+  // (before the column's own Escape, which would close the column).
   useEffect(() => {
     if (!menu) return undefined;
     const away = (event: PointerEvent) => {
-      if (head.current && !head.current.contains(event.target as Node)) setMenu(false);
+      const target = event.target as Node;
+      if (trigger.current?.contains(target) || list.current?.contains(target)) return;
+      setMenu(false);
     };
     const key = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       event.preventDefault();
       event.stopPropagation();
       setMenu(false);
-      picker.current?.focus();
+      trigger.current?.focus();
     };
     document.addEventListener('pointerdown', away, true);
     document.addEventListener('keydown', key, true);
@@ -165,15 +188,104 @@ export function DetailCard({ entry, layout, children }: {
     };
   }, [menu]);
 
+  const choose = (open: () => void) => { setMenu(false); open(); };
+  const title = label?.title || t(KIND_WORD[entry.kind]);
+  return (
+    <>
+      <button
+        ref={trigger}
+        type="button"
+        className={className}
+        aria-haspopup="menu"
+        aria-expanded={menu}
+        aria-label={t('messages:detail.picker.label', { title })}
+        onClick={() => setMenu((open) => !open)}
+        data-detail-picker=""
+      >
+        {children}
+      </button>
+      {menu && at && typeof document !== 'undefined' ? createPortal(
+        <div
+          ref={list}
+          className="detail-card-menu"
+          role="menu"
+          aria-label={t('messages:detail.picker.section')}
+          style={at.rtl ? { right: at.start, top: at.top, width: at.width } : { left: at.start, top: at.top, width: at.width }}
+          data-detail-menu=""
+        >
+          <div className="detail-card-menu-head">{t('messages:detail.picker.section')}</div>
+          {rows.map((row) => {
+            const RowGlyph = GLYPH[row.kind];
+            return (
+              <div key={row.id} className="detail-card-menu-group">
+                <button
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={row.current && !row.versions?.some((v) => v.current)}
+                  className="detail-card-row"
+                  onClick={() => choose(row.open)}
+                  data-detail-item={row.kind}
+                  data-current={row.current && !(row.versions && row.versions.length > 1) ? '' : undefined}
+                >
+                  <span className="detail-card-tile" aria-hidden="true"><RowGlyph className="h-4 w-4" /></span>
+                  <span className="min-w-0 flex-1">
+                    <b>{row.title}</b>
+                    {row.line ? <small>{row.line}</small> : null}
+                  </span>
+                  {row.current ? <CheckIcon className="h-[18px] w-[18px] shrink-0" aria-hidden="true" /> : null}
+                </button>
+                {row.versions && row.versions.length > 1 ? row.versions.map((v) => (
+                  <button
+                    key={v.version}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={v.current}
+                    className="detail-card-version"
+                    onClick={() => choose(v.open)}
+                    data-detail-version={v.version}
+                    data-current={v.current ? '' : undefined}
+                  >
+                    <b>{t('messages:detail.row.version', { version: v.version })}</b>
+                    {v.note ? <span>{v.note}</span> : null}
+                  </button>
+                )) : null}
+              </div>
+            );
+          })}
+        </div>,
+        document.body,
+      ) : null}
+    </>
+  );
+}
+
+export function DetailCard({ entry, layout, children }: {
+  entry: DetailEntry;
+  layout: DetailLayout;
+  children: ReactNode;
+}): ReactNode {
+  const t = useMessages('messages');
+  const [actions, setActions] = useState<HTMLElement | null>(null);
+  const [label, setLabel] = useState<DetailLabel | null>(null);
+  const head = useRef<HTMLDivElement>(null);
+  const say = useCallback((next: DetailLabel | null) => {
+    setLabel((had) => (had?.title === next?.title && had?.line === next?.line ? had : next));
+  }, []);
+  // A new thing open: its words come from its own pane.
+  useEffect(() => { setLabel(null); }, [entry.seq]);
+  const chrome = useMemo<Chrome>(() => ({ card: true, actions, label: say }), [actions, say]);
+  const body = (
+    <div className="detail-card-body" data-detail-body={entry.kind}>
+      <DetailChrome.Provider value={chrome}>{children}</DetailChrome.Provider>
+    </div>
+  );
+  // A running preview is one card: its own bar is its head, and draws the
+  // picker (../staging/staging-overlay.tsx), so there is one header, not two.
+  if (entry.kind === 'preview') return <div className="detail-card" data-detail-card={entry.kind}>{body}</div>;
+
   const Glyph = GLYPH[entry.kind];
   const shown = label || { title: t(KIND_WORD[entry.kind]), line: null };
   const back = layout === 'full';
-  // A running preview's own bar keeps its own × (the staging overlay's exit,
-  // which is never hidden): the head card does not draw a second one.
-  const closeHere = entry.kind !== 'preview';
-  const chrome = useMemo<Chrome>(() => ({ card: true, actions, label: say }), [actions, say]);
-  const choose = (open: () => void) => { setMenu(false); open(); };
-
   return (
     <div className="detail-card" data-detail-card={entry.kind}>
       <div ref={head} className="detail-card-head" data-detail-head="">
@@ -183,77 +295,23 @@ export function DetailCard({ entry, layout, children }: {
           </button>
         ) : null}
         <span className="detail-card-tile" aria-hidden="true"><Glyph className="h-[18px] w-[18px]" /></span>
-        <button
-          ref={picker}
-          type="button"
-          className="detail-card-pick"
-          aria-haspopup="menu"
-          aria-expanded={menu}
-          aria-label={t('messages:detail.picker.label', { title: shown.title })}
-          onClick={() => setMenu((open) => !open)}
-          data-detail-picker=""
-        >
+        <DetailPicker entry={entry} label={label} className="detail-card-pick" anchor={head}>
           {shown.line ? <span className="detail-card-line">{shown.line}</span> : null}
           <span className="detail-card-title">
             <span>{shown.title}</span>
             <ChevronDownIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
           </span>
-        </button>
+        </DetailPicker>
         <span ref={setActions} className="detail-card-acts" data-detail-actions="" />
-        {closeHere && !back ? (
+        {back ? null : (
           <span className="detail-card-exits">
             <button type="button" className="detail-card-disc" onClick={closeDetail} aria-label={t('messages:detail.close')} title={t('messages:detail.close')} data-detail-close="close">
               <XIcon className="h-4 w-4" aria-hidden="true" />
             </button>
           </span>
-        ) : null}
-        {menu ? (
-          <div className="detail-card-menu" role="menu" aria-label={t('messages:detail.picker.section')} data-detail-menu="">
-            <div className="detail-card-menu-head">{t('messages:detail.picker.section')}</div>
-            {rows.map((row) => {
-              const RowGlyph = GLYPH[row.kind];
-              return (
-                <div key={row.id} className="detail-card-menu-group">
-                  <button
-                    type="button"
-                    role="menuitemradio"
-                    aria-checked={row.current && !row.versions?.some((v) => v.current)}
-                    className="detail-card-row"
-                    onClick={() => choose(row.open)}
-                    data-detail-item={row.kind}
-                    data-current={row.current && !(row.versions && row.versions.length > 1) ? '' : undefined}
-                  >
-                    <span className="detail-card-tile" aria-hidden="true"><RowGlyph className="h-4 w-4" /></span>
-                    <span className="min-w-0 flex-1">
-                      <b>{row.title}</b>
-                      {row.line ? <small>{row.line}</small> : null}
-                    </span>
-                    {row.current ? <CheckIcon className="h-[18px] w-[18px] shrink-0" aria-hidden="true" /> : null}
-                  </button>
-                  {row.versions && row.versions.length > 1 ? row.versions.map((v) => (
-                    <button
-                      key={v.version}
-                      type="button"
-                      role="menuitemradio"
-                      aria-checked={v.current}
-                      className="detail-card-version"
-                      onClick={() => choose(v.open)}
-                      data-detail-version={v.version}
-                      data-current={v.current ? '' : undefined}
-                    >
-                      <b>{t('messages:detail.row.version', { version: v.version })}</b>
-                      {v.note ? <span>{v.note}</span> : null}
-                    </button>
-                  )) : null}
-                </div>
-              );
-            })}
-          </div>
-        ) : null}
+        )}
       </div>
-      <div className="detail-card-body" data-detail-body={entry.kind}>
-        <DetailChrome.Provider value={chrome}>{children}</DetailChrome.Provider>
-      </div>
+      {body}
     </div>
   );
 }

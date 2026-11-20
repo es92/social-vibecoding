@@ -12715,6 +12715,28 @@ html.un-kb .un-modal {
   padding-inline-start: 0.9em;
   white-space: nowrap;
 }
+/* Beside a private thread the bar's title is the column's picker
+   (detail-card.tsx DetailPicker): the title and its arrow, the facts under. */
+.staging-titles.staging-pick {
+  display: grid;
+  grid-template-columns: minmax(0, max-content) auto;
+  grid-template-areas: "title chev" "facts facts";
+  column-gap: 6px;
+  align-items: center;
+  justify-content: start;
+  justify-self: start;
+  max-width: 100%;
+  margin: -2px -6px;
+  padding: 2px 6px;
+  border-radius: 12px;
+  text-align: start;
+  color: inherit;
+}
+.staging-titles.staging-pick:hover, .staging-titles.staging-pick[aria-expanded="true"] { background: var(--dc-raised); }
+.staging-titles.staging-pick:focus-visible { outline: 2px solid var(--lit-ink, currentColor); outline-offset: 2px; }
+.staging-pick > .staging-title { grid-area: title; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.staging-pick > .staging-facts { grid-area: facts; min-width: 0; }
+.staging-pick > .staging-pick-chevron { grid-area: chev; }
 .staging-fact::before {
   content: "·";
   position: absolute;
@@ -19711,6 +19733,14 @@ body:has(#ai-screen[data-ai-preview="halves"]:not(.hidden)) {
 #ai-screen[data-ai-preview="three"] {
   padding-inline-end: calc(var(--ai-col-w) + var(--ai-preview-w));
 }
+/* 20 Nov 2026: the open column's lane (#6425, `[data-ai-docked][data-ai-open]`,
+   the width of the thread's column alone) outranked the rule above, so with
+   three columns up the list kept that lane: a gap before the thread, or the
+   thread over the list once a column had been dragged wider. The list gives
+   up the room both columns take. */
+#ai-screen[data-ai-docked][data-ai-open][data-ai-preview="three"] {
+  padding-inline-end: calc(var(--ai-col-w) + var(--ai-preview-w));
+}
 /* The edges' lines: the thread's and Main's on their pane's own hairline, the
    edge each drags (and outweighing that rule, at THE DIVIDER below), the
    preview's on the hairline where it meets the thread. */
@@ -19769,7 +19799,9 @@ body:has(#ai-screen:not(.hidden)) #ai-screen[data-ai-preview="three"] #ai-main-d
 .detail-card-body > .messages-design-pane { flex: 1 1 auto; min-height: 0; border-radius: 0; box-shadow: none; background: none; }
 .detail-card-body .messages-design-stage { padding-top: 16px; }
 .detail-card-body > .detail-preview-slot { min-height: 0; }
-.detail-card-menu { position: absolute; z-index: 5; top: calc(100% + 8px); inset-inline-start: 0; width: min(420px, 100%); max-height: min(60vh, 480px); overflow-y: auto; padding: 8px; border-radius: 18px; background: var(--dc-sheet-solid, #fff); box-shadow: inset 0 0 0 1px var(--app-sheet-line), 0 18px 40px -16px rgba(17, 24, 39, 0.35); }
+/* Drawn at the top of the page under its anchor (detail-card.tsx places it),
+   above a running preview's frame (#staging-overlay, z-index 46). */
+.detail-card-menu { position: fixed; z-index: 60; max-width: calc(var(--platform-usable-w, 100%) - 24px); max-height: min(60vh, 480px); overflow-y: auto; padding: 8px; border-radius: 18px; background: var(--dc-sheet-solid, #fff); box-shadow: inset 0 0 0 1px var(--app-sheet-line), 0 18px 40px -16px rgba(17, 24, 39, 0.35); }
 .detail-card-menu-head { padding: 8px 10px 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
 .detail-card-row { display: flex; width: 100%; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 12px; text-align: start; color: var(--text-primary); }
 .detail-card-row:hover, .detail-card-version:hover { background: var(--dc-raised); }

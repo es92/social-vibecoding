@@ -128,7 +128,7 @@ import { clearSearchMark, currentSearchMark } from './search-mark';
 import { communityScopeStore } from '../workshop/community-scope';
 import { NewChatButton } from './new-chat-button';
 import { AiDrawer, ThreadPane, usePhone } from './phone-drawer';
-import { closeDetail, detailEntry, detailLayout, holdDetail, openDetail, reopenDetail, setDetailOwner, takeHeldDetail, useDetail, THREE_COLUMNS } from './detail';
+import { claimDetail, closeDetail, detailEntry, detailLayout, holdDetail, openDetail, reopenDetail, setDetailOwner, takeHeldDetail, useDetail, THREE_COLUMNS } from './detail';
 import { DetailPane } from '../detail/detail-pane';
 import {
   applyWorkState, freshCount, heroWords, inProgress, isTopicHref, liveThisWeek, movedSince, needsYou, owedCount, rankProjects,
@@ -552,8 +552,13 @@ export function AiScreen(): ReactNode {
   const columnShown: Column = column && detailSlot ? { ...column, detail: detailSlot } as Column : column;
   // The thread or page on screen claims what opens beside it, while this
   // page is the one shown (the AI screen stays mounted behind every other).
+  // What opened before it was known (a reload's preview, reopened from its
+  // address while the page drew) is claimed by it, and drawn again.
+  const [, claimed] = useState(0);
   useEffect(() => {
-    setDetailOwner(visible && shown && shown !== 'new' ? shown : null);
+    const owner = visible && shown && shown !== 'new' ? shown : null;
+    setDetailOwner(owner);
+    if (claimDetail(owner)) claimed((n) => n + 1);
   }, [visible, shown]);
   // Another thread opened: the one left holds what it showed, and the one
   // arrived at shows what it held, if anything.
@@ -588,6 +593,9 @@ export function AiScreen(): ReactNode {
       if (detail.owner !== shown || (detail.kind === 'preview' && !detailHere)) holdDetail(detail.owner);
       return;
     }
+    // No column yet (the page still drawing after a reload): it is claimed
+    // by the thread once that is known (above), not closed for want of one.
+    if (!shown) return;
     if (detail.kind === 'design' && openRoot && openRoot !== detail.ref.rootId) closeDetail();
     if (detail.kind === 'draft' && openRoot && openRoot !== detail.ref.rootId) closeDetail();
     if (detail.kind !== 'design' && detail.kind !== 'draft' && !detailHere) closeDetail();
