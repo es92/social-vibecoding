@@ -28,6 +28,9 @@ function load() {
     stubs: {
       react: { useMemo: (factory) => factory() },
       '../../lib/i18n/react': { useMessages: () => (id) => id },
+      // 20 Nov 2026: beside a thread on the bot tab the head card draws its
+      // title and close (./detail-card.tsx); elsewhere it draws its own.
+      './detail-card': { useDetailCard: () => false, useDetailLabel: () => {} },
     },
   });
   return { detail, shots };

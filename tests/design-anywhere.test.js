@@ -318,13 +318,18 @@ test('the preview: its own column beside the thread, three where they fit, halve
   assert.match(ai, /data-ai-preview=\{detailHere \? layout : undefined\}/);
   // Artifacts: the column is named for what any preview is (a design, a page, a plan), not for a design.
   assert.match(ai, /<aside\n\s+ref=\{previewRef\}\n\s+id="ai-preview-pane"\n\s+className="ai-preview-pane"\n\s+data-ai-preview-pane=\{layout\}\n\s+aria-label=\{detail\.kind === 'draft' \? t\('messages:draft\.pane\.label'\) : t\('messages:design\.pane\.labelOpening'\)\}\n\s+>/);
-  assert.match(ai, /probe=\{previewProbe\}\n\s+\/>\n\s+\)\}\n\s+<DetailPane layout=\{layout\} \/>/);
+  // 20 Nov 2026: drawn as cards, with the head card's picker (../detail/detail-card.tsx).
+  assert.match(ai, /probe=\{previewProbe\}\n\s+\/>\n\s+\)\}\n\s+<DetailPane layout=\{layout\} card \/>/);
   assert.match(read('frontend/src/features/detail/detail-pane.tsx'),
     /onClose=\{closeDetail\}\n\s+closeAs=\{layout === 'full' \? 'back' : 'close'\}/);
-  assert.match(ai, /const detailHere = !!detail && !!botId && \(detail\.kind === 'design'\n\s+\? detail\.ref\.conversationId === botId && openRoot === detail\.ref\.rootId/,
+  assert.match(ai, /const detailHere = !!detail && !!botId && ownedHere && \(detail\.kind === 'design'\n\s+\? detail\.ref\.conversationId === botId && openRoot === detail\.ref\.rootId/,
     'only beside the thread it is the design of');
-  assert.match(ai, /if \(detail\.kind === 'design' && openRoot && openRoot !== detail\.ref\.rootId\) closeDetail\(\);/, 'another thread in the column closes it');
-  assert.match(ai, /if \(window\.location\.hash === BOT_TAB\) closeDetail\(\);/, 'the tab brings the list back');
+  // 20 Nov 2026: the column is its thread's. Another thread in the column, or
+  // the tab, puts it away with its thread; it shows again when the thread does.
+  assert.match(ai, /const ownedHere = !detail\?\.owner \|\| detail\.owner === shown;/);
+  assert.match(ai, /if \(detail\.owner !== shown \|\| \(detail\.kind === 'preview' && !detailHere\)\) holdDetail\(detail\.owner\);/, 'another thread in the column holds it');
+  assert.match(ai, /if \(window\.location\.hash !== BOT_TAB\) return;\s+const entry = detailEntry\(\);\s+if \(entry\?\.owner\) holdDetail\(entry\.owner\);\s+else closeDetail\(\);/, 'the tab brings the list back');
+  assert.match(ai, /if \(was\) holdDetail\(was\);\s+const back = takeHeldDetail\(shown\);\s+if \(back\) reopenDetail\(back\);/, 'and the thread come back to shows what it held');
   const css = read('public/css/app.css');
   // #6394: the widths are on the body, where the side panel (an island beside
   // #ai-screen) can read them too; the screen inherits them.

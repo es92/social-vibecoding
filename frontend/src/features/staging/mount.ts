@@ -39,7 +39,7 @@ visualCompareStore.setFlush(flushSync);
 // and the side panel's stores, so it joins the bridge here rather than in
 // the React-free ./staging-bridge.js the tests drive on its own.
 Object.assign(stagingBridge, {
-  place: (input?: { sessionId?: number | null; wide?: boolean; settle?: boolean }) => placePreview(input || {}),
+  place: (input?: { sessionId?: number | null; wide?: boolean; settle?: boolean; slug?: string | null; readOnly?: boolean }) => placePreview(input || {}),
   unplace: () => unplacePreview(),
   placementNow: () => {
     const s = stagingStore.get();

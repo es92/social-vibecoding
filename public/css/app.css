@@ -19737,6 +19737,81 @@ body:has(#ai-screen:not(.hidden)) #ai-screen[data-ai-preview="three"] #ai-main-d
 /* A thread's Preview, in its head: a word, not a glyph, on the disc. */
 .messages-thread-action.messages-thread-preview { width: auto; padding: 0 14px; }
 
+/* THE COLUMN AS CARDS, WITH A PICKER (20 Nov 2026; features/detail/
+   detail-card.tsx). What a thread opened to read beside it is drawn as the
+   thread is: a head card, the thing in a card under it, on the page's own
+   ground, ending on the reply box's line. The head card's title opens the
+   picker (everything the thread can show here) and its × closes the column;
+   a kind's own buttons (Comment, Request it, Copy) stand in it, and its own
+   header steps aside. The layout holds in every look; the cards are painted
+   in the two card looks (below), as the thread's are. */
+.detail-card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+/* Narrow (a phone, a column at its floor), the buttons go under the title
+   rather than squeezing it: the title keeps 180px. */
+.detail-card-head { position: relative; z-index: 3; flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; min-height: 58px; padding: 10px 12px 10px 14px; }
+.detail-card-tile { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; background: var(--dc-raised); color: var(--text-primary); }
+.detail-card-pick { min-width: 0; flex: 1 1 180px; display: flex; flex-direction: column; align-items: flex-start; margin: -2px -6px; padding: 2px 6px; border-radius: 12px; text-align: start; color: var(--text-primary); }
+.detail-card-pick:hover, .detail-card-pick[aria-expanded="true"] { background: var(--dc-raised); }
+.detail-card-pick:focus-visible, .detail-card-row:focus-visible, .detail-card-version:focus-visible, .detail-card-disc:focus-visible { outline: 2px solid var(--lit-ink, currentColor); outline-offset: 2px; }
+.detail-card-line { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; line-height: 18px; font-weight: 500; color: var(--text-secondary); }
+.detail-card-title { display: flex; align-items: center; gap: 6px; max-width: 100%; font-size: 15px; line-height: 20px; font-weight: 650; }
+.detail-card-title > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.detail-card-acts { flex: none; display: flex; align-items: center; gap: 8px; margin-inline-start: auto; }
+.detail-card-acts:empty { display: none; }
+.detail-card-acts > button { height: 36px; min-height: 36px; padding-inline: 14px; border-radius: 999px; }
+/* The quiet one (Comment) is a ringed pill, as the thread head's Preview is. */
+.detail-card-acts > button:not([class~="bg-violet-600"]) { box-shadow: inset 0 0 0 1px var(--app-sheet-line); }
+.detail-card-exits { flex: none; display: flex; align-items: center; }
+.detail-card-acts:not(:empty) + .detail-card-exits::before { content: ""; width: 1px; height: 22px; margin-inline: 0 8px; background: var(--app-sheet-line); }
+.detail-card-disc { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 999px; color: var(--text-secondary); }
+.detail-card-disc:hover { background: var(--dc-raised); color: var(--text-primary); }
+.detail-card-body { position: relative; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.detail-card-body > .messages-design-pane { flex: 1 1 auto; min-height: 0; border-radius: 0; box-shadow: none; background: none; }
+.detail-card-body .messages-design-stage { padding-top: 16px; }
+.detail-card-body > .detail-preview-slot { min-height: 0; }
+.detail-card-menu { position: absolute; z-index: 5; top: calc(100% + 8px); inset-inline-start: 0; width: min(420px, 100%); max-height: min(60vh, 480px); overflow-y: auto; padding: 8px; border-radius: 18px; background: var(--dc-sheet-solid, #fff); box-shadow: inset 0 0 0 1px var(--app-sheet-line), 0 18px 40px -16px rgba(17, 24, 39, 0.35); }
+.detail-card-menu-head { padding: 8px 10px 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+.detail-card-row { display: flex; width: 100%; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 12px; text-align: start; color: var(--text-primary); }
+.detail-card-row:hover, .detail-card-version:hover { background: var(--dc-raised); }
+.detail-card-row[data-current], .detail-card-version[data-current] { background: var(--lit-tint); }
+.detail-card-row .detail-card-tile { width: 32px; height: 32px; border-radius: 10px; }
+.detail-card-row b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; line-height: 20px; font-weight: 650; }
+.detail-card-row small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; line-height: 18px; color: var(--text-secondary); }
+.detail-card-version { display: flex; width: calc(100% - 44px); margin-inline-start: 44px; align-items: baseline; gap: 8px; padding: 6px 10px; border-radius: 10px; text-align: start; font-size: 13px; line-height: 18px; color: var(--text-secondary); }
+.detail-card-version b { flex: none; font-weight: 650; color: var(--text-primary); }
+.detail-card-version span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The cards, in the two card looks: the thread's paint, on the page's own
+   ground. Beside the thread the column paints nothing and keeps the page's
+   gutter; on a phone, where it is the whole screen over the drawer, it is
+   the page's ground with the cards on it. */
+html:is(:not([data-skin]), [data-skin="brand"]) body {
+  --detail-card: var(--dc-sheet-fill, #fff);
+  --detail-card-edge: inset 0 0 0 1px var(--app-sheet-line), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+html:is(:not([data-skin]), [data-skin="brand"]) #ai-screen .ai-preview-pane:has(> .detail-card) {
+  background: none;
+  border: 0;
+  overflow: visible;
+  padding-block-end: 8px;
+  padding-inline-end: calc(12px + var(--ai-edge, 0px));
+}
+html:is(:not([data-skin]), [data-skin="brand"]) #ai-screen[data-ai-preview="full"] .ai-preview-pane:has(> .detail-card) {
+  padding: 8px 12px;
+  background: var(--home-ground);
+}
+html:is(:not([data-skin]), [data-skin="brand"]) #ai-screen .ai-preview-pane :is(.detail-card-head, .detail-card-body) {
+  border-radius: 20px;
+  background: var(--detail-card);
+  box-shadow: var(--detail-card-edge);
+}
+/* A running preview's frame stands over the card's body (its frame never
+   moves: features/staging/placement.ts), so it wears the card's corners. */
+html:is(:not([data-skin]), [data-skin="brand"]) body:has(#ai-preview-pane [data-detail-body="preview"]) #staging-overlay[data-placement="column"] {
+  border: 0;
+  border-radius: 20px;
+  box-shadow: var(--detail-card-edge);
+}
+
 /* ── The AI tab on a phone, as a drawer (features/ai/phone-drawer.tsx) ──
    The Messages drawer's strip: the list at 85% of the screen, the thread
    beside it, peeking at the list's right until it is opened, then the whole
@@ -33779,6 +33854,11 @@ html[data-skin="brand"]:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([d
    it they were white on a white card (a thread's replies, 20 Nov 2026):
    words with no pill round them. */
 html[data-skin="brand"]:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) .messages-bot-answers button:not(.messages-bot-primary, .messages-bot-tint, .messages-bot-done, .messages-bot-on, [aria-pressed="true"]) { box-shadow: var(--bl-raise-edge); }
+/* What a thread opened beside it is this look's cards too (detail-card.tsx). */
+html[data-skin="brand"]:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) body {
+  --detail-card: var(--bl-card);
+  --detail-card-edge: inset 0 0 0 1px var(--app-sheet-line), var(--bl-lift);
+}
 html[data-skin="brand"]:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) .dev-request { --thread-ground-look: var(--bl-page); }
 html[data-skin="brand"]:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])).in-side-panel.side-panel-beside-ai body:has(.dev-thread-card) { background: var(--bl-page) !important; }
 /* Failed tests: the foot's one sun pill is what moves it on (Fix it, or the

@@ -4223,6 +4223,58 @@
     "text": "Posted as a plan on request #{{number}}",
     "description": "Link in the design pane once the design was posted as a plan on a request (a filed issue): opens that request. The design can be posted again as the plan's next version."
   },
+  "detail.back": {
+    "text": "Back to the thread",
+    "description": "Back arrow on the head card of what a private thread shows on a phone (a design, a live preview, a plan): returns to the thread."
+  },
+  "detail.close": {
+    "text": "Close",
+    "description": "Close button (×) on the head card of what a private thread shows beside it: a design, a request draft, a plan, a change's before and after."
+  },
+  "detail.picker.label": {
+    "text": "{{title}}: show something else from this thread",
+    "description": "Screen-reader name of the title button on the head card beside a private thread, which opens a list of everything the thread can show there. {{title}} is what shows now."
+  },
+  "detail.picker.section": {
+    "text": "In this thread",
+    "description": "Heading of the list the head card's title opens: everything the private thread can show beside it (its design and versions, its live preview, plans and before-and-afters it opened)."
+  },
+  "detail.kind.design": {
+    "text": "Design",
+    "description": "Name of a design (screens Homeroom bot drew) in the list of what a private thread can show beside it, and its head card's title until the design's own title loads."
+  },
+  "detail.kind.preview": {
+    "text": "Live preview",
+    "description": "Name of a project's running preview in the list of what a private thread can show beside it, and its head card's title when the change has no name."
+  },
+  "detail.kind.draft": {
+    "text": "Request draft",
+    "description": "Name of a request Homeroom bot drafted, in the list of what a private thread can show beside it."
+  },
+  "detail.kind.plan": {
+    "text": "Plan",
+    "description": "Name of a plan in the list of what a private thread can show beside it, until its own title loads."
+  },
+  "detail.kind.shots": {
+    "text": "Before and after",
+    "description": "Name of a change's before-and-after screenshots in the list of what a thread can show beside it, and their head card's title."
+  },
+  "detail.line.design": {
+    "text": "Design · Version {{version}} of {{total}}",
+    "description": "Small line over a design's title on the head card beside a private thread: which version of the design shows."
+  },
+  "detail.row.design_one": {
+    "text": "Design · {{count}} version",
+    "description": "Under a design's title in the list of what a private thread can show beside it: how many versions it has (one)."
+  },
+  "detail.row.design_other": {
+    "text": "Design · {{count}} versions",
+    "description": "Under a design's title in the list of what a private thread can show beside it: how many versions it has (several)."
+  },
+  "detail.row.version": {
+    "text": "Version {{version}}",
+    "description": "A version of a design in the list of what a private thread can show beside it, before the version's own note."
+  },
   "botCards.gallery.groupLabel": {
     "text": "Pictures Homeroom bot made",
     "description": "Accessible name of the grid of pictures under a Homeroom bot reply, made on an outside picture model."
