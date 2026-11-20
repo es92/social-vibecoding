@@ -33774,6 +33774,11 @@ html[data-skin="brand"]:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([d
 /* A thread in a panel: the panel's ground is the page's cream, so its three
    cards are white on it as a full page's are. The column beside Homeroom
    bot's list paints its body (#6432), so the body is named too. */
+/* Homeroom bot's suggestions are white pills in this look (--brand-tint),
+   as its other quiet pills are, so they wear the same raised edge. Without
+   it they were white on a white card (a thread's replies, 20 Nov 2026):
+   words with no pill round them. */
+html[data-skin="brand"]:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) .messages-bot-answers button:not(.messages-bot-primary, .messages-bot-tint, .messages-bot-done, .messages-bot-on, [aria-pressed="true"]) { box-shadow: var(--bl-raise-edge); }
 html[data-skin="brand"]:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) .dev-request { --thread-ground-look: var(--bl-page); }
 html[data-skin="brand"]:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])).in-side-panel.side-panel-beside-ai body:has(.dev-thread-card) { background: var(--bl-page) !important; }
 /* Failed tests: the foot's one sun pill is what moves it on (Fix it, or the
