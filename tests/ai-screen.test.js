@@ -1741,7 +1741,7 @@ test('the column from 768px: one thread, or a new chat, alone under its own head
   assert.match(src, /: phone \? \(level === 1 \? \(openRoot \? \{ at: 'thread', rootId: openRoot \} : blank \? \{ at: 'new' \} : null\) : null\)/);
   // A thread asked for: the panel gives the column back, a new chat goes.
   // 1 Nov 2026 (C1): and a design's preview goes, unless it is that thread's.
-  assert.match(src, /const showAt = \(next: BotAt\) => \{\s+if \(!next\.threadRootId\) return;\s+sidePanel\(\)\?\.close\?\.\(\);\s+closeNewThread\(\);\s+if \(!detail \|\| detail\.kind === 'design'\) \{\s+if \(next\.threadRootId !== detail\?\.ref\.rootId\) closeDetail\(\);\s+\}\s+setAt\(\{ \.\.\.next \}\);\s+(?:\/\/[^\n]*\n\s+)*if \(botId\) embed\(botId, next, \{ threadsOnly: true \}\);\s+if \(phone\) setLevel\(1\);\s+\};/);
+  assert.match(src, /const showAt = \(next: BotAt\) => \{\s+if \(!next\.threadRootId\) return;\s+sidePanel\(\)\?\.close\?\.\(\);\s+closeNewThread\(\);\s+if \(!detail \|\| detail\.kind === 'design'\) \{\s+if \(next\.threadRootId !== detail\?\.ref\.rootId\) putAway\(\);\s+\}\s+setAt\(\{ \.\.\.next \}\);\s+(?:\/\/[^\n]*\n\s+)*if \(botId\) embed\(botId, next, \{ threadsOnly: true \}\);\s+if \(phone\) setLevel\(1\);\s+\};/);
   assert.match(src, /openPage\(row\.href, row\.app, row\.title, aboutRow\(row\)\);/);
   assert.match(src, /if \(openPublic\(href, app, title\)\) underPanel\(\);/);
   // 3 Nov 2026: the address is the column's, written by one effect (#6215).
@@ -1898,7 +1898,7 @@ test('beside this page the panel is the page\'s own column: its × and the proje
   // tab pressed puts it away again.
   assert.doesNotMatch(index, /mainOpen|setMainOpen|at: 'main'/, 'no Main Chat to stand open beside the lists');
   assert.match(index, /const columnOpen = docked && !!column;/);
-  assert.match(index, /const closeColumn = \(\) => \{\s+if \(phone\) \{ setLevel\(0\); setAt\(null\); return; \}\s+if \(!docked\) return;\s+sidePanel\(\)\?\.close\?\.\(\);\s+closeNewThread\(\);\s+if \(openRoot\) closeThread\(\);\s+closeDetail\(\);\s+setAt\(null\);\s+\};/,
+  assert.match(index, /const closeColumn = \(\) => \{\s+if \(phone\) \{ setLevel\(0\); setAt\(null\); return; \}\s+if \(!docked\) return;\s+sidePanel\(\)\?\.close\?\.\(\);\s+closeNewThread\(\);\s+if \(openRoot\) closeThread\(\);\s+putAway\(\);\s+setAt\(null\);\s+\};/,
     'on a phone the tab pressed slides the list back');
   assert.doesNotMatch(index, /backTo/, 'no chip to name what the page goes back to');
   assert.match(index, /data-ai-open=\{columnOpen \? '' : undefined\}/);

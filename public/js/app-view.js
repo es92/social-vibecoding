@@ -30203,7 +30203,11 @@ const AppView = {
     AppView._writePreviewAddress(slug, sessionId);
     // A preview reopened from its address waits a moment for the page's
     // column, which may not be drawn yet.
-    if (typeof staging.place === 'function') staging.place({ sessionId, wide: false, settle: !!(opts && opts.settle) });
+    // With its project and whether it is read only, so the thread it stands
+    // beside can ask for it again when it is come back to (detail.ts).
+    if (typeof staging.place === 'function') {
+      staging.place({ sessionId, wide: false, settle: !!(opts && opts.settle), slug: slug || null, readOnly });
+    }
     if (window.DevConsole) DevConsole.setButtonVisible(true);
     const loadId = ++AppView._stagingLoadId;
     // The change's name, vote and before-and-after are this OPEN's: they

@@ -22,6 +22,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { ChevronLeftIcon, XIcon } from '@/components/ui/icons';
 
 import { useMessages } from '../../lib/i18n/react';
+import { useDetailCard, useDetailLabel } from '../detail/detail-card';
 import * as api from './api';
 import { MessageMarkdown } from './format';
 
@@ -60,8 +61,12 @@ export function RequestDraftPane({ actionId, copy, seq = 0, onClose, closeAs = '
   // The saved row's whole description; the message's clipped one until it comes.
   const details = draft?.details || copy.details;
   const appSlug = draft?.app.slug || copy.appSlug;
+  // Beside a thread on the bot tab (20 Nov 2026): the head card says it (../detail/detail-card.tsx).
+  const card = useDetailCard();
+  useDetailLabel({ title, line: t('messages:draft.pane.sub', { project }) });
   return (
     <section className="messages-design-pane" data-request-draft-pane={actionId} aria-label={t('messages:draft.pane.label')}>
+      {card ? null : (
       <header className="flex flex-wrap items-center gap-2 px-4 pt-3 pb-2">
         {onClose && closeAs === 'back' ? (
           <button type="button" className={ICON} onClick={onClose} aria-label={t('messages:draft.pane.back')} title={t('messages:draft.pane.back')} data-draft-close="back">
@@ -78,6 +83,7 @@ export function RequestDraftPane({ actionId, copy, seq = 0, onClose, closeAs = '
           </button>
         ) : null}
       </header>
+      )}
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
         <MessageMarkdown content={details} appSlug={appSlug} />
         {draft?.footer ? (

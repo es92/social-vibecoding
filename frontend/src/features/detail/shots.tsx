@@ -19,6 +19,7 @@ import { ChevronLeftIcon, XIcon } from '@/components/ui/icons';
 
 import { useMessages } from '../../lib/i18n/react';
 import { closeDetail, type DetailEntry, type DetailLayout } from '../ai/detail';
+import { useDetailCard, useDetailLabel } from './detail-card';
 
 export function DetailPaneShots({ entry, layout = 'three' }: { entry: DetailEntry; layout?: DetailLayout }): ReactNode {
   const t = useMessages('chat');
@@ -26,7 +27,11 @@ export function DetailPaneShots({ entry, layout = 'three' }: { entry: DetailEntr
   const html = String((entry.payload as { html?: string } | undefined)?.html || '');
   const wrapper = useMemo(() => ({ __html: html }), [html]);
   const back = layout === 'full';
-  const head = (
+  // Beside a thread on the bot tab (20 Nov 2026): the head card says it and closes it.
+  const card = useDetailCard();
+  const m = useMessages('messages');
+  useDetailLabel({ title: m('messages:detail.kind.shots'), line: null });
+  const head = card ? null : (
     <div className="gc-detail-shots-head">
       {back ? (
         <button

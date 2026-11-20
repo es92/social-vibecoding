@@ -34,6 +34,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { ChevronLeftIcon, XIcon } from '@/components/ui/icons';
 
 import { useMessages } from '../../lib/i18n/react';
+import { DetailActions, useDetailCard, useDetailLabel } from '../detail/detail-card';
 import { ArtifactFrame } from '../artifact/frame';
 import { currentSheets, type FramePin } from '../artifact/frame-doc';
 import { inlinePictures } from '../design/pictures';
@@ -137,6 +138,13 @@ export function DesignPane({ conversationId, rootId, view, onView, version = nul
   }, [design, newestSaid, reload]);
 
   const shown = chosen && design && chosen <= design.latest ? chosen : design?.latest || 0;
+  // Beside a thread on the bot tab (20 Nov 2026): the head card says what this
+  // is and which version, and its picker switches version (../detail/detail-card.tsx).
+  const card = useDetailCard();
+  useDetailLabel(design ? {
+    title: design.title,
+    line: t('messages:detail.line.design', { version: shown, total: design.latest || 0 }),
+  } : null);
   // A new version follows the newest, unless the person picked an older one.
   // 1 Nov 2026: a newer one than the pane last knew, not the first read, so
   // the version it was opened at stays shown.
@@ -260,8 +268,16 @@ export function DesignPane({ conversationId, rootId, view, onView, version = nul
   const postable = requestable(design);
   const latest = design?.latest || 0;
   const what = draft?.element?.text || draft?.element?.tag || '';
+  // Its two buttons: in its own header, or the head card's beside a thread.
+  const commentButton = open ? (
+    <button type="button" className={commenting ? FILLED : QUIET} aria-pressed={commenting} onClick={() => { setCommenting((on) => !on); setDraft(null); }} data-design-comment="">
+      {commenting ? t('messages:design.pane.commentDone') : t('messages:design.pane.comment')}
+    </button>
+  ) : null;
+  const proposeButton = postable ? <button type="button" className={FILLED} onClick={() => setProposing(true)} disabled={!latest} data-design-propose="">{t('messages:design.pane.propose')}</button> : null;
   return (
     <section className="messages-design-pane" data-design-pane={rootId} data-design-view={view} aria-label={t(words.label)}>
+      {card ? <DetailActions>{commentButton}{proposeButton}</DetailActions> : (
       <header className="flex flex-wrap items-center gap-2 px-4 pt-3 pb-2">
         {onClose && closeAs === 'back' ? (
           <button type="button" className={ICON} onClick={onClose} aria-label={t('messages:design.pane.back')} title={t('messages:design.pane.back')} data-design-close="back">
@@ -292,18 +308,15 @@ export function DesignPane({ conversationId, rootId, view, onView, version = nul
           ) : null}
         </div>
         {onClose ? null : <button type="button" className={`${QUIET} messages-design-view-switch`} onClick={() => onView('chat')}>{t('messages:design.pane.showChat')}</button>}
-        {open ? (
-          <button type="button" className={commenting ? FILLED : QUIET} aria-pressed={commenting} onClick={() => { setCommenting((on) => !on); setDraft(null); }} data-design-comment="">
-            {commenting ? t('messages:design.pane.commentDone') : t('messages:design.pane.comment')}
-          </button>
-        ) : null}
-        {postable ? <button type="button" className={FILLED} onClick={() => setProposing(true)} disabled={!latest} data-design-propose="">{t('messages:design.pane.propose')}</button> : null}
+        {commentButton}
+        {proposeButton}
         {onClose && closeAs === 'close' ? (
           <button type="button" className={ICON} onClick={onClose} aria-label={t('messages:design.pane.close')} title={t('messages:design.pane.close')} data-design-close="close">
             <XIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
           </button>
         ) : null}
       </header>
+      )}
       {design && !open && design.number && design.app ? (
         <p className="px-4 pb-2 text-[13px] text-zinc-600 dark:text-zinc-300">
           <a className="font-semibold text-violet-700 dark:text-violet-300" href={`#app/${encodeURIComponent(design.app.slug)}/dev/issues/${design.number}`}>

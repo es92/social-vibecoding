@@ -90,6 +90,17 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
 // that frame and no other.
 let shownSession: number | null = null;
 
+/** A thread's open live draft, or null (the preview picker reads it too, ../detail/detail-card.tsx). */
+export async function readLiveDraft(rootId: number): Promise<LiveDraft | null> {
+  const out = await call<{ draft: LiveDraft | null }>(`/api/live-drafts?rootId=${encodeURIComponent(String(rootId))}`);
+  return out.draft || null;
+}
+
+/** Show a live draft's preview beside its thread (its own bar's Show preview, and the picker's row). */
+export function openLivePreview(draft: LiveDraft) {
+  openPreview(draft);
+}
+
 function openPreview(draft: LiveDraft) {
   const view = typeof window !== 'undefined' ? (window as any).AppView : null;
   if (!draft.sessionId || !view || typeof view.ensureStaging !== 'function') return;

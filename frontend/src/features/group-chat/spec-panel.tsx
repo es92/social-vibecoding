@@ -28,6 +28,7 @@ import { ChevronLeftIcon } from '@/components/ui/icons';
 import { useMessages } from '../../lib/i18n/react';
 import { useSpecFrames } from '../../lib/spec-html';
 import { useDetailState, closeDetail, type SpecPanelBody } from '../ai/detail';
+import { DetailActions, useDetailCard, useDetailLabel } from '../detail/detail-card';
 
 function ui(): any {
   return (typeof window !== 'undefined' ? (window as any).PlatformUI : null) || null;
@@ -122,9 +123,14 @@ export interface SpecPanelViewProps {
 
 export function SpecPanelView({ open, title, subtitle, canCopy, body, raw = null, closeAs = 'close' }: SpecPanelViewProps) {
   const t = useMessages('chat');
+  // Beside a thread on the bot tab (20 Nov 2026): the head card says the
+  // plan's title and closes it, and Copy is drawn there (../detail/detail-card.tsx).
+  const card = useDetailCard();
+  useDetailLabel(open ? { title, line: subtitle } : null);
   if (!open) return null;
   return (
     <>
+      {card ? (canCopy ? <DetailActions><CopyButton raw={raw} /></DetailActions> : null) : (
       <div className="gc-spec-panel-header">
         {closeAs === 'back' ? (
           <button
@@ -150,6 +156,7 @@ export function SpecPanelView({ open, title, subtitle, canCopy, body, raw = null
           </button>
         )}
       </div>
+      )}
       {body && body.kind === 'spec' ? <SpecDocBody body={body} /> : null}
       {body && body.kind === 'markdown'
         ? <MarkdownBody html={body.html} />
