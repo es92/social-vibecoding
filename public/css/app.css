@@ -30460,6 +30460,25 @@ html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request[d
   html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:has(.dev-thread-card):not([data-thread-head-tight]) .dev-request-bar .messages-thread-header > :is(.messages-thread-action, .dev-thread-exits) { margin-top: 2px; }
   html:is(:not([data-skin]), [data-skin="brand"]) .dev-request:has(.dev-thread-card):not([data-thread-head-tight]) { --head-mid: 32px; }
 }
+/* THE HEAD EASES (20 Nov 2026). It changed size in one frame: the card
+   dropped 20px of height, the tile and the title shrank and the small line
+   jumped from over the title to under it, all at once, and back again on
+   the way up. The card's padding and shadow, the tile, ⋯ and the way back
+   now ease between the two sizes over 180ms, as the vote's row does when it
+   folds in; the words come up into their new place (thread-head-fit.ts),
+   since two layouts have nothing in between to ease through. */
+#dev-topic-thread .dev-request:has(.dev-thread-card) .dev-thread-bar-tile { transition: width 180ms ease, height 180ms ease, border-radius 180ms ease, font-size 180ms ease; }
+#dev-topic-thread .dev-request:has(.dev-thread-card) .dev-request-bar .messages-thread-header > :is(.messages-thread-action, .dev-thread-exits) { transition: margin-top 180ms ease; }
+.dev-request:has(.dev-thread-card) > .dev-request-back { transition: top 180ms ease; }
+@media (prefers-reduced-motion: reduce) {
+  #dev-topic-thread .dev-request:has(.dev-thread-card) .dev-thread-bar-tile,
+  #dev-topic-thread .dev-request:has(.dev-thread-card) .dev-request-bar .messages-thread-header > :is(.messages-thread-action, .dev-thread-exits),
+  .dev-request:has(.dev-thread-card) > .dev-request-back { transition: none; }
+}
+/* Reduce motion setting (#6510): the same, when Settings asks for it. */
+:where(html[data-motion="reduce"]) #dev-topic-thread .dev-request:has(.dev-thread-card) .dev-thread-bar-tile,
+:where(html[data-motion="reduce"]) #dev-topic-thread .dev-request:has(.dev-thread-card) .dev-request-bar .messages-thread-header > :is(.messages-thread-action, .dev-thread-exits),
+:where(html[data-motion="reduce"]) .dev-request:has(.dev-thread-card) > .dev-request-back { transition: none; }
 /* The card under the head starts at the request's own words: the head says
    its title. The title is drawn only while it is being edited, since the
    editor is in its place (dev-card.tsx TitleContent). */
@@ -30501,7 +30520,7 @@ html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:h
   border-end-end-radius: 0;
   box-shadow: inset 0 0 0 1px var(--app-sheet-line);
 }
-.dev-request-bar > .messages-thread-header { transition: border-radius 180ms ease; }
+.dev-request-bar > .messages-thread-header { transition: border-radius 180ms ease, padding 180ms ease, box-shadow 180ms ease; }
 .dev-thread-float {
   pointer-events: auto;
   position: relative;
@@ -30709,29 +30728,50 @@ body:has(.dev-ws-side) :is(#dev-main-pause-notice, #dev-release-stall-notice, #d
    below), so the cards reach into the round of its upper corners. They
    used to stop on a line at its top edge, with the page showing in both
    corners, as if they ended short of it. The second layer of the mask
-   shows that strip only across the card: the bar's 12px each side, and on
-   a wide page the timeline's column at its end (`--composer-end`), where
-   no card covers it. A card wider than the reply box (the full page's) is
-   still cut at the box's top edge beside it. */
+   shows that strip across the card's column: the whole scroller, less the
+   timeline's column on a wide page (`--composer-end`), where no card
+   covers it.
+
+   THE REPLY BOX IS AS WIDE AS THE CARDS (20 Nov 2026). The bar kept the
+   chat foot's 12px each side, so the box stood 12px inside the cards over
+   it, and the strip above stopped 12px short of their edges: a card going
+   under it was cut flat on the box's top line, its corners sticking out
+   past the box on both sides. The cards here run the scroller's full
+   width, so the bar does too, as it already does in the frame's looks. */
+html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:has(.dev-thread-card) .dev-request-sheet > .messages-composer { padding-inline: 0; }
 html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:has(.dev-thread-card) #gc-thread-scroll {
   --pill-cut: calc(var(--pill-top) + 24px);
   -webkit-mask-image: linear-gradient(to bottom, transparent var(--pill-cut), #000 var(--pill-cut)), linear-gradient(#000, #000);
   mask-image: linear-gradient(to bottom, transparent var(--pill-cut), #000 var(--pill-cut)), linear-gradient(#000, #000);
-  -webkit-mask-size: 100% calc(100% - var(--composer-tuck, 0px)), calc(100% - 24px - var(--composer-end, 0px)) var(--composer-tuck, 0px);
-  mask-size: 100% calc(100% - var(--composer-tuck, 0px)), calc(100% - 24px - var(--composer-end, 0px)) var(--composer-tuck, 0px);
-  -webkit-mask-position: 0 0, calc(12px + var(--composer-end, 0px) * (1 - var(--rtl-sign)) / 2) 100%;
-  mask-position: 0 0, calc(12px + var(--composer-end, 0px) * (1 - var(--rtl-sign)) / 2) 100%;
+  -webkit-mask-size: 100% calc(100% - var(--composer-tuck, 0px)), calc(100% - var(--composer-end, 0px)) var(--composer-tuck, 0px);
+  mask-size: 100% calc(100% - var(--composer-tuck, 0px)), calc(100% - var(--composer-end, 0px)) var(--composer-tuck, 0px);
+  -webkit-mask-position: 0 0, calc(var(--composer-end, 0px) * (1 - var(--rtl-sign)) / 2) 100%;
+  mask-position: 0 0, calc(var(--composer-end, 0px) * (1 - var(--rtl-sign)) / 2) 100%;
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
 }
-/* The foot's padding grows by what the scroller does, so the newest reply
-   still ends 12px over the card. Only while nothing stands between the
-   scroller and the card (nobody typing, no reply, attachment or error over
-   it); the card is opaque in both looks, so what runs under it is hidden. */
+/* The scroller runs on under the card while nothing stands between the
+   two (nobody typing, no reply, attachment or error over it); the card is
+   opaque in both looks, so what runs under it is hidden. */
 html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:has(.dev-thread-card) .dev-request-sheet:has(> .chat-status:empty + .messages-composer > .messages-composer-card):not(:has(> .messages-composer > :is(#gc-thread-reply-preview:not(.hidden), .dc-attach-error:not(.hidden), .dc-attach-strip:not(:empty)))) > #gc-thread-scroll {
   --composer-tuck: 22px;
   margin-bottom: calc(-1 * var(--composer-tuck));
-  padding-bottom: calc(12px + var(--composer-tuck)) !important;
+}
+/* THE FOOT IS A SPACER, NOT PADDING (20 Nov 2026). The newest reply ends
+   12px over the reply box, plus what the scroller runs on under it. That
+   air was the scroller's end padding, and WebKit leaves a grid or flex
+   scroller's end padding out of what it scrolls (the first session's form
+   met the same, "THOSE 200PX ARE A SPACER"): on a wide page, where the
+   scroller is the two-column grid, Safari stopped 34px short, and the last
+   line of the newest reply stayed under the box however far you scrolled.
+   An empty last item is counted by every engine. In the grid it takes a
+   row of its own under both columns. */
+html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:has(.dev-thread-card) #gc-thread-scroll { padding-bottom: 0 !important; }
+html:is(:not([data-skin]), [data-skin="brand"]) #dev-topic-thread .dev-request:has(.dev-thread-card) #gc-thread-scroll::after {
+  content: "";
+  display: block;
+  grid-column: 1 / -1;
+  height: calc(12px + var(--composer-tuck, 0px));
 }
 /* The handle between the card and the timeline: only on a wide page, where
    the timeline stands beside the card (the 1180px block above). */

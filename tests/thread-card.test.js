@@ -634,7 +634,7 @@ test('a foot with a vote to cast folds into the header once it has gone up behin
   // 19 Nov 2026: at the head card's 20px corners, no longer the capsule's ends.
   assert.match(block, /\.dev-thread-float \{[^}]*border-radius: 0 0 20px 20px;/);
   assert.match(block, /\.dev-request-bar \.messages-thread-header \{\s*position: relative;\s*z-index: 1;\s*\/\* The head's corners, as a length they can ease from\. \*\/\s*border-radius: 20px;/);
-  assert.match(block, /\.dev-request-bar > \.messages-thread-header \{ transition: border-radius 180ms ease; \}/);
+  assert.match(block, /\.dev-request-bar > \.messages-thread-header \{ transition: border-radius 180ms ease, padding 180ms ease, box-shadow 180ms ease; \}/);
   assert.match(block, /:has\(\.dev-thread-float\) \.dev-request-rail \{\s*top: 64px;/);
 });
 

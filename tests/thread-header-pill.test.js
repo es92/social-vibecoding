@@ -176,13 +176,22 @@ test('app.css: the cards go under the pill and under the reply box, and no furth
   // (`html[data-skin] … #gc-thread-scroll`) no longer wins in the brand look.
   assert.match(block, /\.dev-request:has\(\.dev-thread-card\) #gc-thread-scroll \{\n  --pill-cut: calc\(var\(--pill-top\) \+ 24px\);\n  -webkit-mask-image: linear-gradient\(to bottom, transparent var\(--pill-cut\), #000 var\(--pill-cut\)\), linear-gradient\(#000, #000\);/);
   assert.doesNotMatch(block, /transparent 4px/, 'no fade across the gap over the pill');
-  // The foot: the strip under the reply box shows only across its card.
-  assert.match(block, /mask-size: 100% calc\(100% - var\(--composer-tuck, 0px\)\), calc\(100% - 24px - var\(--composer-end, 0px\)\) var\(--composer-tuck, 0px\);/);
-  assert.match(block, /mask-position: 0 0, calc\(12px \+ var\(--composer-end, 0px\) \* \(1 - var\(--rtl-sign\)\) \/ 2\) 100%;/);
-  // The scroller runs on under the card by its corner radius, and its foot
-  // grows by the same, so the newest reply still ends 12px over the card.
+  // The foot: the strip under the reply box shows across the cards' column,
+  // the whole scroller less the timeline's (20 Nov 2026: it stopped 12px
+  // short of the cards' edges, with the box).
+  assert.match(block, /mask-size: 100% calc\(100% - var\(--composer-tuck, 0px\)\), calc\(100% - var\(--composer-end, 0px\)\) var\(--composer-tuck, 0px\);/);
+  assert.match(block, /mask-position: 0 0, calc\(var\(--composer-end, 0px\) \* \(1 - var\(--rtl-sign\)\) \/ 2\) 100%;/);
+  // The reply box is as wide as the cards over it: the bar has no side padding.
+  assert.match(block, /#dev-topic-thread \.dev-request:has\(\.dev-thread-card\) \.dev-request-sheet > \.messages-composer \{ padding-inline: 0; \}/);
+  // The scroller runs on under the card by its corner radius.
   assert.match(CSS, /\.messages-composer-card \{\n  border-radius: 22px;/, 'the tuck is the card\'s corner radius');
-  assert.match(block, /\.dev-request-sheet:has\(> \.chat-status:empty \+ \.messages-composer > \.messages-composer-card\):not\(:has\(> \.messages-composer > :is\(#gc-thread-reply-preview:not\(\.hidden\), \.dc-attach-error:not\(\.hidden\), \.dc-attach-strip:not\(:empty\)\)\)\) > #gc-thread-scroll \{\n  --composer-tuck: 22px;\n  margin-bottom: calc\(-1 \* var\(--composer-tuck\)\);\n  padding-bottom: calc\(12px \+ var\(--composer-tuck\)\) !important;\n\}/);
+  assert.match(block, /\.dev-request-sheet:has\(> \.chat-status:empty \+ \.messages-composer > \.messages-composer-card\):not\(:has\(> \.messages-composer > :is\(#gc-thread-reply-preview:not\(\.hidden\), \.dc-attach-error:not\(\.hidden\), \.dc-attach-strip:not\(:empty\)\)\)\) > #gc-thread-scroll \{\n  --composer-tuck: 22px;\n  margin-bottom: calc\(-1 \* var\(--composer-tuck\)\);\n\}/);
+  // The newest reply ends 12px over the box, plus the tuck, by a spacer: WebKit
+  // leaves a grid scroller's end padding out of what it scrolls, and the wide
+  // page's scroller is the two-column grid.
+  assert.match(block, /#dev-topic-thread \.dev-request:has\(\.dev-thread-card\) #gc-thread-scroll \{ padding-bottom: 0 !important; \}/);
+  assert.match(block, /#dev-topic-thread \.dev-request:has\(\.dev-thread-card\) #gc-thread-scroll::after \{\n  content: "";\n  display: block;\n  grid-column: 1 \/ -1;\n  height: calc\(12px \+ var\(--composer-tuck, 0px\)\);\n\}/);
+  assert.doesNotMatch(block, /> #gc-thread-scroll \{[^}]*padding-bottom: calc/, 'no end padding for WebKit to drop');
   // On a wide page the reply box ends where the card does, before the timeline.
   assert.match(CSS, /--thread-rail-gap: 20px;\n[\s\S]{0,200}--composer-end: calc\(var\(--thread-rail-w\) \+ var\(--thread-rail-gap\)\);/);
 });
@@ -250,8 +259,9 @@ test('a drag moves the line from the width the column had, towards whichever sid
 });
 
 test('the head measures itself while full and tightens once the thread scrolls (thread-head-fit.ts)', () => {
-  const { fitThreadHead, HEAD_TIGHT_AFTER_PX } = loadTsx('frontend/src/features/dev-board/topic/thread-head-fit.ts');
+  const { fitThreadHead, HEAD_TIGHT_AFTER_PX, HEAD_OPEN_BELOW_PX } = loadTsx('frontend/src/features/dev-board/topic/thread-head-fit.ts');
   assert.equal(HEAD_TIGHT_AFTER_PX, 24);
+  assert.equal(HEAD_OPEN_BELOW_PX, 8);
   const props = new Map();
   const attrs = new Set();
   const listeners = {};
@@ -267,16 +277,34 @@ test('the head measures itself while full and tightens once the thread scrolls (
     querySelector: (sel) => (sel === ':scope > .dev-request-sheet > .dev-request-scroll' ? scroller : null),
   };
   let height = 102;
-  const head = { closest: (sel) => (sel === '.dev-request' ? page : null), getBoundingClientRect: () => ({ height }) };
+  const fades = [];
+  const words = { animate: (frames) => fades.push(frames) };
+  const head = {
+    closest: (sel) => (sel === '.dev-request' ? page : null),
+    getBoundingClientRect: () => ({ height }),
+    querySelector: (sel) => (sel === '.dev-thread-bar-text' ? words : null),
+  };
   const undo = fitThreadHead(head);
   assert.equal(props.get('--thread-head-h'), '102px', 'the scroller starts under the full head');
   assert.equal(attrs.has('data-thread-head-tight'), false);
   scroller.scrollTop = 30;
   listeners.scroll();
   assert.equal(attrs.has('data-thread-head-tight'), true, 'scrolled: the head tightens');
+  assert.equal(fades.length, 1, 'its words come up into the new layout');
+  // 20 Nov 2026: a few pixels back over the line does not open it again.
+  scroller.scrollTop = 20;
+  listeners.scroll();
   scroller.scrollTop = 10;
   listeners.scroll();
+  assert.equal(attrs.has('data-thread-head-tight'), true, 'still tight short of the top');
+  assert.equal(fades.length, 1);
+  scroller.scrollTop = 4;
+  listeners.scroll();
   assert.equal(attrs.has('data-thread-head-tight'), false, 'back at the top: full again');
+  assert.equal(fades.length, 2);
+  scroller.scrollTop = 20;
+  listeners.scroll();
+  assert.equal(attrs.has('data-thread-head-tight'), false, 'and full until past the tighten line again');
   undo();
   assert.equal(props.has('--thread-head-h'), false);
   assert.deepEqual(Object.keys(listeners), [], 'the scroll listener goes with it');
@@ -289,6 +317,56 @@ test('the head measures itself while full and tightens once the thread scrolls (
     const src = read(file);
     assert.match(src, /const head = useRef<HTMLElement>\(null\);\s+useThreadHeadFit\(head, !frame\);/);
     assert.match(src, /<header ref=\{head\} className="messages-thread-header">/);
+  }
+});
+
+test('the head eases between its sizes and is measured only once it has settled (20 Nov 2026)', async () => {
+  const at = CSS.indexOf('THE HEAD EASES (20 Nov 2026)');
+  assert.ok(at > 0);
+  const block = CSS.slice(at, at + 3000);
+  assert.match(block, /#dev-topic-thread \.dev-request:has\(\.dev-thread-card\) \.dev-thread-bar-tile \{ transition: width 180ms ease, height 180ms ease, border-radius 180ms ease, font-size 180ms ease; \}/);
+  assert.match(block, /\.dev-request:has\(\.dev-thread-card\) > \.dev-request-back \{ transition: top 180ms ease; \}/, 'the way back stays level with the tile');
+  assert.match(CSS, /\.dev-request-bar > \.messages-thread-header \{ transition: border-radius 180ms ease, padding 180ms ease, box-shadow 180ms ease; \}/);
+
+  const { fitThreadHead } = loadTsx('frontend/src/features/dev-board/topic/thread-head-fit.ts');
+  const props = new Map();
+  const scroller = { scrollTop: 0, addEventListener() {}, removeEventListener() {} };
+  const page = {
+    style: { setProperty: (k, v) => props.set(k, v), removeProperty: (k) => props.delete(k) },
+    toggleAttribute() {},
+    removeAttribute() {},
+    querySelector: () => scroller,
+  };
+  let height = 78;
+  let easing = [];
+  const head = {
+    closest: () => page,
+    getBoundingClientRect: () => ({ height }),
+    querySelector: () => null,
+    getAnimations: () => easing,
+  };
+  const prevRO = globalThis.ResizeObserver;
+  let observed = null;
+  globalThis.ResizeObserver = class { constructor(fn) { observed = fn; } observe() {} disconnect() {} };
+  try {
+    const undo = fitThreadHead(head);
+    assert.equal(props.get('--thread-head-h'), '78px');
+    // Mid-ease: an in-between height is never written.
+    let done;
+    easing = [{ finished: new Promise((r) => { done = r; }) }];
+    height = 64;
+    observed();
+    observed();
+    assert.equal(props.get('--thread-head-h'), '78px', 'not while it eases');
+    // Settled: measured once, at its own size.
+    easing = [];
+    height = 80;
+    done();
+    await new Promise((r) => setTimeout(r, 0));
+    assert.equal(props.get('--thread-head-h'), '80px', 'measured once it has settled');
+    undo();
+  } finally {
+    if (prevRO === undefined) delete globalThis.ResizeObserver; else globalThis.ResizeObserver = prevRO;
   }
 });
 
