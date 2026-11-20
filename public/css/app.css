@@ -19585,6 +19585,18 @@ html.in-side-panel.side-panel-beside-ai .dev-request-bar { display: none; }
 :is(html.in-side-panel.side-panel-beside-ai, .dev-ws-side) #dev-topic-thread {
   padding-top: 0;
 }
+/* AND THE COLUMN IS NO BOX ROUND IT (20 Nov 2026). A request opened in the
+   column is the side panel in its place, which paints nothing: its cards
+   lie on the page's own ground, the brand look's grain and splotches
+   included. The column's pane (its flat fill, its hairline, its rounded
+   corner) drew a faint box round a private thread that the public one has
+   not, so it paints nothing either while it holds the thread's page. Beside
+   the lists only: on a phone the column is the drawer, and covers them. */
+#ai-screen[data-ai-docked] .ai-main-pane:has(.dev-private-thread) {
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
 :is(html.in-side-panel.side-panel-beside-ai, .dev-ws-side) .dev-request,
 #ai-screen .dev-private-thread {
   /* The page's gutter, which its head, its cards and its reply box keep. */
@@ -31172,8 +31184,7 @@ html:is(:not([data-skin]), [data-skin="brand"]) #ai-screen .dev-private-thread {
   --thread-card-edge: var(--thread-card-edge-look, inset 0 0 0 1px var(--app-sheet-line), 0 1px 2px rgba(0, 0, 0, 0.05));
   --thread-card-r: 20px;
 }
-html:is(:not([data-skin]), [data-skin="brand"]) :is(.dev-ws-side, .in-side-panel body, .gc-tab-body:has(> .gc-spec-side-panel-open)) #dev-topic-thread .dev-request:has(.dev-request-rail:not(:empty)) .dev-request-sheet,
-html:is(:not([data-skin]), [data-skin="brand"]) #ai-screen .dev-private-thread > .dev-request-sheet { background: var(--thread-ground-look, transparent); }
+html:is(:not([data-skin]), [data-skin="brand"]) :is(.dev-ws-side, .in-side-panel body, .gc-tab-body:has(> .gc-spec-side-panel-open)) #dev-topic-thread .dev-request:has(.dev-request-rail:not(:empty)) .dev-request-sheet { background: var(--thread-ground-look, transparent); }
 html:is(:not([data-skin]), [data-skin="brand"]) .gc-tab-body:has(> .gc-spec-side-panel-open) .dev-request:has(.dev-request-rail:not(:empty)) .dev-request-sheet { border-top-color: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
 html:is(:not([data-skin]), [data-skin="brand"]) :is(.dev-ws-side, .in-side-panel body, .gc-tab-body:has(> .gc-spec-side-panel-open)) #dev-topic-thread .dev-request:has(.dev-request-rail:not(:empty)) :is(#gc-thread-head, #gc-thread-messages, .dev-request-rail),
 html:is(:not([data-skin]), [data-skin="brand"]) #ai-screen .dev-private-thread :is([data-thread-page-post], [data-thread-page-replies]) {
