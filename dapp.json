@@ -1926,10 +1926,17 @@
       "allowConsoleErrors": true
     },
     {
-      "name": "Landing has Sign in and one filled button in its bar, and under the story Explore apps and no link (first session)",
+      "name": "Landing has Sign in and one filled button in its bar, and under the story Explore apps and the door to private communities (first session)",
       "path": "/?shot=anon#landing",
-      "expectSelector": "#auth-landing-screen:not(.hidden):has(#landing-header button[data-landing-sign-up]):has([data-landing-story] button[data-landing-story-explore]):not(:has([data-landing-story] a)) #landing-header [data-landing-sign-in]:not(.hidden)",
+      "expectSelector": "#auth-landing-screen:not(.hidden):has(#landing-header button[data-landing-sign-up]):has([data-landing-story-explore] + a[data-landing-story-private][href=\"/communities\"]) #landing-header [data-landing-sign-in]:not(.hidden)",
       "expectText": "Sign in",
+      "allowConsoleErrors": true
+    },
+    {
+      "name": "Signed out: /communities is the page about private communities, in the guest Discover's place, with its walk through a community, the approval rules and its own way in",
+      "path": "/communities?shot=anon",
+      "expectSelector": "#auth-landing-screen:not(.hidden):not(:has([data-guest-discover])) [data-guest-groups]:has([data-guest-groups-demo]):has(button[data-guest-groups-start]):has(a[data-guest-groups-public][href=\"/\"]) [data-guest-groups-rule=\"you_or_the_group\"] h3",
+      "expectText": "You or the group",
       "allowConsoleErrors": true
     },
     {

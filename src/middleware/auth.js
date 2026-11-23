@@ -239,8 +239,12 @@ const GATE_OPEN_PATHS = [
 // mistyped opens the page that says it does not work, instead of bouncing
 // to `/` and the plain landing. The route answers every such path the way
 // it answers an unknown token, so this discloses nothing.
+// `/communities` is the signed-out page about private communities
+// (frontend/src/features/guest/guest-communities.tsx): a link sent to
+// somebody who runs a group, who has no account yet.
 function isSpaDocumentPath(pathname) {
   return pathname === '/' || pathname === '/index.html'
+    || pathname === '/communities'
     || /^\/app\/[a-z0-9][a-z0-9-]{0,254}(?:\/.*)?$/.test(pathname)
     || /^\/invite\/[^/]+$/.test(pathname)
     // An admin's invite link to Homeroom (routes/access-links.js), opened

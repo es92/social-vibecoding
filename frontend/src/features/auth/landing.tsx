@@ -77,9 +77,10 @@ import {
   type SignInResume,
   spendReleaseLink,
 } from './sign-in-sheet';
-import { Story } from './story';
+import { COMMUNITIES_PATH, Story } from './story';
 import { cardCover, morph, projectHero } from '../guest/card-morph';
 import { devicePinsStore, loadDevicePins, toggleDevicePin } from '../guest/device-pins';
+import { GuestCommunities } from '../guest/guest-communities';
 import { GuestDiscover } from '../guest/guest-discover';
 import { LandingFrame } from '../guest/frame/landing-frame';
 import { type GuestIntent, GuestProject } from '../guest/guest-project';
@@ -1046,6 +1047,13 @@ export function LandingScreen() {
     () => typeof location !== 'undefined' && onInviteLink(location.pathname),
   );
   useEffect(() => { setOnInvitePath(onInviteLink(location.pathname)); }, []);
+  // The page about private communities has an address of its own
+  // (./story.tsx COMMUNITIES_PATH), read in the first render for the same
+  // reason the invite path is.
+  const [onGroupsPath, setOnGroupsPath] = useState(
+    () => typeof location !== 'undefined' && location.pathname === COMMUNITIES_PATH,
+  );
+  useEffect(() => { setOnGroupsPath(location.pathname === COMMUNITIES_PATH); }, []);
 
   // Non-render state, mirroring the legacy module's fields one for one.
   const st = useRef({
@@ -1140,6 +1148,10 @@ export function LandingScreen() {
   const storyFront = storyOn && inApp && !linkedSlug && !discoverLink && !gate;
   // The guest pages (Discover, a project's page) and their bar.
   const guestPages = guestOn && !storyFront;
+  // …and, at its own address, the page about private communities in
+  // Discover's place (../guest/guest-communities.tsx). A project's page or a
+  // members' link's sheet named by the hash still comes first.
+  const groupsPage = guestPages && onGroupsPath && !guestProject && !linkPending && !gate;
   // Discover inside the app, reached from the story: its bar has a back.
   const appDiscover = storyOn && inApp && discoverLink;
   // The project's name, when the link is for a public one.
@@ -2355,6 +2367,12 @@ export function LandingScreen() {
               onAllCommunities={onBack}
             />
           ) : null}
+          {/* At `/communities`, the page about private communities, in the
+              guest Discover's place under either drawing of it. */}
+          {groupsPage ? (
+            <GuestCommunities waitlist={accountsWait} onStart={() => setSheet('start')} />
+          ) : (
+            <>
           {/* The same page in the one frame, ahead of the standard one, which
               app.css puts away while this is up. An account still in line
               looks around on it too. */}
@@ -2391,6 +2409,8 @@ export function LandingScreen() {
               )}
             />
           ) : null}
+            </>
+          )}
         </div>
       </div>
       {/*

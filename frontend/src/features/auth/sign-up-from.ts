@@ -4,9 +4,10 @@
  *
  * Each button notes itself as it opens a sign-in sheet: the story's
  * (./story.tsx: Continue, its Sign in line; the hero's is the looks' frame's,
- * ../guest/frame/landing-frame.tsx) and the landing's own (./landing.tsx:
+ * ../guest/frame/landing-frame.tsx), the landing's own (./landing.tsx:
  * the bar's Sign in and Sign up, what the visitor tried on a project's page,
- * and the sheet a shared link opens by itself). It travels
+ * and the sheet a shared link opens by itself) and the page about private
+ * communities' (`groups`, ../guest/guest-communities.tsx). It travels
  * as a short-lived first-party cookie because one of the ways in leaves the
  * page and comes back: Apple's and Google's sign-ins finish on the
  * provider's callback, a top-level navigation that carries a SameSite=Lax
@@ -32,6 +33,7 @@ export const SIGN_UP_FROM = [
   'story',
   'story_sign_in',
   'link',
+  'groups',
 ] as const;
 export type SignUpFrom = (typeof SIGN_UP_FROM)[number];
 

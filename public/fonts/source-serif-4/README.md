@@ -1,9 +1,10 @@
 # public/fonts/source-serif-4: the Source Serif 4 typeface, self-hosted
 
 Source Serif 4 is the serif of the **signed-out hero**: the headline and the
-button on the landing's short story (`frontend/src/features/auth/story.tsx`).
-It is lighter and tighter than Young Serif, which the heading under that
-hero keeps.
+two buttons on the landing's short story (`frontend/src/features/auth/story.tsx`)
+and on the page about private communities
+(`frontend/src/features/guest/guest-communities.tsx`). It is lighter and
+tighter than Young Serif, which the section headings under those heroes keep.
 The stylesheet names it as `--site-display` under `#auth-landing-screen`
 (`public/css/app.css`, "THE WEBSITE'S LOOK ON THE SIGNED-OUT PAGES"), so only
 a signed-out page asks for the file.

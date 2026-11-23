@@ -1807,7 +1807,12 @@ test('the declared checks that read a board card’s anatomy run with the cards 
   // says what earned each challenge's points, when each was credited and why,
   // and how points work: its own route, which no existing check opens. 704
   // leaves 176 slots.
-  checkCap.assertPinned(DAPP.tests.length, 704);
+  // 704 → 705: +1 (private communities' page): the signed-out page at
+  // `/communities` is a pathname of its own, which no check of the landing
+  // loads, so nothing could take it in a :has(); the landing's own door to
+  // it rides the existing "one filled button in its bar" check. 705 leaves
+  // 175 slots.
+  checkCap.assertPinned(DAPP.tests.length, 705);
 });
 
 test('a tap on the merge-requirements checklist opens the checklist, not the fold (#2128)', () => {

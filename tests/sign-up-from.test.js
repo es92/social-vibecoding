@@ -66,6 +66,8 @@ test('each button notes itself as its sheet opens', () => {
     'frontend/src/features/auth/story.tsx': ['story', 'story_sign_in'],
     'frontend/src/features/guest/frame/landing-frame.tsx': ['hero'],
     'frontend/src/features/auth/landing.tsx': ['header_sign_in', 'header_sign_up', 'link'],
+    // The page about private communities, from either of its two buttons.
+    'frontend/src/features/guest/guest-communities.tsx': ['groups'],
   };
   for (const [file, kinds] of Object.entries(where)) {
     const text = read(file);

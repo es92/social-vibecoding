@@ -50,6 +50,12 @@ const STORY_LINK = 'font-semibold text-violet-700 dark:text-violet-400 hover:und
 // Also the dead invite link's welcome (./invite-card.tsx DeadInvite).
 export const SMALL_CAPS = 'text-[12px] leading-4 font-bold uppercase tracking-[0.06em] text-zinc-500 dark:text-zinc-400';
 
+// The page about private communities (../guest/guest-communities.tsx), which
+// the short story's card and, on a phone, its closing line lead to. A path of
+// its own so it can be sent to somebody as a link (src/middleware/auth.js
+// isSpaDocumentPath lets a visitor with no account open it).
+export const COMMUNITIES_PATH = '/communities';
+
 // THE SHORT STORY IS DRAWN IN THE WEBSITE'S LOOK (13 Nov 2026): it is a
 // visitor's next click after onhomeroom.com, so it is that site's sky band
 // with a white window in it, serif headlines and sun on an ink outline.
@@ -67,10 +73,11 @@ const SITE_LINK = 'font-semibold text-[color:var(--site-ink)] underline decorati
 // One of the three dots a window's strip carries.
 const WINDOW_DOT = 'h-2 w-2 rounded-full border border-[color:var(--site-line)] md:h-2.5 md:w-2.5';
 
-// The short story's button: a sun pill on an ink outline, as the bar's
-// button is.
+// The short story's two buttons: a sun pill on an ink outline, as the bar's
+// button is, and its plain twin beside it.
 const HERO_PILL = 'inline-flex min-h-11 items-center justify-center rounded-full whitespace-nowrap px-[18px] py-2 text-center font-[family-name:var(--site-display)] text-[16px] leading-[22px] font-medium no-underline shadow-[inset_0_0_0_1px_var(--site-line),0_2px_0_var(--site-line)] un-touch-target';
 export const HERO_PRIMARY = `${HERO_PILL} bg-[var(--site-sun)] text-[color:var(--site-on-sun)]`;
+export const HERO_SECONDARY = `${HERO_PILL} bg-[var(--site-panel)] text-[color:var(--site-ink)]`;
 
 // "Explore apps" brings what follows the story (the communities, which start
 // right under it) to the top of the screen, clear of the bar.
@@ -156,9 +163,10 @@ export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, co
   onSignIn?: () => void;
   /**
    * THE SHORT STORY, over the guest Discover (features/guest/guest-discover.tsx):
-   * the headline, two short lines that say what this place is like, and one
-   * button: Explore apps, which brings the list under it to the top. It
-   * makes no account: the 21 Oct 2026 review found two Sign ins, then two Sign ups, on
+   * the headline, two short lines that say what this place is like, and two
+   * buttons: Explore apps, which brings the list under it to the top, and
+   * the door to the page about private communities. Neither makes an
+   * account: the 21 Oct 2026 review found two Sign ins, then two Sign ups, on
    * one screen read as a mistake, so that is the bar's filled button alone
    * ("Join the waitlist" while new accounts wait, landing.tsx). No examples
    * (the real apps follow it) and, on a phone, no pictures, so the first
@@ -285,13 +293,15 @@ export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, co
     // On the page itself, as the story always was, and short. THE PITCH
     // (Evan, 13 Nov 2026): Homeroom is the app library anyone can edit, said
     // the way Wikipedia says it of an encyclopedia. The headline, then the
-    // comparison as two lines, then one button. The three numbered points
+    // comparison as two lines, then two buttons. The three numbered points
     // and the closing line that were here (13 Nov) went on 17 Nov 2026: they
     // stood between a visitor and the apps, which say it better.
     //
-    // ONE BUTTON, NOT AN ACCOUNT: Explore apps scrolls to the list under the
-    // hero. The bar's filled button is still the one way to make an account
-    // (landing.tsx).
+    // TWO BUTTONS, NEITHER AN ACCOUNT: Explore apps scrolls to the list under
+    // the hero, and the white one is the door to the page about private
+    // communities (../guest/guest-communities.tsx), a different promise from
+    // the one this hero makes. The bar's filled button is still the one way
+    // to make an account (landing.tsx).
     //
     // THE PICTURES are for the eye only: the communities page beside the
     // words from lg, and from md the people on the window's bottom edge with
@@ -340,6 +350,9 @@ export function Story({ primaryClass, welcomeEmail = null, onStart, onSignIn, co
               <button type="button" data-landing-story-explore="" className={HERO_PRIMARY} onClick={exploreApps}>
                 {t('auth:guest.hero.explore')}
               </button>
+              <a href={COMMUNITIES_PATH} data-landing-story-private="" className={HERO_SECONDARY}>
+                {t('auth:guest.hero.privateHow')}
+              </a>
             </div>
           </div>
           <div className="hidden min-w-0 py-7 ps-6 pe-8 lg:block xl:pe-10" aria-hidden="true">

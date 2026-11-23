@@ -86,9 +86,12 @@ recorded.
   absolute `${PRODUCTION_ORIGIN}/brand/people.png` URL in the
   `waitlist_released` template's first version (`src/db/email-template-seeds.js`, #4570), with the same
   empty `alt` — the headline under it carries the meaning there too.
-- **sky.webp** — the clouds behind the signed-out hero (the landing's short
-  story, `frontend/src/features/auth/story.tsx`), drawn by
-  `.site-clouds::before` in `public/css/app.css` in the light shell only. Under it is the flat `--site-sky`, which is what shows if the file
+- **sky.webp** — the clouds behind the two signed-out heroes (the landing's
+  short story, `frontend/src/features/auth/story.tsx`, and the page about
+  private communities, `frontend/src/features/guest/guest-communities.tsx`),
+  drawn by `.site-clouds::before` in `public/css/app.css` in the light shell
+  only, and the sky inside the window of the private page's walk-through
+  (`.hx-main`, `.hx-banner`) in both. Under it is the flat `--site-sky`, which is what shows if the file
   does not load.
 - **landing-communities.webp** — the picture of the communities page beside
   the landing hero's words, from 1024px. Decorative, empty `alt`.
@@ -167,4 +170,44 @@ which needs a sign-in; its files are under `/brand/homeroom/bg/`), saved on
 re-encoding. Standard (WIP) draws one across the top of each pinned
 community's card on the Communities page (app.css, `--wip-scene-1` to `-6`).
 They are decoration loaded by the stylesheet when that page is drawn, so
-they are not in `public/sw.js`'s precache list.
+they are not in `public/sw.js`'s precache list. `bg/sky.webp` is also the
+soft sky behind the closing band of the page about private communities
+(`.site-sky-soft`).
+
+## `groups/` — the pictures on the page about private communities
+
+Fifteen WebP files drawn by the signed-out page at `/communities`
+(`frontend/src/features/guest/guest-communities.tsx`, the B3 design), all
+named in `public/css/app.css` ("THE PAGE ABOUT PRIVATE COMMUNITIES") except
+the six `benefit-*` drawings, which the component names by its card's key.
+
+**Where they came from.** Every one was taken out of the B3 design file the
+product owner supplied on 23 Nov 2026 (`private-communities-B3.html`, a
+single page with its pictures embedded) and committed as embedded: the same
+bytes, no resize and no re-encoding. The design file does not say where its
+pictures came from, so neither can this table. **The three photographs
+(`friends.webp`, `avatar-kai.webp`, `avatar-zoe.webp`) show real people:
+their source and the right to use them were not recorded with the design and
+should be confirmed by whoever supplied it.** Replace a file here with one of
+the same name and the page follows.
+
+| File | What it is | Dimensions | Size |
+|---|---|---|---|
+| `groups/stars.webp` | the brand green with pale stars, behind "What your group gets" and "Your group, your rules" | 1200 × 675 | 71.6 KB |
+| `groups/friends.webp` | a photograph of three friends, on the "Friend groups" card | 1100 × 580 | 36.0 KB |
+| `groups/benefit-private.webp` | brand drawing: two people | 96 × 96 | 4.5 KB |
+| `groups/benefit-around.webp` | brand drawing: an eye | 96 × 96 | 3.4 KB |
+| `groups/benefit-vote.webp` | brand drawing: a party popper | 96 × 96 | 7.5 KB |
+| `groups/benefit-comment.webp` | brand drawing: a pencil | 96 × 96 | 4.2 KB |
+| `groups/benefit-talk.webp` | brand drawing: a speech bubble | 96 × 96 | 4.7 KB |
+| `groups/benefit-credit.webp` | brand drawing: a trophy | 96 × 96 | 4.9 KB |
+| `groups/avatar-f1.webp`, `groups/avatar-f3.webp`, `groups/avatar-f4.webp`, `groups/avatar-m3.webp`, `groups/avatar-m4.webp` | brand characters, as the faces of made-up members in the hero's walk-through | 96 × 96 | 1.6 to 2.3 KB each |
+| `groups/avatar-kai.webp`, `groups/avatar-zoe.webp` | photographs of two faces, for two more made-up members | 96 × 96 | 1.8 and 2.0 KB |
+
+They are decoration (empty `alt`, or a background behind words that read
+without it) and are not in `SHELL_ASSETS`: an offline visitor loses the
+pictures and nothing else. The design file also carried three more brand
+characters and a second picture for the "Friend groups" card that the page
+does not draw; they were not committed. Its soft sky behind the closing band
+was the brand kit's sky at another size, so the page draws `bg/sky.webp`
+(above) instead of a second copy.
