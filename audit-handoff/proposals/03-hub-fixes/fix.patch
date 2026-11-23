@@ -1,0 +1,74 @@
+diff --git a/frontend/src/features/dev-board/board-frame.tsx b/frontend/src/features/dev-board/board-frame.tsx
+index f26893c5..85442d52 100644
+--- a/frontend/src/features/dev-board/board-frame.tsx
++++ b/frontend/src/features/dev-board/board-frame.tsx
+@@ -334,7 +334,8 @@ function CodePauseNotice(): ReactNode {
+   const s = useStoreState<CodePauseState>(codePauseStore);
+   if (!s.paused) return null;
+   return (
+-    <Alert variant="notice" density="compact" data-code-pause="github">
++    // The title carries the whole sentence: on a wide window the notice is one line in the page's title row, cut with an ellipsis where it does not fit.
++    <Alert variant="notice" density="compact" data-code-pause="github" title={t('project:codePause.notice')}>
+       <span>{t('project:codePause.notice')}</span>
+     </Alert>
+   );
+diff --git a/public/css/app.css b/public/css/app.css
+index 18c6f13d..34d58329 100644
+--- a/public/css/app.css
++++ b/public/css/app.css
+@@ -7121,6 +7168,8 @@ html:not([data-skin]) #dev-workshop .dev-ws-hero-summary .dev-ws-hero-actions #d
+ }
+ html:not([data-skin]) #dev-workshop .dev-ws-hero-summary .dev-ws-hero-actions #dev-plus-btn .dev-ws-plus-glyph { width: 1.25rem; height: 1.25rem; stroke-width: 2.2; }
+ html:not([data-skin]) #dev-workshop .dev-ws-hero-summary .dev-ws-hero-id { gap: 1rem; }
++/* The ⋯ sits in the card's corner, out of the flow, and reaches 1.5rem into the words' column: a name of more than about fourteen letters ran under it on a phone. The name's first line stops short of it. */
++html:not([data-skin]) #dev-workshop .dev-ws-hero-summary:has(.dev-ws-hero-actions > .dev-ws-plus) .dev-ws-hero-name { padding-inline-end: 1.75rem; }
+ html:not([data-skin]) #dev-workshop .dev-ws-hero-summary .dev-ws-hero-tile {
+   width: var(--wip-hub-icon);
+   height: var(--wip-hub-icon);
+@@ -7274,6 +7323,14 @@ html:not([data-skin]):where([data-motion="reduce"]) #dev-workshop [data-ws-hub-f
+   html:not([data-skin]) #dev-workshop [data-ws-hub-for-you] > :first-child { grid-column: 1 / -1; }
+   html:not([data-skin]) #dev-workshop [data-ws-hub-for-you] > .dev-ws-foryou > * { grid-column: auto; align-self: stretch; }
+ }
++/* THREE DOORS NEED THREE COLUMNS' WORTH OF ROOM. Side by side from 768px, each was about 230px wide beside the open sidebar up to 1200px (and beside the folded one up to 1020px): after its glyph, its count and its chevron a door had 20px left for words, and read "N…" for Needs you and "Disc…" for Discussion. Narrower than that they are a list, one to a row, as on a phone. */
++@media (min-width: 768px) and (max-width: 1199.98px) {
++  html:not([data-skin]) #dev-workshop [data-ws-hub-for-you] > .dev-ws-foryou > * { grid-column: 1 / -1; }
++  html:not([data-skin]) #dev-workshop [data-ws-hub-for-you] > .dev-ws-foryou > * + * { margin-top: calc(0.5rem - var(--wip-row-gap)); }
++}
++@media (min-width: 1020px) and (max-width: 1199.98px) {
++  html:not([data-skin]) body:has(> #platform-tabs.platform-tabs-folded) #dev-workshop [data-ws-hub-for-you] > .dev-ws-foryou > * { grid-column: auto; margin-top: 0; }
++}
+ /* RECENTLY LIVE, as a list and not a wall of pictures. Each change is a row
+    of Home's own kind: a small picture at its side (a thumbnail, not a
+    poster), then its title over who shipped it and when. Three across from
+@@ -7452,6 +7509,8 @@ html:not([data-skin]) #dev-workshop .wip-hero-wash[data-scene="home"]::after {
+ }
+ html:not([data-skin]) #dev-workshop .wip-hero-wash[data-scene="home"] + .wip-hero-art .wip-hero-stage { animation: none; place-items: end center; padding-block-end: 6px; }
+ .wip-hero-people { position: absolute; inset-block-end: 6px; inset-inline-end: 1.25rem; height: calc(100% - 14px); width: auto; max-width: none; }
++/* The people are as tall as the card, so their width followed its height, and where the words wrap (about 900 to 1200px) the card grew and the picture with it, out of the side kept for it and over the words. They stay inside that side, standing on the bottom edge, and are drawn smaller when it is narrow. */
++html:not([data-skin]) #dev-workshop .wip-hero-people { max-width: calc(100% - 1.25rem); object-fit: contain; object-position: bottom; }
+ /* THE PROJECT'S PREVIEW STANDS BESIDE THE HERO (asked 20 Nov 2026), in its row from 1024px: the hero takes two of the
+    hub's three columns and the preview the third, the two as tall as each other. Narrower, there is no card: the hero keeps the picture at its own side, tilted, as before. */
+ html:not([data-skin]) #dev-workshop .wip-hero-preview { position: relative; aspect-ratio: 16 / 10; overflow: hidden; border-radius: var(--wip-card-radius); box-shadow: inset 0 0 0 1px var(--wip-card-line); background-color: var(--wip-card-bg); }
+@@ -7728,7 +7787,8 @@ html:not([data-skin]) #dev-workshop .dev-ws[data-ws-tab="all"] #dev-filter-chips
+   html:not([data-skin]) #dev-forum-scroll:has(> #dev-body > #dev-workshop > .dev-ws:is([data-ws-tab="status"], [data-ws-tab="all"])) > #dev-code-pause-notice > [data-code-pause],
+   html[data-skin-wip] #dev-forum-scroll:has(> #dev-body > #dev-workshop > .dev-ws[data-ws-tab="all"]) > #dev-code-pause-notice > [data-code-pause] {
+     flex: none;
+-    max-width: 62%;
++    /* Everything but the title's own room. It was 62% of the row, which cut the sentence at "Requests and discus…" on a 1440px window with a third of the row empty beside it. */
++    max-width: calc(100% - 10rem);
+     margin-top: 0.9375rem;
+     align-self: flex-start;
+     overflow: hidden;
+diff --git a/tests/proposal-code-missing-render.test.js b/tests/proposal-code-missing-render.test.js
+index 10c405b1..89055625 100644
+--- a/tests/proposal-code-missing-render.test.js
++++ b/tests/proposal-code-missing-render.test.js
+@@ -164,7 +164,7 @@ test('the change\'s page: the notice above Votes and Testing, in the project pag
+     `<div data-change-code-missing="" class="rounded-lg border border-amber-500/40 bg-amber-500/10 text-sm text-amber-800 dark:text-amber-300 px-3 py-2 mt-3"><span>${SENTENCE}</span></div>`);
+   // The same notice the project page draws for paused code changes.
+   const frame = read('frontend', 'src', 'features', 'dev-board', 'board-frame.tsx');
+-  assert.match(frame, /<Alert variant="notice" density="compact" data-code-pause="github">/);
++  assert.match(frame, /<Alert variant="notice" density="compact" data-code-pause="github" title=\{t\('project:codePause\.notice'\)\}>/);
+   const src = read(head);
+   // The stacked-change notice (tests/proposal-stacked-render.test.js) sits
+   // between the two.

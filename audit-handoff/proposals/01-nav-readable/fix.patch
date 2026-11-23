@@ -1,0 +1,49 @@
+diff --git a/public/css/app.css b/public/css/app.css
+index 18c6f13d..34d58329 100644
+--- a/public/css/app.css
++++ b/public/css/app.css
+@@ -8277,6 +8342,7 @@ html:not([data-skin]) {
+   --wip-nav-ink-strong: #ffffff;
+   --wip-nav-mut: rgb(255 255 255 / 0.72);
+   --wip-nav-faint: rgb(255 255 255 / 0.32);
++  --wip-nav-tile-letter: #8e8e93;        /* a community's initial on its white tile: the page's faint grey, not the panel's faint white */
+   --wip-nav-hover: rgb(255 255 255 / 0.16);
+   --wip-nav-line: transparent;
+   --wip-nav-accent: transparent;        /* a bar at the start of the place you are on */
+@@ -8382,6 +8448,13 @@ html:not([data-skin]) #platform-tabs [aria-current="page"] :is(.platform-rail-vo
+   background: var(--wip-nav-on-count-bg);
+   color: var(--wip-nav-on-count-ink);
+ }
++/* The grey "new to read" count takes the panel's faint white for its fill, which on the lit row's sun leaves white numerals on yellow. There it is the row's own ink on a tint of it: still the quiet count, and readable. */
++html:not([data-skin]) #platform-tabs [aria-current="page"] .platform-tab-badge {
++  background: color-mix(in srgb, var(--wip-nav-on-ink) 14%, transparent);
++  color: var(--wip-nav-on-ink);
++}
++/* A letter tile's face is the page's white, not the panel's blue, so its initial takes the page's faint grey (as on Home) and not the panel's faint white, which drew a blank square. */
++html:not([data-skin]):not(.dark) #platform-tabs :is(.app-icon-tile[data-icon="letter"], .app-icon-wait) { color: var(--wip-nav-tile-letter); }
+ html:not([data-skin]) #platform-tabs :is(.platform-rail-head, .platform-rail-head-label, .platform-side-apps-head, .dev-ws-places-head) { color: var(--wip-nav-mut); }
+ html:not([data-skin]) #platform-tab-home { --wip-nav-ic: var(--wip-nav-ic-home); }
+ html:not([data-skin]) #platform-tab-ai { --wip-nav-ic: var(--wip-nav-ic-spark); }
+@@ -25037,6 +25130,22 @@ html.un-android.in-native-webview:not(.web-browser-chrome) {
+   .platform-tab { padding: 0; }
+   .platform-tab .platform-tab-label { font-size: 10.5px; letter-spacing: -.02em; }
+ }
++/* EACH SEAT IS AS WIDE AS ITS WORD (audit, 21 Nov 2026). The seats above are fixed shares of the bar, measured to fit
++   the labels at 11px on a 360 to 390px phone, with the two long labels let out of their seats where they did not. So at
++   320px, and on any phone whose system text size is turned up (an Android WebView scales the text, not the bar),
++   "Communities" ran out of its lit pill and into "Homeroom bot", and that into "Messages". A seat now starts from its
++   own label and the bar's spare room is shared out evenly, so a pill always holds its word; and if the five words
++   together are wider than the bar, the longest ends in an ellipsis instead of being printed over its neighbour. Not the
++   iPhone Duo's side strip, which stacks its tabs and has its own rules. */
++@media (max-width: 767.98px) {
++  html:not([data-skin]):not([data-side-strip]) #platform-tabs { grid-template-columns: repeat(5, auto); }
++  html:not([data-skin]):not([data-side-strip]) #platform-tabs .platform-tab { padding-inline: 5px; }
++  html:not([data-skin]):not([data-side-strip]) #platform-tabs :is(#platform-tab-workshop, #platform-tab-ai) { overflow: hidden; }
++  html:not([data-skin]):not([data-side-strip]) #platform-tabs :is(#platform-tab-workshop, #platform-tab-ai) .platform-tab-label { overflow: hidden; text-overflow: ellipsis; }
++}
++@media (max-width: 374.98px) {
++  html:not([data-skin]):not([data-side-strip]) #platform-tabs .platform-tab { padding-inline: 3px; }
++}
+ 
+ /* TWO ORDERS, ONE MARKUP (the reviewer, 29 Oct 2026). The tabs' markup is the
+    desktop sidebar's order, Home, AI, Messages, Communities, then you, so a

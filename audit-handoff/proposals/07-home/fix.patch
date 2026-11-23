@@ -1,0 +1,86 @@
+diff --git a/public/css/app.css b/public/css/app.css
+index 18c6f13d..34d58329 100644
+--- a/public/css/app.css
++++ b/public/css/app.css
+@@ -6572,6 +6589,12 @@ html:not([data-skin]) #app-list .app-card-desc { display: none; }
+   html:not([data-skin]) { --home-cell-h: var(--wip-tile-h-stacked); }
+   html:not([data-skin]) #app-list .app-card-title { margin-top: var(--wip-title-gap-stacked); font-size: var(--wip-title-size-mid); min-height: 2.5em; }
+ }
++/* BESIDE THE OPEN SIDEBAR THE TILES STAY STACKED UP TO 1280px. From 1024px a tile is a row (its icon, then its name on one line), four across: beside the 244px sidebar that left a name about 75px, and every project on Home read "Stagi…" or "Game …". The row needs the room it has from 1280px, or from 1024px with the sidebar folded; between, a tile keeps its icon over two lines of its name, as it is under 1024px. */
++@media (min-width: 1024px) and (max-width: 1279.98px) {
++  html:not([data-skin]):not(:has(body > #platform-tabs.platform-tabs-folded)) #app-list .app-card-people { display: none; }
++  html:not([data-skin]):not(:has(body > #platform-tabs.platform-tabs-folded)) { --home-cell-h: var(--wip-tile-h-stacked); --wip-cols: 2; }
++  html:not([data-skin]):not(:has(body > #platform-tabs.platform-tabs-folded)) #app-list .app-card-title { margin-top: var(--wip-title-gap-stacked); font-size: var(--wip-title-size-mid); min-height: 2.5em; }
++}
+ /* On a phone the tile gives its side padding to the name: at this size a
+    name needs every pixel of its quarter of the screen. */
+ @media (max-width: 639.98px) {
+@@ -6581,7 +6581,7 @@
+      at the row's size a long name broke in the middle of a word. */
+   html:not([data-skin]) #app-list .app-card-title { font-size: var(--wip-title-size-phone); line-height: 1.2; min-height: 2.4em; }
+ }
+-@media (min-width: 1024px) {
++@media (min-width: 1280px) {
+   html:not([data-skin]) { --home-cell-h: var(--wip-tile-h); }
+   html:not([data-skin]) #app-list > .app-card {
+     flex-direction: row;
+@@ -6601,6 +6627,26 @@ html:not([data-skin]) #app-list .app-card-desc { display: none; }
+     text-align: start;
+   }
+ }
++@media (min-width: 1024px) and (max-width: 1279.98px) {
++  html:not([data-skin]):has(body > #platform-tabs.platform-tabs-folded) { --home-cell-h: var(--wip-tile-h); }
++  html:not([data-skin]):has(body > #platform-tabs.platform-tabs-folded) #app-list > .app-card {
++    flex-direction: row;
++    align-items: center; /* a tile with no sentence keeps its two lines beside the icon's middle */
++    gap: var(--wip-tile-gap);
++    text-align: start;
++  }
++  html:not([data-skin]):has(body > #platform-tabs.platform-tabs-folded) #app-list > .app-card > .min-w-0 { flex: 1 1 0; width: auto; }
++  html:not([data-skin]):has(body > #platform-tabs.platform-tabs-folded) #app-list > .app-card > .relative,
++  html:not([data-skin]):has(body > #platform-tabs.platform-tabs-folded) #app-list > .app-card > .relative > .app-icon-tile { width: var(--wip-icon); height: var(--wip-icon); }
++  html:not([data-skin]):has(body > #platform-tabs.platform-tabs-folded) #app-list > .app-card > .relative > .app-icon-tile { border-radius: var(--wip-icon-radius); font-size: var(--wip-icon-glyph); }
++  html:not([data-skin]):has(body > #platform-tabs.platform-tabs-folded) #app-list .app-card-people { justify-content: flex-start; }
++  html:not([data-skin]):has(body > #platform-tabs.platform-tabs-folded) #app-list .app-card-title {
++    -webkit-line-clamp: 1;
++    line-clamp: 1;
++    min-height: 0;
++    text-align: start;
++  }
++}
+ /* The icon sits a little above the card: one soft shadow, at every width,
+    and in the dark a hairline round a tile a step lighter than the card, so
+    a dark picture or glyph stays a shape. (No gloss: it read as a grey cap
+@@ -8053,6 +8116,8 @@ html:not([data-skin]) #communities-screen .communities-search { flex: 1 1 auto;
+    (asked 21 Nov 2026). Two ids, so it outranks the BUTTONS block's shape. */
+ html:not([data-skin]) #communities-screen #communities-new-top { font-family: var(--wip-font); }
+ html:not([data-skin]) #communities-search-input { border-radius: var(--wip-radius-inner); }
++/* Beside New community a phone leaves this box about 100px of words, and its prompt was cut mid-word with nothing to say so ("Search your con"). It ends in an ellipsis. */
++html:not([data-skin]) :is(#communities-search-input, #home-search-input) { text-overflow: ellipsis; }
+ /* A group's label is Home's: one row gap above every group after the first, the config's label tokens. */
+ html:not([data-skin]) #communities-screen section ~ section > .home-area-label { padding-top: var(--wip-row-gap); }
+ html:not([data-skin]) #communities-screen .home-area-label > span:first-child {
+@@ -24608,6 +24697,10 @@ html:not(.un-kb) body:has(#platform-tabs:not(.hidden):not(.platform-tabs-peek)):
+    (`--platform-vv-top`) from the page's top, and this box starts the
+    header's height further down, so only the part of the pan past that is
+    padding here. */
++/* BESIDE THE SIDEBAR, NOT OVER IT. From 768px the standard look's sidebar reaches the top of the window, beside the top bar. A screen that covers the page under the top bar (What do you want to make?) covered the sidebar from there down too, and left its top 52px, the fold button and the logo on blue, standing alone in the corner. It starts at the sidebar's edge. */
++@media (min-width: 768px) {
++  html:not([data-skin]) body:has(> #platform-tabs:not(.hidden):not(.platform-tabs-route-hidden)) .platform-kb-surface.platform-under-header { inset-inline-start: var(--platform-rail-w, 0px); }
++}
+ .platform-under-header {
+   top: calc(var(--browser-banner-h, 0px) + var(--platform-header-h) + var(--platform-safe-top));
+ }
+diff --git a/tests/standard-wip-look.test.js b/tests/standard-wip-look.test.js
+index 34dc0443..35334972 100644
+--- a/tests/standard-wip-look.test.js
++++ b/tests/standard-wip-look.test.js
+@@ -25,6 +25,8 @@ const WIP_HIDES = [
+   'html:not([data-skin]) #app-list .app-card-desc',
+   // Under 1024px a project's tile is its icon and name alone.
+   'html:not([data-skin]) #app-list .app-card-people',
++  // …and beside the open sidebar up to 1280px, where the tile stays stacked: a row left its name about 75px.
++  'html:not([data-skin]):not(:has(body > #platform-tabs.platform-tabs-folded)) #app-list .app-card-people',
+   // A project's hub has no Topics card under the look (asked 18 Nov 2026).
+   'html:not([data-skin]) #dev-workshop [data-ws-hub-topics]',
+   // A board card's category tag shows in Advanced mode only (asked 18 Nov 2026).

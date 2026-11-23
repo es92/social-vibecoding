@@ -1,0 +1,67 @@
+diff --git a/frontend/src/features/dev-board/workshop/community-card.tsx b/frontend/src/features/dev-board/workshop/community-card.tsx
+index ba67553f..f4f0ca16 100644
+--- a/frontend/src/features/dev-board/workshop/community-card.tsx
++++ b/frontend/src/features/dev-board/workshop/community-card.tsx
+@@ -740,14 +740,15 @@ function HeroIdentity({ slug, name, iconUrl, iconEmoji, data, member }: {
+                 </span>
+               ) : null}
+               {member ? (
+-                // A drawn arrow, for show: it swoops from the people to the open seat.
+-<SwooshArrowIcon className="wip-hub-meta-arrow" aria-hidden="true" />
+-              ) : null}
+-              {member ? (
+-                <button type="button" className="wip-hub-meta-invite" data-ws-community-invite="" title={t('project:communityCard.invite.title')} onClick={openInviteLinks}>
+-                  <span className="wip-hub-meta-seat" aria-hidden="true"><UserPlusIcon className="wip-invite-glyph" /></span>
+-                  {t('project:communityCard.invite.button')}
+-                </button>
++                // The arrow and the seat it points at wrap as one: apart, the arrow stayed on the first line pointing at nothing.
++                <span className="wip-hub-meta-ask">
++                  {/* A drawn arrow, for show: it swoops from the people to the open seat. */}
++                  <SwooshArrowIcon className="wip-hub-meta-arrow" aria-hidden="true" />
++                  <button type="button" className="wip-hub-meta-invite" data-ws-community-invite="" title={t('project:communityCard.invite.title')} onClick={openInviteLinks}>
++                    <span className="wip-hub-meta-seat" aria-hidden="true"><UserPlusIcon className="wip-invite-glyph" /></span>
++                    {t('project:communityCard.invite.button')}
++                  </button>
++                </span>
+               ) : null}
+             </span>
+           ) : solo || !data.audience_label ? (
+diff --git a/public/css/app.css b/public/css/app.css
+index 18c6f13d..34d58329 100644
+--- a/public/css/app.css
++++ b/public/css/app.css
+@@ -7060,17 +7106,18 @@ html:not([data-skin]) #dev-workshop .dev-ws-hero-summary .dev-ws-hero-actions .d
+   transform: rotate(-4deg);
+   transition: transform 0.25s ease;
+ }
+-.wip-hub-meta:hover > .wip-hub-meta-arrow { transform: rotate(-4deg) translateX(3px); }
++.wip-hub-meta-ask { display: inline-flex; align-items: center; gap: 0.875rem; }
++.wip-hub-meta:hover .wip-hub-meta-arrow { transform: rotate(-4deg) translateX(3px); }
+ html:not([data-skin])[dir="rtl"] .wip-hub-meta-arrow { transform: scaleX(-1) rotate(-4deg); }
+ @media (max-width: 639.98px) {
+   .wip-hub-meta-arrow { display: none; }
+ }
+ @media (prefers-reduced-motion: reduce) {
+   html:not([data-skin]) .wip-hub-meta-arrow { transition: none; }
+-  html:not([data-skin]) .wip-hub-meta:hover > .wip-hub-meta-arrow { transform: rotate(-4deg); }
++  html:not([data-skin]) .wip-hub-meta:hover .wip-hub-meta-arrow { transform: rotate(-4deg); }
+ }
+ html:not([data-skin]):where([data-motion="reduce"]) .wip-hub-meta-arrow { transition: none; }
+-html:not([data-skin]):where([data-motion="reduce"]) .wip-hub-meta:hover > .wip-hub-meta-arrow { transform: rotate(-4deg); }
++html:not([data-skin]):where([data-motion="reduce"]) .wip-hub-meta:hover .wip-hub-meta-arrow { transform: rotate(-4deg); }
+ .wip-hub-meta-seat {
+   flex: none;
+   width: 1.375rem;
+diff --git a/tests/home-needs-you-card.test.js b/tests/home-needs-you-card.test.js
+index d714e0f4..29238cbd 100644
+--- a/tests/home-needs-you-card.test.js
++++ b/tests/home-needs-you-card.test.js
+@@ -319,7 +319,7 @@ test('Standard (WIP): a project\'s hub folds Invite and Make it public into its
+   assert.match(card, /\{wipLook \? <WipHeroPublic slug=\{slug\} name=\{displayName\} data=\{data\} \/> : null\}/);
+   assert.match(card, /function WipHeroPublic\([^)]*\): ReactNode \{\s*if \(data\.audience !== 'solo' \|\| !data\.can_manage \|\| data\.audience_change\) return null;\s*return <MakePublic /, 'Make it public is offered to exactly whom Share it offers it');
+   // Invite ends the line about who is here, for a member, and opens the same pane.
+-  assert.match(card, /\{member \? \(\s*<button type="button" className="wip-hub-meta-invite" data-ws-community-invite="" title=\{t\('project:communityCard\.invite\.title'\)\} onClick=\{openInviteLinks\}>/);
++  assert.match(card, /\{member \? \([\s\S]{0,400}?<span className="wip-hub-meta-ask">[\s\S]{0,400}?<button type="button" className="wip-hub-meta-invite" data-ws-community-invite="" title=\{t\('project:communityCard\.invite\.title'\)\} onClick=\{openInviteLinks\}>/);
+   assert.match(card, /\{wipLook \? null : \(\s*<>\s*\{member && !\(inviteCard && showsInviteHero\(data\) && !inviteClosed\) \? \(/, 'one Invite on the page');
+   // The hero's scenery is for show.
+   assert.match(card, /<span className="wip-hero-wash" data-scene=\{platform \? 'home' : String\(communityScene\(slug\)\)\} aria-hidden="true" \/>\s*<span className="wip-hero-art" aria-hidden="true">/);

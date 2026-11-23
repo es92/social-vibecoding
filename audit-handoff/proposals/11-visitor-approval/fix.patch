@@ -1,0 +1,88 @@
+diff --git a/frontend/src/features/guest/guest-discover.tsx b/frontend/src/features/guest/guest-discover.tsx
+index bac474d7..fc9fb80a 100644
+--- a/frontend/src/features/guest/guest-discover.tsx
++++ b/frontend/src/features/guest/guest-discover.tsx
+@@ -425,6 +425,7 @@ export function GuestDiscover({ apps, failed, hero, onRetry, signedIn = false, o
+             exclude={EMPTY}
+             signedIn={false}
+             query={q}
++            emptyLine={<p data-guest-empty="" role="status" className="px-2 py-10 text-center text-[15px] text-zinc-500 dark:text-zinc-400">{t('auth:guest.empty')}</p>}
+             headingAction={searchShown ? null : (
+               <button
+                 type="button"
+diff --git a/frontend/src/features/home/communities-to-join.tsx b/frontend/src/features/home/communities-to-join.tsx
+index 105b9e4f..ffb990a5 100644
+--- a/frontend/src/features/home/communities-to-join.tsx
++++ b/frontend/src/features/home/communities-to-join.tsx
+@@ -67,7 +67,7 @@ export function joinOrder(apps: readonly GuestApp[], sort: GuestSort = 'trending
+   return [...featured, ...sortApps(apps, sort).filter((a) => !first.has(a.slug))];
+ }
+ 
+-export function CommunitiesToJoin({ apps, failed = false, exclude, signedIn, query, onRetry, headingAction, ids }: {
++export function CommunitiesToJoin({ apps, failed = false, exclude, signedIn, query, onRetry, headingAction, emptyLine, ids }: {
+   /** The public directory, or null while it loads. */
+   apps: GuestApp[] | null;
+   /** The directory could not be read: say so, with a way to try again. */
+@@ -81,6 +81,8 @@ export function CommunitiesToJoin({ apps, failed = false, exclude, signedIn, que
+   onRetry?: () => void;
+   /** A control at the end of the heading's row: the visitor's search button (../guest/guest-discover.tsx). */
+   headingAction?: ReactNode;
++  /** Drawn when a search matches nothing. Home's own search answers that itself; the visitor's page has only this list, and was left blank. */
++  emptyLine?: ReactNode;
+   /** The section's and its Featured label's ids where it is drawn a second time in the document (the Communities page): Home's own stay Home's. */
+   ids?: { section: string; featured: string };
+ }) {
+@@ -148,7 +150,7 @@ export function CommunitiesToJoin({ apps, failed = false, exclude, signedIn, que
+     return () => { io.disconnect(); if (timer) window.clearTimeout(timer); };
+   }, [more, shown]);
+ 
+-  if (query && !list.length) return null;
++  if (query && !list.length) return emptyLine ?? null;
+   const sortMenu = (
+     <Select
+       variant="plain"
+diff --git a/public/css/app.css b/public/css/app.css
+index 18c6f13d..34d58329 100644
+--- a/public/css/app.css
++++ b/public/css/app.css
+@@ -3632,6 +3645,10 @@ body:has(#auth-landing-screen:not(.hidden)) #platform-header {
+    beats that on specificity alone (`body:has(...) #platform-header`), so
+    dropping it costs nothing and stops this rule silently outranking a
+    later one. */
++/* THE VISITOR'S BAR (audit, 21 Nov 2026). Its logo is as wide as its 28px height makes it, in a box that shrinks: beside Sign in and Join the waitlist on a 360px phone the box was 101px and the logo 109, so it read "Homeroon" (and "Hon" at a large text size). The logo is drawn smaller, whole, where it does not fit.
++   With an app open the bar has Pin beside Sign in, about 110px over the title's end, and the title kept room for Sign in alone: an app's name ran under Pin. */
++#landing-header-title > svg { max-width: 100%; }
++#landing-header:has([data-landing-pin-app]) #landing-header-title { padding-inline-end: 5.5rem; }
+ html[data-browser-scroller] :is(#platform-header, #landing-header) {
+   position: sticky;
+   top: var(--browser-banner-h);
+diff --git a/public/css/cli-authorize.css b/public/css/cli-authorize.css
+index b32122b6..943b2a86 100644
+--- a/public/css/cli-authorize.css
++++ b/public/css/cli-authorize.css
+@@ -13,7 +13,9 @@ body {
+ }
+ 
+ main {
+-  width: min(30rem, calc(100% - 3rem));
++  /* The card's whole width, padding and border included: as a content width it came to 100% + 18px on a phone, and the card ran off both edges. The same 30rem of words on a wide screen. */
++  box-sizing: border-box;
++  width: min(calc(34rem + 2px), calc(100% - 3rem));
+   padding: 2rem;
+   border: 1px solid #3f3f46;
+   border-radius: 1rem;
+diff --git a/public/css/connect-authorize.css b/public/css/connect-authorize.css
+index 16d59bee..af78dcae 100644
+--- a/public/css/connect-authorize.css
++++ b/public/css/connect-authorize.css
+@@ -20,7 +20,9 @@ body {
+ }
+ 
+ main {
+-  width: min(32rem, calc(100% - 3rem));
++  /* The card's whole width, padding and border included: as a content width it came to 100% + 18px on a phone, and the card ran off both edges. The same 32rem of words on a wide screen. */
++  box-sizing: border-box;
++  width: min(calc(36rem + 2px), calc(100% - 3rem));
+   padding: 2rem;
+   border: 1px solid #3f3f46;
+   border-radius: 1rem;

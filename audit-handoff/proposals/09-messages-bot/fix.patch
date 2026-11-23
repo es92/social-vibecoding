@@ -1,0 +1,35 @@
+diff --git a/public/css/app.css b/public/css/app.css
+index 18c6f13d..34d58329 100644
+--- a/public/css/app.css
++++ b/public/css/app.css
+@@ -1015,6 +1016,10 @@ html.web-browser-chrome.platform-kb-short {
+ .messages-invitation p { margin-top: 2px; color: var(--text-muted); }
+ .messages-invitation [role="alert"] { display: block; margin-top: 4px; color: #dc2626; }
+ .messages-invite-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
++/* THE WORDS KEEP A READING WIDTH (audit, 21 Nov 2026). The card is a row, and its three buttons never gave way: in the thread pane beside the list (328px at 1024, 584 at 1280) the words were laid out at zero width, one to a line down an 890px card, with "Decline & block" printed over them. The words take at least 18rem, and the buttons go under them when the two do not fit side by side. */
++.messages-invitation { flex-wrap: wrap; }
++.messages-invitation > div:first-child { flex: 1 1 min(18rem, 100%); }
++.messages-invitation > .messages-invite-actions { flex: 0 1 auto; min-width: 0; max-width: 100%; }
+ .messages-invite-decline,
+ .messages-invite-block,
+ .messages-invite-accept {
+@@ -3147,6 +3156,10 @@ html.dark[data-contrast="more"] .dark\:border-zinc-800 { border-color: #48484a;
+   --un-toast-bg: #1c1c2a;
+ }
+ 
++/* AN ALERT OVER A DIALOG IS A CARD OF ITS OWN (audit, 21 Nov 2026). The kit's alert has no edge: it stands out by the dimmed page behind it. But its scrim is under an open dialog (9990 against the dialog's 9992), so "Leave this group?" raised from Group members was a white card on a white card, a hole in the dialog with its rows cut off on either side. The alert's scrim comes over the dialog (the kit appends it just before the card, and after any dialog), and the card has a hairline and a shadow wherever it stands. */
++.un-backdrop:has(+ .un-alert) { z-index: 9992; }
++html:not([data-skin]) .un-alert { box-shadow: inset 0 0 0 1px var(--app-sheet-line), 0 18px 48px -18px rgb(0 0 0 / 0.45); }
++
+ .platform-chat-header.un-scrolled,
+ .un-navbar,
+ .un-action-card,
+@@ -20034,6 +20121,8 @@ html:not([data-side-strip]):not([data-side-corner]) body:has(#ai-screen:not(.hid
+    have. A row, New chat or a link opens it, and the list gives the lane up
+    again. */
+ #ai-screen[data-ai-docked][data-ai-open] { padding-inline-end: var(--ai-main-w); }
++/* WITH A THREAD OPEN BESIDE IT the list is about 270px wide, and from 1024px each row still kept a 48px column for a request's number (and its gap), empty on most rows: a title had 60 to 130px and read "Staging …" or "Fix unr…". The number's column goes while the list is that narrow, as it does on every screen under 1024px; the number is on the thread's own head. */
++#ai-screen[data-ai-docked][data-ai-open] [data-ai-line] > span.w-12 { display: none; }
+ /* NO GUTTER AFTER THE RAIL WHILE MAIN IS DOCKED (1 Nov 2026). Every screen
+    beside the rail pads a gutter after it and mirrors it on the far edge, so
+    a column inside centres. Here Main is the far edge, with no gutter, so the

@@ -1,0 +1,73 @@
+diff --git a/frontend/locales/en/dialogs.json b/frontend/locales/en/dialogs.json
+index 4d97fb76..a5d23fe4 100644
+--- a/frontend/locales/en/dialogs.json
++++ b/frontend/locales/en/dialogs.json
+@@ -320,7 +320,7 @@
+     "description": "Heading of the dialog for proposing a new display name for an app."
+   },
+   "rename.current": {
+-    "text": "Current app name:<0>{{name}}</0>",
++    "text": "Current app name: <0>{{name}}</0>",
+     "description": "Line under the rename dialog's heading. {{name}} is the app's present name; the numbered tag sets it in a different typeface and must stay around it."
+   },
+   "rename.newName": {
+@@ -332,7 +332,7 @@
+     "description": "Greyed example text inside the empty new-name field of the rename dialog."
+   },
+   "rename.hint": {
+-    "text": "3–64 characters. This is the app's display name, and the URL won't change. Opens a PR that edits<0>dapp.json</0>; the rename applies once the PR is voted in and merged.",
++    "text": "3–64 characters. This is the app's display name, and the URL won't change. Opens a PR that edits <0>dapp.json</0>; the rename applies once the PR is voted in and merged.",
+     "description": "Help text under the new-name field of the rename dialog. PR means a pull request on GitHub. dapp.json is a file name and stays as it is, inside its numbered tag."
+   },
+   "rename.submit": {
+diff --git a/public/css/app.css b/public/css/app.css
+index 18c6f13d..34d58329 100644
+--- a/public/css/app.css
++++ b/public/css/app.css
+@@ -2303,6 +2310,8 @@ html.dark .messages-markdown .gc-ref-issue.gc-ref-request { color: hsl(var(--req
+ #gc-thread-form,
+ #feedback-form { position: relative; }
+ #feedback-form > .attach-drop-overlay { inset: -6px; border-radius: 16px; }
++/* The two places a suggestion can go share the row evenly, each name cut with an ellipsis: without a floor of zero the Homeroom tile was pushed off the sheet by a long project name ("Homeroo / The platfor"). */
++#feedback-target > div { min-width: 0; }
+ /* The boxed thread composer inside a board card has no card radius of its own. */
+ #gc-form:not(.gc-composer-card) > .attach-drop-overlay,
+ #gc-thread-form:not(.gc-composer-card) > .attach-drop-overlay { border-radius: 12px; }
+diff --git a/public/js/app-view.js b/public/js/app-view.js
+index 96b0ac06..c209f0d0 100644
+--- a/public/js/app-view.js
++++ b/public/js/app-view.js
+@@ -10746,6 +10746,15 @@ const AppView = {
+     const btn = document.getElementById('dev-plus-btn');
+     const menu = document.getElementById('dev-plus-menu');
+     if (!btn || !menu) return;
++    // A sheet row's words. A row's title can hold a second, quieter run after
++    // its name (App secrets' "No manifest yet"): two flex items on the desktop
++    // menu, with a gap between. `textContent` has no gap, and the sheet read
++    // "App secretsNo manifest yet", so the runs are joined with a middle dot.
++    const rowLabel = (titleEl, node) => {
++      const runs = Array.from(titleEl?.childNodes || [])
++        .map((part) => (part.textContent || '').replace(/\s+/g, ' ').trim()).filter(Boolean);
++      return runs.length ? runs.join(' · ') : (titleEl?.textContent || node.textContent).replace(/\s+/g, ' ').trim();
++    };
+     AppView._plusMenuAbort?.abort();
+     const ac = new AbortController();
+     AppView._plusMenuAbort = ac;
+@@ -10774,7 +10783,7 @@ const AppView = {
+       const glyph = node.querySelector('svg')?.cloneNode(true);
+       if (glyph) glyph.removeAttribute('class');
+       return {
+-        label: (titleEl?.textContent || node.textContent).replace(/\s+/g, ' ').trim(),
++        label: rowLabel(titleEl, node),
+         iconEl: glyph || undefined,
+         handler: () => node.click(),
+       };
+@@ -10840,7 +10849,7 @@ const AppView = {
+             const glyph = node.querySelector('svg')?.cloneNode(true);
+             if (glyph) glyph.removeAttribute('class');
+             return {
+-              label: (titleEl?.textContent || node.textContent).replace(/\s+/g, ' ').trim(),
++              label: rowLabel(titleEl, node),
+               iconEl: glyph || undefined,
+               // The menu's one lit row, Suggest an improvement (actions-row.tsx
+               // `lit`, the owner, 8 Oct 2026), is lit in the sheet too.

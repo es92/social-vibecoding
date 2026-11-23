@@ -1,0 +1,161 @@
+diff --git a/frontend/src/head.html b/frontend/src/head.html
+index 2c270a6d..da40fd0e 100644
+--- a/frontend/src/head.html
++++ b/frontend/src/head.html
+@@ -1101,7 +1101,11 @@
+         var bg = s.backgroundColor;
+         probe.remove();
+         var tinted = bg && !/^(transparent|rgba\(0, 0, 0, 0\))$/.test(bg);
+-        if (!(size > 0 && size < 12) || weight !== '500' || !tinted) {
++        // 0.65rem against the root's own size, not against 12px: Settings > Appearance's two largest text sizes
++        // raise the root to 20px and 24px, where a healthy 0.65rem is 13px and 15.6px, and this reported a
++        // broken cascade on every load for anyone who had picked them.
++        var rootSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
++        if (!(size > 0 && size < rootSize * 0.75) || weight !== '500' || !tinted) {
+           console.error(
+             '[tailwind] compiled utilities are losing the cascade to app.css — '
+             + '/css/tailwind.css must be the LAST stylesheet in <head>. Probe got '
+diff --git a/public/css/app.css b/public/css/app.css
+index 18c6f13d..34d58329 100644
+--- a/public/css/app.css
++++ b/public/css/app.css
+@@ -796,8 +796,9 @@ html.un-kb .platform-kb-column .un-kb-avoid {
+   text-overflow: ellipsis;
+   white-space: nowrap;
+ }
+-.messages-row-name { color: var(--text-primary); font-size: 15px; font-weight: 650; line-height: 20px; }
+-.messages-row-preview { margin-top: 2px; color: var(--text-muted); font-size: 13px; line-height: 18px; }
++/* In rem, with the other words a person reads in a conversation (the bubble, its sender and time, a thread's replies): Settings > Accessibility's Text size says it makes text bigger everywhere, and these were fixed pixels, so at 150% the page's headings grew and the messages themselves did not. */
++.messages-row-name { color: var(--text-primary); font-size: 0.9375rem; font-weight: 650; line-height: 1.25rem; }
++.messages-row-preview { margin-top: 2px; color: var(--text-muted); font-size: 0.8125rem; line-height: 1.125rem; }
+ /* An invitation's preview is the ACTION the row offers, so it takes the
+    accent — the language's "actionable / yours". */
+ .messages-row-preview-invited { color: var(--accent); font-weight: 500; }
+@@ -1091,12 +1096,14 @@ html.web-browser-chrome.platform-kb-short {
+   gap: 0 8px;
+   min-width: 0;
+   min-height: 22px;
++  /* Never wider than the message's column: a long name at a large text size pushed the time off the screen. The name gives way (it ends in an ellipsis). */
++  max-width: 100%;
+   color: var(--text-primary);
+-  font-size: 17px;
++  font-size: 1.0625rem;
+   font-weight: 700;
+ }
+ .messages-message-head time,
+-.messages-message-head time ~ span { color: var(--text-muted); font-size: 15px; font-weight: 400; white-space: nowrap; }
++.messages-message-head time ~ span { color: var(--text-muted); font-size: 0.9375rem; font-weight: 400; white-space: nowrap; }
+ /* QA 2026-09-24 Q22: a long name gives way before the time does. The name
+    takes what the line has left, up to its own width, and ends in an ellipsis
+    rather than breaking at a hyphen; the time never wraps inside itself. The
+@@ -1122,7 +1129,7 @@ html.web-browser-chrome.platform-kb-short {
+    later in this file, which a bare .messages-markdown would lose to. */
+ .messages-markdown.gc-msg-content {
+   color: var(--text-primary);
+-  font-size: 17px;
++  font-size: 1.0625rem;
+   line-height: 1.3;
+   overflow-wrap: anywhere;
+ }
+@@ -1210,7 +1217,7 @@ html.dark .messages-markdown .gc-ref-issue.gc-ref-request { color: hsl(var(--req
+   padding: 10px 16px;
+   color: var(--text-primary);
+   background: var(--messages-surface);
+-  font-size: 17px;
++  font-size: 1.0625rem;
+   line-height: 1.3;
+   overflow-wrap: anywhere;
+ }
+@@ -2567,12 +2576,12 @@ html.dark .messages-markdown .gc-ref-issue.gc-ref-request { color: hsl(var(--req
+    and the composer and the inline editor come down with it, so what you type
+    is the size it will be drawn at. Nothing new on the scale: 17 → 15 → 13. */
+ @media (min-width: 768px) {
+-  .messages-message-head { min-height: 20px; font-size: 15px; }
++  .messages-message-head { min-height: 20px; font-size: 0.9375rem; }
+   .messages-message-head time,
+-  .messages-message-head time ~ span { font-size: 13px; }
+-  .messages-markdown.gc-msg-content { font-size: 15px; line-height: 1.4; }
+-  .messages-composer-input { font-size: 15px; }
+-  .messages-edit textarea { font-size: 15px; }
++  .messages-message-head time ~ span { font-size: 0.8125rem; }
++  .messages-markdown.gc-msg-content { font-size: 0.9375rem; line-height: 1.4; }
++  .messages-composer-input { font-size: 0.9375rem; }
++  .messages-edit textarea { font-size: 0.9375rem; }
+ }
+ 
+ /* A READABLE MEASURE (N14 of the 19 Oct polish board). A message's text ran
+@@ -6580,6 +6580,9 @@
+   /* And the name is a size down there (four across leaves each about 85px):
+      at the row's size a long name broke in the middle of a word. */
+   html:not([data-skin]) #app-list .app-card-title { font-size: var(--wip-title-size-phone); line-height: 1.2; min-height: 2.4em; }
++  /* The icon is 3.5rem, and a quarter of a phone is about 84px: at the two largest text sizes (the root at 125% and 150%) the four icons of a row met edge to edge and their lock and copy marks were printed over each other. An icon is never wider than its own cell, less a gap. */
++  html:not([data-skin]) #app-list > .app-card > .relative { width: min(3.5rem, calc(100% - 0.75rem)); height: auto; aspect-ratio: 1 / 1; }
++  html:not([data-skin]) #app-list > .app-card > .relative > .app-icon-tile { width: 100%; height: 100%; border-radius: min(1.25rem, 36%); }
+ }
+ @media (min-width: 1024px) {
+   html:not([data-skin]) { --home-cell-h: var(--wip-tile-h); }
+@@ -18039,9 +18126,9 @@ div.dev-card-topic [data-work-note] { font-size: 12.5px; line-height: 1.45; marg
+ }
+ #dev-topic-thread #gc-thread-messages[data-language="chat"] .gc-msg-self > .min-w-0 { background: transparent; }
+ #dev-topic-thread #gc-thread-messages[data-language="chat"] .gc-msg > .min-w-0 > .flex { gap: 8px; margin-bottom: 0; }
+-#dev-topic-thread #gc-thread-messages[data-language="chat"] .gc-msg > .min-w-0 > .flex > .truncate { font-size: 17px; }
++#dev-topic-thread #gc-thread-messages[data-language="chat"] .gc-msg > .min-w-0 > .flex > .truncate { font-size: 1.0625rem; }
+ #dev-topic-thread #gc-thread-messages[data-language="chat"] .gc-msg > .min-w-0 > .flex > .shrink-0 { font-size: 15px; }
+-#dev-topic-thread #gc-thread-messages[data-language="chat"] .gc-msg > .min-w-0 > .leading-snug { font-size: 17px; }
++#dev-topic-thread #gc-thread-messages[data-language="chat"] .gc-msg > .min-w-0 > .leading-snug { font-size: 1.0625rem; }
+ #dev-topic-thread #gc-thread-messages[data-language="chat"] .gc-msg > [aria-hidden="true"] { width: 44px; height: 44px; font-size: 17px; border-radius: 12px; margin-top: 0; }
+ /* The editor needs the row's available width, not the bubble's intrinsic
+    text width. Save and Cancel clear data-editing and restore bubble sizing. */
+@@ -18435,9 +18522,9 @@ div.dev-card-topic [data-work-note] { font-size: 12.5px; line-height: 1.45; marg
+ #dev-topic-thread #gc-thread-messages:is([data-language="request"], [data-language="change"]) .gc-msg-self > .min-w-0 { background: transparent; }
+ #dev-topic-thread #gc-thread-messages:is([data-language="request"], [data-language="change"]) .gc-msg-username-self { color: inherit; }
+ #dev-topic-thread #gc-thread-messages:is([data-language="request"], [data-language="change"]) .gc-msg > .min-w-0 > .flex { gap: 8px; margin-bottom: 0; }
+-#dev-topic-thread #gc-thread-messages:is([data-language="request"], [data-language="change"]) .gc-msg > .min-w-0 > .flex > .truncate { font-size: 17px; }
++#dev-topic-thread #gc-thread-messages:is([data-language="request"], [data-language="change"]) .gc-msg > .min-w-0 > .flex > .truncate { font-size: 1.0625rem; }
+ #dev-topic-thread #gc-thread-messages:is([data-language="request"], [data-language="change"]) .gc-msg > .min-w-0 > .flex > .shrink-0 { font-size: 15px; }
+-#dev-topic-thread #gc-thread-messages:is([data-language="request"], [data-language="change"]) .gc-msg > .min-w-0 > .leading-snug { font-size: 17px; line-height: 1.3; }
++#dev-topic-thread #gc-thread-messages:is([data-language="request"], [data-language="change"]) .gc-msg > .min-w-0 > .leading-snug { font-size: 1.0625rem; line-height: 1.3; }
+ #dev-topic-thread #gc-thread-messages:is([data-language="request"], [data-language="change"]) .gc-msg > [aria-hidden="true"] {
+   width: 36px;
+   height: 36px;
+diff --git a/tests/chat-sheets-audit.test.js b/tests/chat-sheets-audit.test.js
+index 34fc305a..7d420bf3 100644
+--- a/tests/chat-sheets-audit.test.js
++++ b/tests/chat-sheets-audit.test.js
+@@ -24,9 +24,9 @@ test('C03: the phone\'s Messages list keeps the rows\' own type and time', () =>
+   assert.doesNotMatch(block, /\.messages-row-name \{ font-size: 15px; font-weight: 400; \}/, 'no 400-weight title');
+   assert.doesNotMatch(block, /\.messages-row-preview \{ font-size: 12px;/, 'no 12px last line');
+   assert.doesNotMatch(block, /\.messages-row-time[^{]*\{ display: none; \}/, 'the time stays');
+-  // The house rule the column now inherits: 15 over 13 at 650.
+-  assert.match(CSS, /\n\.messages-row-name \{ color: var\(--text-primary\); font-size: 15px; font-weight: 650;/);
+-  assert.match(CSS, /\n\.messages-row-preview \{ margin-top: 2px; color: var\(--text-muted\); font-size: 13px;/);
++  // The house rule the column now inherits: 15 over 13 at 650, in rem so Text size scales it.
++  assert.match(CSS, /\n\.messages-row-name \{ color: var\(--text-primary\); font-size: 0\.9375rem; font-weight: 650;/);
++  assert.match(CSS, /\n\.messages-row-preview \{ margin-top: 2px; color: var\(--text-muted\); font-size: 0\.8125rem;/);
+ });
+ 
+ test('C06: an empty reply box on a request or a channel shows Send faded, as Messages does', () => {
+diff --git a/tests/messages-card-runs.test.js b/tests/messages-card-runs.test.js
+index 6d27d91d..6a2f36c6 100644
+--- a/tests/messages-card-runs.test.js
++++ b/tests/messages-card-runs.test.js
+@@ -102,11 +102,12 @@ test('#2883: from 768px up the transcript steps down the existing scale, and the
+   const at = CSS.indexOf('#2883: THE TRANSCRIPT READS ONE STEP DOWN');
+   assert.ok(at >= 0);
+   const block = CSS.slice(CSS.indexOf('@media (min-width: 768px) {', at), CSS.indexOf('\n}\n', at));
+-  assert.match(block, /\.messages-message-head \{ min-height: 20px; font-size: 15px; \}/);
+-  assert.match(block, /\.messages-message-head time ~ span \{ font-size: 13px; \}/);
+-  assert.match(block, /\.messages-markdown\.gc-msg-content \{ font-size: 15px; line-height: 1\.4; \}/);
+-  assert.match(block, /\.messages-composer-input \{ font-size: 15px; \}/);
+-  assert.match(block, /\.messages-edit textarea \{ font-size: 15px; \}/);
+-  for (const size of block.match(/font-size: \d+px/g)) assert.match(size, /font-size: (15|13)px/, 'nothing off the scale');
+-  assert.match(rule('.messages-markdown.gc-msg-content'), /font-size: 17px;/, 'the phone keeps its reading size');
++  assert.match(block, /\.messages-message-head \{ min-height: 20px; font-size: 0\.9375rem; \}/);
++  assert.match(block, /\.messages-message-head time ~ span \{ font-size: 0\.8125rem; \}/);
++  assert.match(block, /\.messages-markdown\.gc-msg-content \{ font-size: 0\.9375rem; line-height: 1\.4; \}/);
++  assert.match(block, /\.messages-composer-input \{ font-size: 0\.9375rem; \}/);
++  assert.match(block, /\.messages-edit textarea \{ font-size: 0\.9375rem; \}/);
++  // In rem, so Settings > Accessibility's Text size reaches the transcript: 0.9375rem and 0.8125rem are 15 and 13 at the default size.
++  for (const size of block.match(/font-size: [\d.]+(?:px|rem)/g)) assert.match(size, /font-size: (0\.9375|0\.8125)rem/, 'nothing off the scale');
++  assert.match(rule('.messages-markdown.gc-msg-content'), /font-size: 1\.0625rem;/, 'the phone keeps its reading size');
+ });

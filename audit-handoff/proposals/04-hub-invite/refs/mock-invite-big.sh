@@ -1,0 +1,11 @@
+#!/bin/bash
+# Item 32: a full-size Invite beside Open app (the hub hero's action row); the small pill and arrow go.
+cd /home/user/hr-lab
+OUT=review/img
+D="(()=>{const st=document.createElement('style'); st.textContent='.mk-hero-invite{display:inline-flex;align-items:center;justify-content:center;cursor:pointer;border:0} .mk-hero-invite svg{width:1.125rem;height:1.125rem;flex:none}'; document.head.appendChild(st); const hero=document.querySelector('.dev-ws-hero-summary'); const meta=hero.querySelector('.wip-hub-meta'); const glyph=meta.querySelector('.wip-invite-glyph').cloneNode(true); meta.querySelector('.wip-hub-meta-arrow')?.remove(); meta.querySelector('.wip-hub-meta-invite')?.remove(); const actions=hero.querySelector('.dev-ws-hero-actions'); const open=actions.querySelector('[data-ws-community-open-app]'); const b=document.createElement('button'); b.type='button'; b.className='mk-hero-invite'; b.append(glyph,'Invite'); if(open){const cs=getComputedStyle(open); Object.assign(b.style,{height:cs.height,paddingInlineStart:'1.125rem',paddingInlineEnd:'1.375rem',borderRadius:cs.borderRadius,fontSize:cs.fontSize,fontWeight:cs.fontWeight,gap:'0.5rem',fontFamily:cs.fontFamily}); open.after(b);} else { Object.assign(b.style,{height:'2.75rem',paddingInlineStart:'1.125rem',paddingInlineEnd:'1.375rem',borderRadius:'999px',fontSize:'1rem',fontWeight:'700',gap:'0.5rem'}); actions.prepend(b); const row=actions.closest('.dev-ws-hero-row'); if(row){row.style.height='auto'; row.style.minHeight='0'; row.style.margin='0';} } })()"
+for size in "desktop 1440 900" "laptop 1024 768" "phone 393 852"; do set -- $size
+  node tools/shot.js --origin http://127.0.0.1:3000 --profile $1 --w $2 --h $3 --route '/#app/staging-demo-app/dev/hub' --wait 3000 --js "$D" --sel '.dev-ws-hero-summary' --pad 6 --scale 2 --out $OUT/inv-app-$2.png 2>/dev/null &
+  node tools/shot.js --origin http://127.0.0.1:3000 --profile $1 --w $2 --h $3 --route '/?demo=1#app/usernode-2d5619/dev/hub' --wait 3000 --sel '.dev-ws-hero-summary' --pad 6 --scale 2 --out $OUT/inv-hr-now-$2.png 2>/dev/null &
+  node tools/shot.js --origin http://127.0.0.1:3000 --profile $1 --w $2 --h $3 --route '/?demo=1#app/usernode-2d5619/dev/hub' --wait 3000 --js "$D" --sel '.dev-ws-hero-summary' --pad 6 --scale 2 --out $OUT/inv-hr-$2.png 2>/dev/null &
+  wait; done
+ls $OUT | grep "^inv-"

@@ -1,0 +1,65 @@
+diff --git a/public/css/app.css b/public/css/app.css
+index 18c6f13d..34d58329 100644
+--- a/public/css/app.css
++++ b/public/css/app.css
+@@ -8408,11 +8481,24 @@ html:not([data-skin]) #platform-tabs :is(.platform-rail-votes, .platform-tab-vot
+ }
+ @media (min-width: 768px) {
+   html:not([data-skin]) #platform-tabs {
+-    top: 0;
+-    padding-top: var(--wip-nav-brand-h);
++    /* Under the strips a browser tab shows above the header ("Get the app", offline), as the header is: from 0 its Home row stood behind the header on a tablet in a browser. */
++    top: var(--browser-banner-h, 0px);
++    /* …and under the device's own status bar (an iPad in the app): the brand's band starts below it, as the top bar's row does. */
++    padding-top: calc(var(--platform-safe-top, 0px) + var(--wip-nav-brand-h));
+     z-index: 9; /* over the page, under the top bar (10), whose logo it frames */
+     box-shadow: inset -1px 0 0 var(--wip-nav-line);
+   }
++  /* THE TOP BAR HAS A GROUND WHERE THE PAGE SCROLLS UNDER IT (audit, 21 Nov 2026). On a desktop the bar is transparent: the page scrolls inside its own box under the bar, and the panel reaches the window's top behind it. But a touch browser scrolls the document (lib/browser-scroll.ts), tablets included, with this bar sticky over it, and there the page went straight through it: on a project's Workshop a card's words ran under the logo and the bell. (Home and the other plain screens had a ground in Safari alone, for its status strip, and that one covered the panel's top: the fold button, white for the panel, was white on cream, and with the "Get the app" strip up the Home row was behind the bar.) So wherever the document is the scroller, and in Safari, the bar is the page's solid plane from where the panel ends, and the panel still reaches the top. */
++  html:not([data-skin])[data-browser-scroller] #platform-header,
++  html:not([data-skin]).un-ios.web-browser-chrome:not([data-community-tint]) body:has(> #platform-tabs:not(.hidden):not(.platform-tabs-route-hidden)) #platform-header {
++    background-color: transparent;
++    background-image: linear-gradient(to right, transparent var(--platform-rail-w, 0px), var(--dc-sheet-solid) 0);
++    border-end-start-radius: 0;
++  }
++  html:not([data-skin])[dir="rtl"][data-browser-scroller] #platform-header,
++  html:not([data-skin])[dir="rtl"].un-ios.web-browser-chrome:not([data-community-tint]) body:has(> #platform-tabs:not(.hidden):not(.platform-tabs-route-hidden)) #platform-header {
++    background-image: linear-gradient(to left, transparent var(--platform-rail-w, 0px), var(--dc-sheet-solid) 0);
++  }
+   html:not([data-skin]) body { --platform-rail-full: var(--wip-nav-w); }
+   html:not([data-skin]) #platform-tabs .platform-tab-glyph { width: var(--wip-nav-ic-size); height: var(--wip-nav-ic-size); }
+   html:not([data-skin]) #platform-tabs .platform-rail-settings-glyph { width: var(--wip-nav-ic-size-small); height: var(--wip-nav-ic-size-small); }
+@@ -8454,7 +8540,7 @@ html:not([data-skin]) #platform-tabs :is(.platform-rail-votes, .platform-tab-vot
+   html:not([data-skin]) #platform-tabs::before {
+     content: "";
+     position: absolute;
+-    inset-block-start: var(--wip-nav-brand-top);
++    inset-block-start: calc(var(--platform-safe-top, 0px) + var(--wip-nav-brand-top));
+     inset-inline-start: calc(var(--wip-nav-pad) + var(--wip-nav-row-pad) + var(--wip-nav-ic-size) + var(--wip-nav-row-gap));
+     width: var(--wip-nav-brand-w);
+     height: var(--wip-nav-brand-tile);
+@@ -8480,9 +8566,10 @@ html:not([data-skin]) #platform-tabs :is(.platform-rail-votes, .platform-tab-vot
+      rule for it. Its glyph is the shell's own SidebarIcon, a panel with
+      its side column, the same in both states (the icon's note in
+      @/components/ui/icons.tsx says why), drawn at the rows' weight. */
++  /* BELOW THE STATUS BAR (audit, 21 Nov 2026): on an iPad in the app this button stood 16px from the screen's top, under the clock, while the top bar's own row started 24px lower (the layout audit's content-under-system warning on every iPad screen). It, the brand and the panel's first row add the top inset. */
+   html:not([data-skin]) body:has(> #platform-tabs:not(.hidden):not(.platform-tabs-route-hidden)) #platform-header #sidebar-toggle {
+     position: absolute;
+-    inset-block-start: calc(var(--wip-nav-brand-top) + (var(--wip-nav-brand-tile) - var(--wip-nav-fold)) / 2);
++    inset-block-start: calc(var(--platform-safe-top, 0px) + var(--wip-nav-brand-top) + (var(--wip-nav-brand-tile) - var(--wip-nav-fold)) / 2);
+     inset-inline-start: calc(var(--wip-nav-pad) + var(--wip-nav-row-pad) - (var(--wip-nav-fold) - var(--wip-nav-ic-size)) / 2);
+     width: var(--wip-nav-fold);
+     height: var(--wip-nav-fold);
+diff --git a/tests/standard-wip-look.test.js b/tests/standard-wip-look.test.js
+index 34dc0443..35334972 100644
+--- a/tests/standard-wip-look.test.js
++++ b/tests/standard-wip-look.test.js
+@@ -305,7 +307,7 @@ test('the fold button leads the logo\'s line, on the same spot open and folded,
+   const RAIL = 'html:not([data-skin]) body:has(> #platform-tabs:not(.hidden):not(.platform-tabs-route-hidden))';
+   // ONE RULE PLACES IT, whatever the menu's state: its glyph in the rows' icon column, on the logo's line.
+   assert.ok(block.includes(`${RAIL} #platform-header #sidebar-toggle {\n    position: absolute;\n`
+-    + '    inset-block-start: calc(var(--wip-nav-brand-top) + (var(--wip-nav-brand-tile) - var(--wip-nav-fold)) / 2);\n'
++    + '    inset-block-start: calc(var(--platform-safe-top, 0px) + var(--wip-nav-brand-top) + (var(--wip-nav-brand-tile) - var(--wip-nav-fold)) / 2);\n'
+     + '    inset-inline-start: calc(var(--wip-nav-pad) + var(--wip-nav-row-pad) - (var(--wip-nav-fold) - var(--wip-nav-ic-size)) / 2);'));
+   assert.deepEqual(all.filter((r) => r.selector.includes('#sidebar-toggle') && /folded|peek/.test(r.selector)).map((r) => r.selector), [],
+     'no rule moves or repaints it for the folded menu (it jumped 240px to the top bar\'s start there)');

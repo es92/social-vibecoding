@@ -1,0 +1,35 @@
+diff --git a/public/css/app.css b/public/css/app.css
+index 18c6f13d..34d58329 100644
+--- a/public/css/app.css
++++ b/public/css/app.css
+@@ -7975,6 +8035,9 @@ html:not([data-skin]) #app-list .app-card-opened { display: none; }
+    under it, and it sits on the page over its hairline as it does over the hub. */
+ html:not([data-skin]):not([data-skin-wip]) #dev-workshop .dev-ws[data-ws-tab="all"][data-ws-pinned] > .dev-ws-placebar,
+ html:not([data-skin]):not([data-skin-wip]) #dev-workshop .dev-ws[data-ws-tab="all"] .dev-ws-pane-head { background-color: color-mix(in srgb, var(--wip-card-bg) 90%, transparent); }
++/* SOLID, NOT NEARLY (audit, 21 Nov 2026). At 90%, with no blur, every card passing under the head was still read through it: a card's title ghosted across "All items", the search box and the columns' names. Nothing shows through a head that words scroll under. */
++html:not([data-skin]):not([data-skin-wip]) #dev-workshop .dev-ws[data-ws-tab="all"][data-ws-pinned] > .dev-ws-placebar,
++html:not([data-skin]):not([data-skin-wip]) #dev-workshop .dev-ws[data-ws-tab="all"] .dev-ws-pane-head { background-color: var(--wip-card-bg); }
+ /* THE STANDARD LOOK'S BOARD IS A PAGE UNDER THE WORKSHOP (20 Nov 2026): the Workshop's door opens its overview, and the
+    board's head leads with the way back up to it and the page's name, "‹ All items", the page's one heading. So the
+    place's name over it is the quiet name of where you are, as "Hub" is over the hub's hero, not a second title. */
+@@ -31577,6 +31686,20 @@ html:is(:not([data-skin]), [data-skin="brand"]) :is(#dev-topic-thread, #ai-scree
+    title, as it is at the top of the page; only the sizes change, so nothing swaps places while the page scrolls. */
+ html:not([data-skin]) #dev-topic-thread .dev-request[data-thread-head-tight]:has(.dev-thread-card) :is(#gc-thread-bar, .dev-request-bar) .dev-thread-bar-text > .messages-thread-name { grid-row: 2; }
+ html:not([data-skin]) #dev-topic-thread .dev-request[data-thread-head-tight]:has(.dev-thread-card) :is(#gc-thread-bar, .dev-request-bar) .dev-thread-bar-text :is(.messages-thread-sub, .messages-thread-kicker, [data-change-status], [data-request-status]) { grid-row: 1; }
++/* A NARROW HEAD WRAPS ITS SMALL LINE. The number and the status pill are `max-content` cells, so where the head is narrow
++   (a phone, a thread beside a list) a long pill ("Goes live in ~2d 22h · 1/2") ran over ⋯ and off the card, and took the
++   title's cell with it. The project and topic had already been squeezed to nothing there, leaving their "·" at the start
++   of the line. Under 340px of text the line is the number and the pill alone, and the pill drops under the number when
++   the two do not fit. */
++html:is(:not([data-skin]), [data-skin="brand"]) :is(#dev-topic-thread, #ai-screen) .dev-request:has(.dev-thread-card) :is(#gc-thread-bar, .dev-request-bar) .dev-thread-bar-text { container: thread-head-text / inline-size; }
++@container thread-head-text (max-width: 340px) {
++  html:is(:not([data-skin]), [data-skin="brand"]) :is(#dev-topic-thread, #ai-screen) .dev-request:has(.dev-thread-card) :is(#gc-thread-bar, .dev-request-bar) .dev-thread-bar-text > div:has(> .messages-thread-kicker) { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; grid-row: 1; grid-column: 1 / -1; min-width: 0; }
++  html:is(:not([data-skin]), [data-skin="brand"]) :is(#dev-topic-thread, #ai-screen) .dev-request:has(.dev-thread-card) :is(#gc-thread-bar, .dev-request-bar) .dev-thread-bar-text > .messages-thread-sub { display: none; }
++  html:is(:not([data-skin]), [data-skin="brand"]) :is(#dev-topic-thread, #ai-screen) .dev-request:has(.dev-thread-card) :is(#gc-thread-bar, .dev-request-bar) .dev-thread-bar-text:has(> .messages-thread-sub) .messages-thread-kicker::before { content: none; }
++  html:is(:not([data-skin]), [data-skin="brand"]) :is(#dev-topic-thread, #ai-screen) .dev-request:has(.dev-thread-card) :is(#gc-thread-bar, .dev-request-bar) .dev-thread-bar-text :is([data-change-status], [data-request-status]) { margin-inline-start: 0; }
++  html:is(:not([data-skin]), [data-skin="brand"]) :is(#dev-topic-thread, #ai-screen) .dev-request[data-thread-head-tight]:has(.dev-thread-card) :is(#gc-thread-bar, .dev-request-bar) .dev-thread-bar-text > div:has(> .messages-thread-kicker) { grid-row: 2; }
++  html:not([data-skin]) #dev-topic-thread .dev-request[data-thread-head-tight]:has(.dev-thread-card) :is(#gc-thread-bar, .dev-request-bar) .dev-thread-bar-text > div:has(> .messages-thread-kicker) { grid-row: 1; }
++}
+ /* A phone's head: the same card, a size down. */
+ @media (max-width: 767px) {
+   html:is(:not([data-skin]), [data-skin="brand"]) :is(#dev-topic-thread, #ai-screen) .dev-request:has(.dev-thread-card) .dev-request-bar .messages-thread-header { gap: 10px; padding: 12px 10px 12px 12px; }
