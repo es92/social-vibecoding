@@ -1092,10 +1092,19 @@ test('the server: a row\'s list is its stored work state, read for the viewer', 
   const decide = ws('waiting_for_you', { why: 'decide', line: { code: 'reason', text: 'A person must choose.' } });
   assert.equal(aiWork.standing(open, ME, now, null, decide, { decides: true }).group, 'needs');
   assert.equal(aiWork.standing(open, ME, now, null, decide, { decides: false }).group, 'waiting');
-  assert.equal(aiWork.standing({ ...open, own: false }, ME, now, null, decide, { decides: false }).group, 'waiting',
+  // 24 Nov 2026 (mobile 04): `wrote` tells a writer (or someone named in
+  // it) from a voter. A writer's thread is listed at every stage, as their
+  // own would be; one they only voted in is listed at none while it is open.
+  assert.equal(aiWork.standing({ ...open, own: false, wrote: true }, ME, now, null, decide, { decides: false }).group, 'waiting',
     'one they only wrote in, with no change in flight, waits on that person');
+  assert.equal(aiWork.standing({ ...open, own: false, wrote: true, change_status: 'active', change_user: 9 }, ME, now, null, ws('building')).group, 'next',
+    'one they only wrote in, being built, is In progress');
+  assert.equal(aiWork.standing({ ...open, own: false }, ME, now, null, decide, { decides: false }), null,
+    'one they only voted in, with no change in flight, is not listed (it was Not moving)');
+  assert.equal(aiWork.standing({ ...open, own: false }, ME, now, null, ws('reading', { line: { code: 'waiting' } })), null,
+    'nor one nobody has picked up');
   assert.equal(aiWork.standing({ ...open, own: false, change_status: 'active', change_user: 9 }, ME, now, null, ws('building')), null,
-    'one they only wrote in, being built, asks nothing of them');
+    'one they only voted in, being built, asks nothing of them');
   // Who is building it is the viewer's to read.
   assert.equal(aiWork.standing({ ...open, change_status: 'active', change_user: 3 }, ME, now, 3, ws('building')).by, 'bot');
   assert.equal(aiWork.standing({ ...open, change_status: 'active', change_user: ME }, ME, now, 3, ws('building')).by, 'you');
@@ -1248,9 +1257,9 @@ test('Needs you here is the threads you are in, counted in the label\'s ink, wit
   // The most rows are not spent on threads that are never listed, and Live
   // this week has its own, apart from the rest, their own first (30 Oct 2026).
   const { THREADS_SQL } = require('../src/services/ai-work');
-  // 24 Nov 2026 (mobile 04): a thread she wrote or was named in is read
-  // while it moves; one she only voted in is not.
-  assert.match(THREADS_SQL, /AND \(mine\.own OR mine\.wrote OR ch\.status IS NULL OR ch\.status = 'merged' OR ch\.user_id = \$1\)/);
+  // 24 Nov 2026 (mobile 04): a thread she wrote or was named in is read at
+  // every stage; one she only voted in only once a change of it merged.
+  assert.match(THREADS_SQL, /AND \(mine\.own OR mine\.wrote OR ch\.status = 'merged' OR ch\.user_id = \$1\)/);
   assert.match(THREADS_SQL, /AND \(t\.state = 'open' OR \(t\.closed_at > NOW\(\) - make_interval\(days => \$5\) AND ch\.status = 'merged'\)\)/,
     'a closed thread is read only for its merged change');
   assert.match(THREADS_SQL, /PARTITION BY COALESCE\(ch\.status = 'merged', FALSE\)\s+ORDER BY mine\.own DESC,/);

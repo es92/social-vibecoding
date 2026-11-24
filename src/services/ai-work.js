@@ -35,9 +35,10 @@
 //                       waiting for a free builder or held back (as the bot
 //                       says in Main), or a request nobody has picked up;
 //              live     a change of it went live in the last week.
-//            One they only voted in is listed only once it is live or while
-//            nobody has picked it up: once they have voted there is nothing
-//            left for them to do. 24 Nov 2026 (mobile 04): one they wrote in,
+//            One they only voted in is listed only once it is live: once
+//            they have voted there is nothing left for them to do (24 Nov
+//            2026, mobile 04: no longer while nobody has picked it up either,
+//            where it sat as "Not moving"). One they wrote in,
 //            or were named in with @, is listed at every stage, placed as
 //            their own would be and below their own (`tookPart`). A change
 //            up for a vote that still owes their vote is the Needs you feed's
@@ -264,12 +265,13 @@ SELECT t.id, t.app_id, mine.own, mine.wrote, t.number, t.kind, t.title AS thread
         OR (ch.live_at IS NULL AND (mine.own OR mine.wrote OR ch.user_id = $1)))
    AND NOT EXISTS (SELECT 1 FROM thread_followers f
                     WHERE f.thread_id = t.id AND f.user_id = $1 AND f.muted_at IS NOT NULL)
-   -- A change in flight in a thread they only voted in is never listed
-   -- (standing), so it is not read either: somebody who votes on everything
-   -- filled the most rows with those, and their own requests further down
-   -- were cut off before they could be listed. One they wrote or were named
-   -- in is listed while it moves (24 Nov 2026), so it is read.
-   AND (mine.own OR mine.wrote OR ch.status IS NULL OR ch.status = 'merged' OR ch.user_id = $1)
+   -- An open thread they only voted in is never listed (standing), so it is
+   -- not read either: somebody who votes on everything filled the most rows
+   -- with those, and their own requests further down were cut off before
+   -- they could be listed. 24 Nov 2026 (mobile 04): one they wrote or were
+   -- named in is listed at every stage, so it is read; one they only voted
+   -- in is read once a change of it has merged (Live this week).
+   AND (mine.own OR mine.wrote OR ch.status = 'merged' OR ch.user_id = $1)
    AND ${VISIBLE_APP_WHERE}
 ) listed
  WHERE place <= $4
@@ -436,8 +438,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /**
  * Pure: where one thread stands for the viewer, or null when it is not
  * theirs to see in these lists (a vote they owe is Needs you's, and so is
- * the bot's question; a change live more than a week ago is history; one in
- * flight that they only voted in asks nothing more of them). `work`
+ * the bot's question; a change live more than a week ago is history; an
+ * open one they only voted in asks nothing more of them). `work`
  * is the stored work state of its request (or of its change, when it has no
  * request); `viewer` is whether they decide on it (they asked for it, or
  * they run its project). `botId` is Homeroom bot's account, so a change it
@@ -542,14 +544,17 @@ function standing(row, viewerId, now = new Date(), botId = null, work = null, vi
   if (state.stage === 'checking' && status === 'promoted' && wouldVote && !inIt && !updating) {
     return { group: 'waiting', work: stored, at };
   }
-  // One they only voted in is listed while no change of it is in flight, as
-  // Waiting: it asks nothing of them, and nobody is building it. One they
-  // wrote or were named in is placed as their own (inIt).
+  // One they wrote or were named in is placed as their own (inIt). 24 Nov
+  // 2026 (mobile 04, Evan): one they only voted in is not listed while it is
+  // open, moving or not: it used to be Waiting while nothing of it was in
+  // flight ("Not moving" for weeks after its changes were set aside). It
+  // shows once it lands (Live this week, above) and then under Votes in
+  // History.
   const place = updating
     ? ((inIt || wouldVote)
       ? ((row.update_coming === 'running' || code === 'revising' || code === 'fixing' || code === 'fixing_check') ? 'next' : 'waiting')
       : null)
-    : workState.placeFor(state, { requester: decides, own: inIt, voteOwed }) || (!own && !inFlight(state) ? 'waiting' : null);
+    : workState.placeFor(state, { requester: decides, own: inIt, voteOwed });
   if (!place) return null;
   const out = { group: place, work: stored, at };
   if (state.stage === 'building' && !state.line) {
@@ -570,13 +575,6 @@ function standing(row, viewerId, now = new Date(), botId = null, work = null, vi
     if (quiet >= 7) out.quietDays = quiet;
   }
   return out;
-}
-
-// A change of it is being made, checked, voted on or put live.
-const READY_LINES = new Set(['queued', 'held_builds', 'held_waiting']);
-function inFlight(state) {
-  if (state.stage === 'building') return !READY_LINES.has(state.line?.code);
-  return state.stage === 'checking' || state.stage === 'up_for_vote' || state.stage === 'going_live';
 }
 
 // In progress is soonest first: going live, then a change being fixed or

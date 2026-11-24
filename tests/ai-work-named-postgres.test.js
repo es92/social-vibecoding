@@ -134,6 +134,12 @@ test('mobile 04: every thread you are in, and being named, against the full sche
   const both = await change(8, bob, 7, 'promoted', { promotedAt: new Date(Date.now() - 1800000), checkState: 'pending' });
   await pool.query(`INSERT INTO pr_votes (session_id, user_id, vote, approval_epoch) VALUES ($1, $2, 'yes', 0)`, [both.id, ada.id]);
   await say(ada, 7, 'yes from me');
+  // Bob's, open, which she only voted on, whose change was set aside weeks
+  // ago (Evan's Type Racer Battle #2): nothing of it is being built.
+  await request(29, bob, 'Voted, set aside');
+  const aside = await change(30, bob, 29, 'archived', { promotedAt: new Date(Date.now() - 40 * 86400000) });
+  await pool.query(`UPDATE chat_sessions SET archived_at = NOW() - interval '30 days' WHERE id = $1`, [aside.id]);
+  await pool.query(`INSERT INTO pr_votes (session_id, user_id, vote, approval_epoch) VALUES ($1, $2, 'yes', 0)`, [aside.id, ada.id]);
   // Bob's, which she only voted on, live yesterday.
   await request(9, bob, 'Voted, live');
   const landed = await change(10, bob, 9, 'merged', { mergedAt: new Date(Date.now() - 2 * 86400000), liveAt: new Date(Date.now() - 86400000) });
@@ -153,6 +159,15 @@ test('mobile 04: every thread you are in, and being named, against the full sche
   assert.ok(row(w, 'Voted and wrote'), 'one she voted and wrote in is listed while it moves');
   assert.equal(row(w, 'Voted and wrote').myVote, 'yes', 'saying how she voted');
   assert.equal(row(w, 'Voted, live').group, 'live', 'one she only voted in is Live this week once it lands');
+  // Evan's update (24 Nov 2026): not while it is stalled either. It used to
+  // be Waiting, "Not moving".
+  assert.equal(row(w, 'Voted, set aside'), null, 'an open thread she only voted in, nothing being built, is not listed');
+  const read = await pool.query(aiWork.THREADS_SQL, [ada.id, false, false, aiWork.THREADS_MAX, aiWork.LIVE_DAYS]);
+  assert.ok(!read.rows.some((r) => r.thread_title === 'Voted, set aside' || r.request_title === 'Voted, set aside'),
+    'and it is not read, so it spends none of the most rows');
+  // It is History's, under Votes, now that the change she voted on closed.
+  const votesPast = await aiHistory.historyFor(pool, { user: { id: ada.id }, kind: 'vote', deps: { bot } });
+  assert.ok(votesPast.rows.some((r) => r.title === 'Voted, set aside' && r.kind === 'vote'));
 
   // ── 2. Named only, at every stage ──────────────────────────────────────
   await request(11, bob, 'Named only');
@@ -328,10 +343,11 @@ test('mobile 04: every thread you are in, and being named, against the full sche
   ]);
   const recent = await recentThreadsPage(pool, ada.id, { limit: 50 });
   const missing = recent.threads.filter((r) => !seen.has(r.threadId)).map((r) => r.title);
-  // The one moving thread she only voted in stays off, on purpose. So does
-  // an @ older than a week in a thread that is still open with nothing of
-  // hers moving: it is listed (Not moving), so it is not missing either.
-  assert.deepEqual(missing, ['Only voted'], 'every recent thread is somewhere but a moving one she only voted in');
+  // The open thread she only voted in, moving, stays off, on purpose. The
+  // stalled one she voted in is History's (its change closed); an @ older
+  // than a week in an open thread is listed (Not moving), so neither is
+  // missing.
+  assert.deepEqual(missing, ['Only voted'], 'every recent thread is somewhere but an open one she only voted in');
 
   // ── The route: Dismiss is per person, and only for a thread of the app ─
   const { aiWorkRoutes } = require('../src/routes/ai-work');
