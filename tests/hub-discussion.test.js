@@ -271,6 +271,131 @@ test('a link to a message finds its post: the thread opened, older pages read; o
   assert.match(read('public/css/app.css'), /\.dh-msg\[data-ws-discussion-marked\] \{[^}]*animation: dh-marked 2\.4s ease-out;/);
 });
 
+// Part 2: the room live. A project's chat socket says what was said; Homeroom's
+// #general (a Messages room) names what changed, and the card reads it again.
+test('the room live: a socket frame is drawn as it lands, a changed room is read again', async () => {
+  const me = 'priya';
+  const chat = feed.liveFromAppFrame({ type: 'chat', id: 50, userId: 2, username: 'dev', content: 'hi', msgType: 'message', createdAt: SINCE }, me);
+  assert.equal(chat.kind, 'said');
+  assert.deepEqual([chat.said.id, chat.said.rootId, chat.said.who.username, chat.said.content], [50, null, 'dev', 'hi']);
+  const reply = feed.liveFromAppFrame({ type: 'chat', id: 51, userId: 2, username: 'dev', content: 'yes', thread: { type: 'message', ref: 10 }, createdAt: SINCE }, me);
+  assert.equal(reply.said.rootId, 10);
+  assert.equal(feed.liveFromAppFrame({ type: 'chat', id: 52, userId: 2, username: 'dev', content: 'x', thread: { type: 'category', ref: 3 } }, me), null, 'a topic\'s message is not #general\'s');
+  assert.equal(feed.liveFromAppFrame({ type: 'typing', username: 'dev' }, me), null);
+  assert.deepEqual(feed.liveFromAppFrame({ type: 'thread_summary', root_id: 10, thread: { reply_count: 4, last_reply_at: SINCE } }, me),
+    { kind: 'thread', rootId: 10, replyCount: 4, lastReplyAt: SINCE });
+  assert.deepEqual(feed.liveFromAppFrame({ type: 'chat_edit', messageId: 10, content: 'edited' }, me), { kind: 'edit', id: 10, content: 'edited' });
+  assert.deepEqual(feed.liveFromAppFrame({ type: 'reaction', messageId: 10, reactions: [{ emoji: '👍', count: 2, users: ['dev', 'priya'] }] }, me),
+    { kind: 'reactions', id: 10, reactions: [{ emoji: '👍', count: 2, reacted: true, users: ['dev', 'priya'] }] });
+  assert.deepEqual(feed.liveFromAppFrame({ type: 'chat_delete', id: 10 }, me), { kind: 'gone', id: 10 });
+  assert.deepEqual(feed.liveFromAppFrame({ type: 'resync_hint' }, me), { kind: 'stale', messageId: null, rootId: null });
+  assert.deepEqual(feed.liveFromConversationEvent({ type: 'conversation_message_created', conversationId: 7, messageId: 9, threadRootId: 4 }, 7),
+    { kind: 'stale', messageId: 9, rootId: 4 });
+  assert.equal(feed.liveFromConversationEvent({ conversationId: 8, messageId: 9 }, 7), null, 'another room\'s');
+
+  // The feed draws each as it lands.
+  const { DiscussionFeed } = loadTsx(CARD);
+  let reads = 0;
+  const source = {
+    key: 'live', streamHoldsReplies: true,
+    async page() { reads += 1; return { messages: [said(10, { replyCount: 1 }), said(11, { rootId: 10 })], more: false, readId: 0 }; },
+    async thread() { return { root: null, replies: [] }; },
+    async post() { return null; }, async react() { return null; },
+    async readPosition() { return 0; }, async markRead() {},
+    async ranked() { return { ids: [], more: false }; },
+    live() { return () => {}; },
+  };
+  const room = new DiscussionFeed(source, null, { current: me });
+  await room.load();
+  room.heard(feed.liveFromAppFrame({ type: 'chat', id: 60, userId: 2, username: 'dev', content: 'new post', createdAt: SINCE }, me));
+  room.heard(feed.liveFromAppFrame({ type: 'chat', id: 61, userId: 2, username: 'dev', content: 'a reply', thread: { type: 'message', ref: 10 }, createdAt: SINCE }, me));
+  let post = room.items().find((i) => i.key === 'post:10');
+  assert.deepEqual([post.replyCount, post.replies.map((r) => r.id)], [2, [11, 61]], 'a reply lands under its post, which counts it');
+  assert.ok(room.items().some((i) => i.key === 'post:60'), 'a new post is drawn');
+  room.heard(feed.liveFromAppFrame({ type: 'chat', id: 61, userId: 2, username: 'dev', content: 'a reply', thread: { type: 'message', ref: 10 }, createdAt: SINCE }, me));
+  assert.equal(room.items().find((i) => i.key === 'post:10').replyCount, 2, 'the same message twice is counted once');
+  room.heard({ kind: 'thread', rootId: 10, replyCount: 5, lastReplyAt: SINCE });
+  room.heard({ kind: 'edit', id: 60, content: 'new post, edited' });
+  room.heard({ kind: 'reactions', id: 60, reactions: [{ emoji: '🎉', count: 1, reacted: false, users: ['dev'] }] });
+  room.heard({ kind: 'gone', id: 11 });
+  post = room.items().find((i) => i.key === 'post:10');
+  assert.equal(post.replyCount, 5);
+  assert.deepEqual(post.replies.map((r) => r.id), [61], 'a reply taken back leaves its post');
+  const fresh = room.items().find((i) => i.key === 'post:60');
+  assert.deepEqual([fresh.root.content, fresh.root.reactions[0].emoji], ['new post, edited', '🎉']);
+  // A room that only says something changed is read again, once for a burst.
+  const before = reads;
+  room.heard({ kind: 'stale', messageId: 9, rootId: null });
+  room.heard({ kind: 'stale', messageId: 10, rootId: null });
+  await new Promise((resolve) => setTimeout(resolve, 400));
+  assert.equal(reads, before + 1);
+
+  // Held while on screen: the source's live events and the page's own "read it again".
+  const card = read(CARD);
+  assert.match(card, /const stopSource = this\.source\.live\(\(event\) => this\.heard\(event\)\);\s*const stopReads = watchLiveReads\(\(\) => this\.refresh\(\)\);/);
+  assert.match(read(FEED), /new WebSocket\(`\$\{proto\}\/\/\$\{location\.host\}\/ws\/chat\/\$\{encodeURIComponent\(slug\)\}\$\{qs\}`\)/);
+  assert.match(read(FEED), /window\.addEventListener\('usernode:conversation-changed', changed\)/);
+  assert.match(read('public/js/app.js'), /window\.UsernodeReact\?\.messages\?\.handleEvent\?\.\(data\);[\s\S]{0,500}window\.dispatchEvent\(new CustomEvent\('usernode:conversation-changed', \{ detail: data \}\)\)/);
+});
+
+test('Most replies is the whole room\'s: the server ranks, the card reads the busiest posts in', async () => {
+  const { DiscussionFeed } = loadTsx(CARD);
+  const asked = [];
+  const threads = [];
+  const source = {
+    key: 'rank', streamHoldsReplies: true,
+    async page() { return { messages: [said(40), said(41)], more: true, readId: 0 }; },
+    async thread(rootId) {
+      threads.push(rootId);
+      return { root: said(rootId, { replyCount: 2 }), replies: [said(rootId + 100, { rootId }), said(rootId + 101, { rootId })] };
+    },
+    async post() { return null; }, async react() { return null; },
+    async readPosition() { return 0; }, async markRead() {},
+    async ranked(after, offset, limit) {
+      asked.push([after, offset, limit]);
+      return offset === 0 ? { ids: [7, 3, 40], more: true } : { ids: [2], more: false };
+    },
+    live() { return () => {}; },
+  };
+  const fold = { since: SINCE, fold_at: 8, earlier: null };
+  const room = new DiscussionFeed(source, fold, { current: 'me' });
+  await room.load();
+  await room.rankTo(8);
+  assert.deepEqual(asked[0], [0, 0, 8], 'from the start of the room, a page of eight');
+  assert.deepEqual(threads.sort((a, b) => a - b), [2, 3, 7], 'each ranked post not here is read with its thread');
+  const top = feed.sortItems(room.items(), 'replies').map((i) => i.key);
+  assert.deepEqual(top.slice(0, 3), ['post:7', 'post:3', 'post:2']);
+  assert.deepEqual(room.get().ranked, [7, 3, 40, 2]);
+  assert.equal(room.get().rankedMore, false);
+  // With the fold, the ranking starts after its last message.
+  const folded = new DiscussionFeed(source, { since: SINCE, fold_at: 8, earlier: { count: 9, from: SINCE, to: SINCE, last_id: 30 } }, { current: 'me' });
+  await folded.load();
+  asked.length = 0;
+  await folded.rankTo(1);
+  assert.deepEqual(asked[0], [30, 0, 8]);
+  // A ranking that cannot be read leaves the posts sorted as they are.
+  const offline = new DiscussionFeed({ ...source, async ranked() { throw new Error('down'); } }, fold, { current: 'me' });
+  await offline.load();
+  await offline.rankTo(8);
+  assert.equal(offline.get().rankedMore, false);
+  const view = read(CARD);
+  assert.match(view, /if \(sort !== 'replies' \|\| mode === 'preview' \|\| state\.status !== 'ready'\) return;\s*void feed\.rankTo\(limit\);/);
+  // The route: who gets the channel may rank it.
+  const route = read('src/routes/apps.js');
+  assert.match(route, /router\.get\('\/api\/apps\/:slug\/discussion\/most-replied'/);
+  assert.match(route, /return res\.json\(await discussion\.rankedInConversation\(pool, conversationId, opts\)\);/);
+  assert.match(route, /if \(!\(await appAccess\.checkAppAccess\(pool, app, req\.user, 'collab'\)\)\) \{\s*return res\.status\(404\)/);
+  const server = require('../src/services/discussion');
+  const sql = [];
+  const pool = { query: async (text, args) => { sql.push([text, args]); return { rows: [{ id: '5', reply_count: 3, active_at: new Date(SINCE) }, { id: '4', reply_count: 0, active_at: SINCE }] }; } };
+  assert.deepEqual(await server.rankedInApp(pool, 9, { viewerId: 1, afterId: 'x', limit: 1, offset: -4 }),
+    { posts: [{ id: 5, reply_count: 3, active_at: SINCE }], more: true });
+  assert.deepEqual(sql[0][1], [9, 0, 1, 2, 0], 'bad bounds are read as none');
+  assert.match(sql[0][0], /ORDER BY reply_count DESC, active_at DESC, m\.id DESC/);
+  await server.rankedInConversation(pool, 3, { limit: 500 });
+  assert.equal(sql[1][1][3], server.RANKED_MAX + 1, 'a page is at most RANKED_MAX');
+});
+
 test('the server says what was said before Discussion, best-effort, beside the channel', async () => {
   const route = read('src/routes/apps.js');
   assert.match(route, /discussion: await discussion\.discussionSummary\(pool, \{ conversationId, viewerId: req\.user\?\.id \}\),/);

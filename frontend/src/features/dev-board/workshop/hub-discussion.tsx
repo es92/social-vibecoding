@@ -57,10 +57,18 @@
  * ── Island rules ───────────────────────────────────────────────────────
  *
  * The hub mounts client-side and reads in effects: the first render is the
- * card's frame and its loading rows, never data. It reads again every
- * REFRESH_MS while the page is on screen, after the viewer writes, and when
- * the window comes back into focus; the room's own socket belongs to the
- * channel's chat, which this does not hold.
+ * card's frame and its loading rows, never data.
+ *
+ * ── Live, and Most replies across the room (part 2) ───────────────────
+ *
+ * While it is on screen the feed holds the room's live events
+ * (DiscussionSource.live): a project's chat socket, whose frames carry what
+ * was said, or for Homeroom's #general the page's events socket, which
+ * names what changed and is read again. A dropped socket, a tab away or the
+ * browser offline reads it again (../../../lib/live-reads.ts), and so does
+ * the window coming back into focus; REFRESH_MS is only a safety net.
+ * "Most replies" is the server's ranking of every post since the fold
+ * (DiscussionFeed.rankTo), not only the posts a page of the stream read.
  */
 
 import {
@@ -74,6 +82,7 @@ import { ArrowUpIcon, ChevronRightIcon, HashIcon, ReplyArrowIcon, ThreadIcon } f
 import { useMessages } from '../../../lib/i18n/react';
 import { messageStamp, shortDate } from '../../../lib/timestamp';
 import { enterSends, isTouchInput } from '../../../lib/enter-sends';
+import { watch as watchLiveReads } from '../../../lib/live-reads';
 import { useStoreState } from '../../../lib/use-store-state';
 import { MessageActionBar } from '../../message-actions/action-bar';
 import { MessageActionSheet, useLongPress } from '../../message-actions/action-sheet';
@@ -85,15 +94,21 @@ import { MessageMarkdown, UserAvatar } from '../../messages/format';
 import type { ConversationUser } from '../../messages/types';
 import type { CommunityPayload } from './community-card';
 import {
-  POSTS_SHOWN, PREVIEW_POSTS, appSource, assemble, conversationSource, earlierFold, inEarlier, isNewTo, shownReplies, sortItems,
-  toggledReactions,
+  POSTS_SHOWN, PREVIEW_POSTS, REPLIES_SHOWN, appSource, assemble, conversationSource, earlierFold, inEarlier, isNewTo, shownReplies,
+  sortItems, toggledReactions,
   type DiscussionItem, type DiscussionPerson, type DiscussionSort, type DiscussionSource, type DiscussionSummary,
-  type EarlierFold, type Said,
+  type EarlierFold, type LiveEvent, type Said,
 } from './discussion-feed';
 import { takeDiscussionTarget, type DiscussionTarget } from './project-discussion';
 
-/** How often the card reads the room again while it is on screen. */
-export const REFRESH_MS = 60_000;
+/**
+ * How often the card reads the room again while it is on screen: a safety
+ * net, since the room's live events (DiscussionSource.live) bring what is
+ * said as it is said, and a dropped socket or a page away reads it again.
+ */
+export const REFRESH_MS = 5 * 60_000;
+/** Live events this close together are read again once. */
+const STALE_MS = 300;
 /** At most this many older posts with a new reply are brought in by one read. */
 const ACTIVE_ROOTS_READ = 5;
 /** Older pages of the room a door's message is looked for in before #general's chat takes it. */
@@ -121,10 +136,15 @@ interface FeedState {
   opened: ReadonlySet<number>;
   /** A read of older posts, or of a thread, is under way. */
   busy: boolean;
+  /** "Most replies": the posts the server ranked so far, busiest first, read in. */
+  ranked: readonly number[];
+  /** The ranking has more posts after `ranked`. */
+  rankedMore: boolean;
 }
 
 const EMPTY: FeedState = {
   status: 'idle', messages: new Map(), oldest: null, more: false, readId: null, opened: new Set(), busy: false,
+  ranked: [], rankedMore: true,
 };
 
 export class DiscussionFeed {
@@ -139,6 +159,12 @@ export class DiscussionFeed {
   private marked = 0;
   /** The first read, while it runs and once it has: what a door waits for. */
   private loaded: Promise<void> | null = null;
+  /** The room's live events, and the page's own "read it again", while the feed is held. */
+  private stopLive: (() => void) | null = null;
+  private stale: ReturnType<typeof setTimeout> | null = null;
+  private staleRoots = new Set<number>();
+  /** A "Most replies" read under way. */
+  private ranking: Promise<void> | null = null;
 
   constructor(source: DiscussionSource, summary: DiscussionSummary | null, viewer: { current: string | null }) {
     this.source = source;
@@ -186,7 +212,11 @@ export class DiscussionFeed {
     return !(fold && this.state.oldest != null && this.state.oldest <= fold.lastId);
   }
 
-  /** Hold the feed while a card shows it: it is read once, and again every REFRESH_MS. */
+  /**
+   * Hold the feed while a card shows it: it is read once, then kept as the
+   * room says things (its live events), read again after a gap (the page's
+   * live reads: a dropped socket, a tab away) and every REFRESH_MS.
+   */
   hold(): () => void {
     this.holders += 1;
     if (this.state.status === 'idle' || this.state.status === 'error') void this.load();
@@ -195,14 +225,104 @@ export class DiscussionFeed {
         if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
         void this.refresh();
       }, REFRESH_MS);
+      const stopSource = this.source.live((event) => this.heard(event));
+      const stopReads = watchLiveReads(() => this.refresh());
+      this.stopLive = () => { stopSource(); stopReads(); };
     }
     return () => {
       this.holders -= 1;
       if (this.holders <= 0 && this.timer) {
         clearInterval(this.timer);
         this.timer = null;
+        this.stopLive?.();
+        this.stopLive = null;
       }
     };
+  }
+
+  /**
+   * What the room said live, drawn as it lands: a post or a reply (its
+   * post's count moves with it), a thread's count, an edit, the reactions
+   * on a message, a message taken back. A room that says only what changed
+   * (`stale`) is read again, once for a burst.
+   */
+  heard(event: LiveEvent): void {
+    if (this.state.status !== 'ready') return;
+    const messages = this.state.messages;
+    switch (event.kind) {
+      case 'said': {
+        const known = messages.has(event.said.id);
+        const updates: Said[] = [known ? { ...messages.get(event.said.id) as Said, content: event.said.content } : event.said];
+        const root = event.said.rootId != null ? messages.get(event.said.rootId) : null;
+        if (root && !known) updates.push({ ...root, replyCount: root.replyCount + 1, lastReplyAt: event.said.at });
+        this.merge(updates);
+        return;
+      }
+      case 'thread': {
+        const root = messages.get(event.rootId);
+        if (root) this.merge([{ ...root, replyCount: event.replyCount, lastReplyAt: event.lastReplyAt }]);
+        return;
+      }
+      case 'edit': {
+        const said = messages.get(event.id);
+        if (said) this.merge([{ ...said, content: event.content }]);
+        return;
+      }
+      case 'reactions': {
+        const said = messages.get(event.id);
+        if (said) this.merge([{ ...said, reactions: event.reactions }]);
+        return;
+      }
+      case 'gone': {
+        const said = messages.get(event.id);
+        if (said) this.merge([{ ...said, deleted: true, content: '', reactions: [] }]);
+        return;
+      }
+      default: {
+        const said = event.messageId != null ? messages.get(event.messageId) : null;
+        const root = event.rootId ?? said?.rootId ?? null;
+        if (root != null && messages.has(root)) this.staleRoots.add(root);
+        if (this.stale) return;
+        this.stale = setTimeout(() => {
+          this.stale = null;
+          const roots = [...this.staleRoots];
+          this.staleRoots.clear();
+          void Promise.all([this.refresh(), ...roots.map((id) => this.readThread(id, this.state.opened.has(id)))]);
+        }, STALE_MS);
+      }
+    }
+  }
+
+  /**
+   * "Most replies" across the whole room: the server's ranking of the posts
+   * since the fold, read in until `count` of them are here (each one's
+   * thread, so its newest replies show). Where the ranking cannot be read,
+   * the posts already here are sorted as they are.
+   */
+  rankTo(count: number): Promise<void> {
+    if (this.ranking) return this.ranking;
+    this.ranking = (async () => {
+      const fold = this.fold();
+      while (this.state.status === 'ready' && this.state.rankedMore && this.state.ranked.length < count) {
+        let page: { ids: number[]; more: boolean };
+        try {
+          page = await this.source.ranked(fold ? fold.lastId : 0, this.state.ranked.length, POSTS_SHOWN);
+        } catch {
+          this.set({ rankedMore: false });
+          break;
+        }
+        const all = [...this.state.messages.values()];
+        const missing = page.ids.filter((id) => {
+          const said = this.state.messages.get(id);
+          if (!said) return true;
+          const have = all.filter((m) => m.rootId === id).length;
+          return have < Math.min(said.replyCount, REPLIES_SHOWN);
+        });
+        await Promise.all(missing.map((id) => this.readThread(id, false)));
+        this.set({ ranked: [...this.state.ranked, ...page.ids], rankedMore: page.more && page.ids.length > 0 });
+      }
+    })().finally(() => { this.ranking = null; });
+    return this.ranking;
   }
 
   load(): Promise<void> {
@@ -216,6 +336,7 @@ export class DiscussionFeed {
       const page = await this.source.page(null);
       const readId = page.readId ?? await this.source.readPosition();
       this.state = { ...EMPTY, opened: this.state.opened, status: 'ready', readId };
+      this.staleRoots.clear();
       this.merge(page.messages, { oldest: oldestMain(page.messages), more: page.more, status: 'ready' });
       await this.fillIn();
     } catch {
@@ -385,7 +506,7 @@ const feeds = new Map<string, DiscussionFeed>();
 /** The source a channel is read from: Homeroom's #general conversation, or the app's own chat. */
 export function sourceFor(slug: string, channel: Channel, viewer: { current: string | null }): DiscussionSource {
   const conversationId = Number((channel as { conversation_id?: unknown }).conversation_id) || null;
-  return conversationId ? conversationSource(conversationId) : appSource(slug, viewer);
+  return conversationId ? conversationSource(conversationId, slug) : appSource(slug, viewer);
 }
 
 function sourceKey(slug: string, channel: Channel): string {
@@ -571,6 +692,13 @@ function FeedView({ feed, slug, name, channel, mode, headId, host, viewer, focus
     return () => watch.disconnect();
   }, [feed, state, mode, host]);
 
+  // "Most replies" ranks the whole room: the server's busiest posts are read
+  // in as far down as the list shows.
+  useEffect(() => {
+    if (sort !== 'replies' || mode === 'preview' || state.status !== 'ready') return;
+    void feed.rankTo(limit);
+  }, [feed, sort, mode, limit, state.status]);
+
   // The phone's card asked for the box: it is ready to write in.
   useEffect(() => {
     if (mode !== 'page' || !focusOnOpen) return;
@@ -644,7 +772,7 @@ function FeedView({ feed, slug, name, channel, mode, headId, host, viewer, focus
   }
 
   const shown = items.slice(0, limit);
-  const canMore = items.length > limit || feed.morePosts();
+  const canMore = items.length > limit || (sort === 'replies' ? state.rankedMore : feed.morePosts());
   return (
     <>
       {head}
@@ -685,7 +813,7 @@ function FeedView({ feed, slug, name, channel, mode, headId, host, viewer, focus
           disabled={state.busy}
           onClick={() => {
             setLimit((n) => n + POSTS_SHOWN);
-            if (items.length <= limit + POSTS_SHOWN) void feed.morePostsRead();
+            if (sort === 'newest' && items.length <= limit + POSTS_SHOWN) void feed.morePostsRead();
           }}
         >
           {t('project:hub.discussion.morePosts')}

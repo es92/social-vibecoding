@@ -4280,6 +4280,41 @@ function appRoutes(config, { pool = getPool(config) } = {}) {
   // It is the headline number, not the whole gate — opposition raises it
   // and the lazy-consensus window can merge below it — and the card says
   // "to merge", not "exactly".
+  // THE DISCUSSION'S "MOST REPLIES" (part 2, 26 Nov 2026): the posts of a
+  // project's #general since the fold (`after`, the Earlier post's last
+  // message), busiest first, a page at a time; the hub's Discussion card
+  // reads each one's thread through the room's own routes
+  // (dev-board/workshop/discussion-feed.ts `ranked`). Who may ask is who
+  // gets the channel on the community read below: on Homeroom's own project
+  // its #general, any signed-in person; on any other, a collaborator.
+  router.get('/api/apps/:slug/discussion/most-replied', async (req, res) => {
+    try {
+      if (!req.user) return res.status(401).json({ error: 'Sign in to read the discussion' });
+      const showSelfHosted = !!req.user.isAdmin || !!config.selfAppPublicVoting;
+      const { rows } = await pool.query(
+        'SELECT * FROM apps WHERE slug = $1 AND (NOT self_hosted OR $2::boolean)',
+        [req.params.slug, showSelfHosted]
+      );
+      const app = rows[0];
+      if (!app || !(await appAccess.checkAppAccess(pool, app, req.user, 'view'))) {
+        return res.status(404).json({ error: 'App not found' });
+      }
+      const opts = { viewerId: req.user.id, afterId: req.query.after, limit: req.query.limit, offset: req.query.offset };
+      if (app.slug === config.selfAppSlug) {
+        const conversationId = await discussion.generalConversationId(pool);
+        if (!conversationId) return res.status(404).json({ error: 'No discussion' });
+        return res.json(await discussion.rankedInConversation(pool, conversationId, opts));
+      }
+      if (!(await appAccess.checkAppAccess(pool, app, req.user, 'collab'))) {
+        return res.status(404).json({ error: 'App not found' });
+      }
+      return res.json(await discussion.rankedInApp(pool, app.id, opts));
+    } catch (err) {
+      log.error('apps', 'Discussion ranking failed', { slug: req.params.slug, err: err.message });
+      return res.status(500).json({ error: 'Failed to read the discussion' });
+    }
+  });
+
   router.get('/api/apps/:slug/community', async (req, res) => {
     try {
       const showSelfHosted = !!req.user?.isAdmin || !!config.selfAppPublicVoting;

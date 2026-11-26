@@ -375,6 +375,144 @@ export interface DiscussionSource {
   /** Where the viewer's reading stands, when the page did not say. */
   readPosition(): Promise<number | null>;
   markRead(messageId: number): Promise<void>;
+  /**
+   * "Most replies" across the whole room: the posts after `afterId` (the
+   * Earlier post's last message, or 0), busiest first, `limit` from
+   * `offset`. The server sorts (routes/apps.js `discussion/most-replied`).
+   */
+  ranked(afterId: number, offset: number, limit: number): Promise<{ ids: number[]; more: boolean }>;
+  /** What the room says as it says it, handed to `heard` until the returned stop is called. */
+  live(heard: (event: LiveEvent) => void): () => void;
+}
+
+/**
+ * What the room said live: a project's chat socket (`/ws/chat/:slug`, the
+ * frames src/services/ws.js broadcasts) or, for Homeroom's #general, the
+ * page's events socket, which names only what changed (`stale`: read it
+ * again).
+ */
+export type LiveEvent =
+  | { kind: 'said'; said: Said }
+  | { kind: 'thread'; rootId: number; replyCount: number; lastReplyAt: string | null }
+  | { kind: 'edit'; id: number; content: string }
+  | { kind: 'reactions'; id: number; reactions: DiscussionReaction[] }
+  | { kind: 'gone'; id: number }
+  | { kind: 'stale'; messageId: number | null; rootId: number | null };
+
+/** Pure: one frame of a project's chat socket as a LiveEvent, or null for one the Discussion does not draw. */
+export function liveFromAppFrame(frame: unknown, me: string | null): LiveEvent | null {
+  const f = (frame || {}) as Json;
+  switch (str(f.type)) {
+    case 'chat': {
+      const thread = (f.thread || null) as Json | null;
+      const said = fromAppRow({
+        id: f.id,
+        user_id: f.userId,
+        username: f.username,
+        content: f.content,
+        msg_type: f.msgType || 'message',
+        metadata: f.metadata,
+        thread_type: thread ? thread.type : null,
+        thread_ref: thread ? thread.ref : null,
+        created_at: f.createdAt,
+        reactions: [],
+        deleted: false,
+      }, me);
+      return said ? { kind: 'said', said } : null;
+    }
+    case 'thread_summary': {
+      const rootId = num(f.root_id);
+      const t = (f.thread || {}) as Json;
+      return rootId ? { kind: 'thread', rootId, replyCount: Number(t.reply_count) || 0, lastReplyAt: str(t.last_reply_at) || null } : null;
+    }
+    case 'chat_edit': {
+      const id = num(f.messageId);
+      return id ? { kind: 'edit', id, content: str(f.content) } : null;
+    }
+    case 'reaction': {
+      const id = num(f.messageId);
+      return id ? { kind: 'reactions', id, reactions: appReactions(f.reactions, me) } : null;
+    }
+    case 'chat_delete': {
+      const id = num(f.id);
+      return id ? { kind: 'gone', id } : null;
+    }
+    case 'resync_hint':
+      return { kind: 'stale', messageId: null, rootId: null };
+    default:
+      return null;
+  }
+}
+
+/** Pure: one Messages event as a LiveEvent for `conversationId`'s room, or null for another room's. */
+export function liveFromConversationEvent(event: unknown, conversationId: number): LiveEvent | null {
+  const e = (event || {}) as Json;
+  if (num(e.conversationId) !== conversationId) return null;
+  return { kind: 'stale', messageId: num(e.messageId), rootId: num(e.threadRootId) };
+}
+
+/** Wait before a dropped socket is opened again, doubling to the cap. */
+export const LIVE_RETRY_MS = 1000;
+export const LIVE_RETRY_MAX_MS = 30_000;
+
+/** The "Most replies" read both rooms share: the project's own address answers for either. */
+async function rankedRead(slug: string, afterId: number, offset: number, limit: number): Promise<{ ids: number[]; more: boolean }> {
+  const params = new URLSearchParams({ after: String(afterId || 0), offset: String(offset), limit: String(limit) });
+  const response = await fetch(`/api/apps/${encodeURIComponent(slug)}/discussion/most-replied?${params}`, {
+    credentials: 'same-origin', headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) throw new Error(`discussion ranking ${response.status}`);
+  const data = await readJson(response);
+  const posts = Array.isArray(data.posts) ? data.posts as Json[] : [];
+  return { ids: posts.map((p) => num(p.id)).filter((id): id is number => !!id), more: !!data.more };
+}
+
+/** The project's chat socket, held while the Discussion is on screen; it opens again after a drop, and says so (`stale`). */
+function appSocket(slug: string, viewer: { current: string | null }, heard: (event: LiveEvent) => void): () => void {
+  if (typeof WebSocket !== 'function' || typeof location === 'undefined') return () => {};
+  let socket: WebSocket | null = null;
+  let stopped = false;
+  let wait = LIVE_RETRY_MS;
+  let retry: ReturnType<typeof setTimeout> | null = null;
+  let dropped = false;
+  const open = () => {
+    if (stopped) return;
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    // A staging preview signs its sockets in with the page's token, as the chat's own does (public/js/group-chat.js).
+    const token = new URLSearchParams(location.search).get('token');
+    const qs = token ? `?token=${encodeURIComponent(token)}` : '';
+    const ws = new WebSocket(`${proto}//${location.host}/ws/chat/${encodeURIComponent(slug)}${qs}`);
+    socket = ws;
+    ws.onopen = () => {
+      wait = LIVE_RETRY_MS;
+      // What was said while it was away is read again.
+      if (dropped) heard({ kind: 'stale', messageId: null, rootId: null });
+      dropped = false;
+    };
+    ws.onmessage = (message) => {
+      let frame: unknown = null;
+      try { frame = JSON.parse(String(message.data)); } catch { return; }
+      const event = liveFromAppFrame(frame, viewer.current);
+      if (event) heard(event);
+    };
+    ws.onclose = (closed) => {
+      if (socket !== ws || stopped) return;
+      socket = null;
+      dropped = true;
+      // 4004: this viewer may not read the room; asking again will not change that.
+      if (closed.code === 4004) return;
+      retry = setTimeout(open, wait);
+      wait = Math.min(LIVE_RETRY_MAX_MS, wait * 2);
+    };
+  };
+  open();
+  return () => {
+    stopped = true;
+    if (retry) clearTimeout(retry);
+    const ws = socket;
+    socket = null;
+    try { ws?.close(1000, 'done'); } catch { /* already gone */ }
+  };
 }
 
 function demoParam(): string {
@@ -468,11 +606,17 @@ export function appSource(slug: string, viewer: { current: string | null }): Dis
         method: 'POST', credentials: 'same-origin', headers: json, body: JSON.stringify({ message_id: messageId }),
       });
     },
+    ranked(afterId, offset, limit) {
+      return rankedRead(slug, afterId, offset, limit);
+    },
+    live(heard) {
+      return appSocket(slug, viewer, heard);
+    },
   };
 }
 
-/** Homeroom's own #general: a Messages conversation. */
-export function conversationSource(conversationId: number): DiscussionSource {
+/** Homeroom's own #general: a Messages conversation, on the project `slug`. */
+export function conversationSource(conversationId: number, slug: string): DiscussionSource {
   const shape = (list: ConversationMessage[]) => list.map(fromConversationMessage).filter((m): m is Said => !!m);
   return {
     key: `conversation:${conversationId}`,
@@ -520,6 +664,20 @@ export function conversationSource(conversationId: number): DiscussionSource {
     },
     async markRead(messageId) {
       await messagesApi.markRead(conversationId, messageId);
+    },
+    ranked(afterId, offset, limit) {
+      return rankedRead(slug, afterId, offset, limit);
+    },
+    // The page's events socket names what changed in the room (public/js/app.js
+    // relays it as `usernode:conversation-changed`); the feed reads it again.
+    live(heard) {
+      if (typeof window === 'undefined') return () => {};
+      const changed = (event: Event) => {
+        const live = liveFromConversationEvent((event as CustomEvent).detail, conversationId);
+        if (live) heard(live);
+      };
+      window.addEventListener('usernode:conversation-changed', changed);
+      return () => window.removeEventListener('usernode:conversation-changed', changed);
     },
   };
 }

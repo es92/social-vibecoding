@@ -149,8 +149,120 @@ async function discussionSummary(pool, { appId = null, conversationId = null, vi
   return { since, fold_at: EARLIER_FOLD_AT, earlier };
 }
 
+// ── Most replies, across the whole room (part 2) ──────────────────────
+//
+// The card's "Sort by: Most replies" ranks every post since the fold, not
+// only the ones a page of the stream happened to read: this answers which
+// posts those are, busiest first, a page at a time, and the card reads each
+// one's thread through the room's own routes (so what it draws keeps their
+// shaping and their permissions). A post's count is its live replies,
+// blocked people's left out as the thread leaves them out. Ties go to the
+// latest activity, then the newer post.
+
+/** The most posts one read of the ranking answers with. */
+const RANKED_MAX = 20;
+
+function shapeRanked(rows, limit) {
+  return {
+    posts: rows.slice(0, limit).map((r) => ({
+      id: Number(r.id),
+      reply_count: Number(r.reply_count) || 0,
+      active_at: iso(r.active_at),
+    })),
+    more: rows.length > limit,
+  };
+}
+
+function rankedArgs({ afterId = 0, limit = 8, offset = 0 } = {}) {
+  const after = Number.isSafeInteger(Number(afterId)) && Number(afterId) > 0 ? Math.min(Number(afterId), 2147483647) : 0;
+  const size = Math.min(RANKED_MAX, Math.max(1, Number(limit) || 8));
+  const skip = Math.min(10000, Math.max(0, Number(offset) || 0));
+  return { after, size, skip };
+}
+
+/** A project's #general (its app chat's main stream), busiest posts first. */
+async function rankedInApp(pool, appId, opts = {}) {
+  const { after, size, skip } = rankedArgs(opts);
+  const { rows } = await pool.query(
+    `SELECT m.id, COUNT(r.id)::int AS reply_count,
+            GREATEST(m.created_at, COALESCE(MAX(r.created_at), m.created_at)) AS active_at
+       FROM chat_messages m
+       LEFT JOIN chat_messages r
+         ON r.app_id = m.app_id
+        AND r.thread_type = 'message' AND r.thread_ref = m.id
+        AND r.deleted_at IS NULL AND r.moderation_hidden_at IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM user_blocks blocked
+           WHERE blocked.blocker_id = $3 AND blocked.blocked_user_id = r.user_id
+        )
+      WHERE m.app_id = $1
+        AND m.thread_type IS NULL
+        AND m.msg_type IN ('message', 'spec_share')
+        AND m.deleted_at IS NULL
+        AND m.moderation_hidden_at IS NULL
+        AND m.id > $2
+        AND NOT EXISTS (
+          SELECT 1 FROM user_blocks blocked
+           WHERE blocked.blocker_id = $3 AND blocked.blocked_user_id = m.user_id
+        )
+      GROUP BY m.id
+      ORDER BY reply_count DESC, active_at DESC, m.id DESC
+      LIMIT $4 OFFSET $5`,
+    [appId, after, opts.viewerId || null, size + 1, skip]
+  );
+  return shapeRanked(rows, size);
+}
+
+/** Homeroom's #general (a Messages conversation), busiest posts first. */
+async function rankedInConversation(pool, conversationId, opts = {}) {
+  const { after, size, skip } = rankedArgs(opts);
+  const { rows } = await pool.query(
+    `SELECT m.id, COUNT(r.id)::int AS reply_count,
+            GREATEST(m.created_at, COALESCE(MAX(r.created_at), m.created_at)) AS active_at
+       FROM conversation_messages m
+       LEFT JOIN conversation_messages r
+         ON r.conversation_id = m.conversation_id
+        AND r.thread_root_id = m.id
+        AND r.msg_type = 'message'
+        AND r.deleted_at IS NULL AND r.moderation_hidden_at IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM user_blocks blocked
+           WHERE blocked.blocker_id = $3 AND blocked.blocked_user_id = r.sender_id
+        )
+      WHERE m.conversation_id = $1
+        AND m.thread_root_id IS NULL
+        AND m.msg_type = 'message'
+        AND m.deleted_at IS NULL
+        AND m.moderation_hidden_at IS NULL
+        AND m.id > $2
+        AND NOT EXISTS (
+          SELECT 1 FROM user_blocks blocked
+           WHERE blocked.blocker_id = $3 AND blocked.blocked_user_id = m.sender_id
+        )
+      GROUP BY m.id
+      ORDER BY reply_count DESC, active_at DESC, m.id DESC
+      LIMIT $4 OFFSET $5`,
+    [conversationId, after, opts.viewerId || null, size + 1, skip]
+  );
+  return shapeRanked(rows, size);
+}
+
+/** The platform's one #general conversation, Homeroom's own project's channel. */
+async function generalConversationId(pool) {
+  const { rows } = await pool.query(
+    `SELECT id FROM conversations
+      WHERE kind = 'channel' AND channel_key = 'general' AND status = 'active'
+      LIMIT 1`
+  );
+  return rows[0] ? Number(rows[0].id) : null;
+}
+
 module.exports = {
   EARLIER_FOLD_AT,
+  RANKED_MAX,
+  generalConversationId,
+  rankedInApp,
+  rankedInConversation,
   discussionSince,
   discussionSummary,
   earlierForApp,
