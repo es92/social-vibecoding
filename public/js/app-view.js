@@ -13809,7 +13809,7 @@ const AppView = {
       const stored = key ? window.localStorage.getItem(key) : null;
       // A remembered page (Needs you, All items) reopens as itself, with its
       // way back to the tab it hangs off above it.
-      if (AppView._isWorkshopPlace(stored) && stored !== 'plan' && stored !== 'posts') return stored;
+      if (AppView._isWorkshopPlace(stored) && stored !== 'plan') return stored;
       // A viewer who last left the Dev screen on the Board gets the tab those
       // columns live in: migrating the retired mode without carrying what it
       // MEANT would hand them a digest where they had chosen a worklist.
@@ -14147,9 +14147,8 @@ const AppView = {
   },
 
   _setWorkshopTab(key, slug) {
-    // The plan is gone once it is built, so the page reopens on the hub; the
-    // Discussion page is the hub's own card, whole, so it reopens there too.
-    const next = AppView._isWorkshopPlace(key) && key !== 'plan' && key !== 'posts' ? key : 'status';
+    // The plan is gone once it is built, so the page reopens on the hub.
+    const next = AppView._isWorkshopPlace(key) && key !== 'plan' ? key : 'status';
     // An explicit tap retires the URL override, exactly as `_setViewMode`
     // does — otherwise `?ws=` would keep winning over every later press.
     AppView._workshopTabUrlOverride = null;
@@ -14486,6 +14485,7 @@ const AppView = {
       focusMessageId: id(t.focusMessageId),
       conversationId: id(t.conversationId),
       topicRef: id(t.topicRef),
+      asChat: t.asChat === true,
       from: typeof t.from === 'string' && t.from ? t.from : null,
       at: Date.now(),
     };
@@ -14513,10 +14513,26 @@ const AppView = {
   },
   // A door to the Discussion tab with a place in it: the target first, so
   // the page the tab door turns (or mounts) finds it waiting.
+  //
+  // #general IS THE DISCUSSION (26 Nov 2026): a door that names a message or
+  // a reply thread in #general (a notification, a message link) lands on
+  // the Discussion, #general as posts (`posts`, dev-board/workshop/
+  // hub-discussion.tsx), which opens the post it is in and marks it. What
+  // the posts do not show (an old message's own thread, a message too far
+  // back) the page hands on to #general's chat, the same room drawn as one
+  // stream, with the target. A door to the room itself, a topic's, or one
+  // that asks for the chat (`asChat`: the Discussion's own "in #general"
+  // links) opens the chat as before.
   _landOnDiscussion(slug, target) {
     if (!slug) return;
     AppView._stashDiscussionTarget(slug, target);
-    AppView._landOnTab(slug, 'discussion');
+    AppView._landOnTab(slug, AppView._discussionPlaceFor(AppView._peekDiscussionTarget(slug)));
+  },
+  // Which of the two a waiting target opens: the Discussion's posts for a
+  // message or a thread in #general, #general's chat for anything else.
+  _discussionPlaceFor(target) {
+    const t = target || null;
+    return t && !t.topicRef && !t.asChat && (t.threadRootId || t.focusMessageId) ? 'posts' : 'discussion';
   },
   // Rows per lane per theme before "+N more · Open on Board".
   WORKSHOP_LANE_MAX: 8,

@@ -7212,7 +7212,9 @@ const App = {
       return null;
     }
     const replace = App._onChatAddress(slug);
-    AppView._landOnTab(slug, 'discussion');
+    // A message or a thread the address named opens on the Discussion's
+    // posts, as every other door to one does (AppView._landOnDiscussion).
+    AppView._landOnTab(slug, AppView._discussionPlaceFor?.(AppView._peekDiscussionTarget?.(slug)) || 'discussion');
     return { replace };
   },
 

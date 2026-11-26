@@ -3404,7 +3404,10 @@ export function DevWorkshop(): ReactNode {
   }, [v.slug]);
   // What waits elsewhere: the channel on screen is being read. Computed ahead
   // of the publish below so the merged header's button carries it too (#4703).
-  const here = isChannelPlace(tab) ? findChannel(community?.places, placeHandle(tab)) : null;
+  // The Discussion is #general, as posts.
+  const here = isChannelPlace(tab) || tab === 'posts'
+    ? findChannel(community?.places, tab === 'posts' ? 'general' : placeHandle(tab))
+    : null;
   const unreadElsewhere = Math.max(0, unreadTotal(community?.places)
     - (here && here.state === 'live' ? Math.max(0, Number(here.unread) || 0) : 0));
   useEffect(() => {
@@ -3841,13 +3844,32 @@ export function DevWorkshop(): ReactNode {
         />
       ) : null}
 
-      {/* ── THE DISCUSSION, WHOLE, a page under the Hub (26 Nov 2026) ──
-          Where a phone's Discussion card opens: #general as posts with
-          replies, the whole width, with the way back up to the Hub; Hub
-          stays lit. See ./hub-discussion.tsx. */}
-      {tab === 'posts' && slug ? (
-        <DiscussionCard slug={slug} name={app.name || community?.name || slug} data={community} mode="page" onBack={() => upTab('status')} />
-      ) : null}
+      {/* ── THE DISCUSSION (26 Nov 2026) ──
+          #general as posts with replies, the whole width: the places list's
+          Discussion row, where a phone's Discussion card opens and where a
+          link to a #general message lands. "Open as chat" shows the same
+          room as #general's chat (`discussion`), which keeps the Discussion
+          row lit; a link whose message the posts do not show goes on there,
+          in place of this entry. A viewer the record gives no channel (one
+          who may not read the room) gets the chat's own answer. See
+          ./hub-discussion.tsx. */}
+      {tab === 'posts' && slug && community ? (community.channel ? (
+        <DiscussionCard
+          slug={slug}
+          name={app.name || community.name || slug}
+          data={community}
+          mode="page"
+          onChat={() => openTab('discussion')}
+          onMissing={(target) => {
+            callAppView('_stashDiscussionTarget', slug, { ...target, asChat: true });
+            setTab('discussion');
+            callAppView('_setWorkshopTab', 'discussion', slug);
+            callAppView('_stampWorkshopTab', slug, 'discussion');
+          }}
+        />
+      ) : (
+        <ProjectDiscussion slug={slug} name={app.name || community.name || slug} data={community} channel={null} onPlace={openTab} />
+      )) : null}
 
       {/* ── DISCUSSION: the community's channel, whole ── (./project-discussion.tsx) */}
       {isChannelPlace(tab) ? (

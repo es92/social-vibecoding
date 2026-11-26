@@ -90,10 +90,13 @@ test('a project page is its places, Hub, Needs you, Workshop and #general, with 
   const { pageParent, pageTitle } = loadTsx('frontend/src/features/dev-board/workshop/workshop.tsx');
   const places = loadTsx('frontend/src/features/dev-board/workshop/places.ts');
   const { placeRows } = loadTsx('frontend/src/features/dev-board/workshop/project-places.tsx');
-  // A project with no topics: the three pages, then #general.
+  // A project with no topics: the three pages, then its Discussion, #general
+  // as posts (26 Nov 2026), whose chat view lights it.
   const rows = placeRows(null, 0);
   assert.deepEqual(rows.pages.map((p) => [p.key, p.label]), [['status', 'Hub'], ['needs', 'Needs you'], ['workshop', 'Workshop']]);
-  assert.deepEqual([rows.general.key, rows.general.label], ['discussion', 'general']);
+  assert.deepEqual([rows.general.key, rows.general.label], ['posts', 'Discussion']);
+  assert.equal(places.litPlace('discussion'), 'posts', "#general's chat lights the Discussion");
+  assert.equal(places.placeName('posts'), 'Discussion');
   assert.deepEqual(rows.topics, []);
   assert.equal(places.litPlace('all'), 'workshop', 'the Workshop stays lit over All items');
   assert.equal(pageParent('all'), 'workshop', 'All items goes back to the Workshop');
@@ -175,11 +178,12 @@ test('a project page is its places, Hub, Needs you, Workshop and #general, with 
   assert.match(av, /WORKSHOP_TABS: \['status', 'discussion', 'workshop', 'needs', 'all', 'plan', 'posts', 'bot'\],/);
   // #4417: and so is a topic's channel, `c:<handle>`, a place like the others.
   assert.match(av, /_isWorkshopPlace\(key\) \{\n\s*return AppView\.WORKSHOP_TABS\.indexOf\(key\) !== -1\n\s*\|\| \(typeof key === 'string' && AppView\.WORKSHOP_CHANNEL_RE\.test\(key\)\);/);
-  // 26 Nov 2026: the Discussion page under the Hub (`posts`) is not reopened on either: the hub draws it.
-  assert.match(av, /const next = AppView\._isWorkshopPlace\(key\) && key !== 'plan' && key !== 'posts' \? key : 'status';/);
-  assert.match(av, /if \(AppView\._isWorkshopPlace\(stored\) && stored !== 'plan' && stored !== 'posts'\) return stored;/);
+  // 26 Nov 2026: the plan is not reopened on; the Discussion (`posts`) is a
+  // place of its own, so it is, and it lights its own row.
+  assert.match(av, /const next = AppView\._isWorkshopPlace\(key\) && key !== 'plan' \? key : 'status';/);
+  assert.match(av, /if \(AppView\._isWorkshopPlace\(stored\) && stored !== 'plan'\) return stored;/);
   const { litPlace } = loadTsx('frontend/src/features/dev-board/workshop/places.ts');
-  assert.equal(litPlace('posts'), 'status', 'Hub stays lit over the Discussion page');
+  assert.equal(litPlace('posts'), 'posts', 'the Discussion lights its own row');
   assert.equal(litPlace('plan'), 'status', 'Hub stays lit over the plan');
   assert.equal(litPlace('all'), 'workshop');
   assert.equal(litPlace('bot'), 'workshop', 'and over the bot\'s slots');

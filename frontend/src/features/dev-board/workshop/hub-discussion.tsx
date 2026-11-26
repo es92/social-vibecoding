@@ -35,12 +35,24 @@
  *     COLUMNS);
  *   - `preview`, a phone's card: the newest few posts, a line each, with their
  *     reply counts; it opens the page;
- *   - `page`, the Discussion whole, a page under the Hub (`posts`,
- *     ./places.ts), where the phone's card goes.
+ *   - `page`, the Discussion whole: the place the places list's Discussion
+ *     row opens (`posts`, ./places.ts) and the phone's card goes to.
  *
  * Discussion takes #general's place on the hub, so For you has no #general
  * row while this card is drawn (./hub-cards.tsx ForYouCard `discussionHere`).
- * The channel itself, its topics and its address are untouched.
+ *
+ * ── #general IS THE DISCUSSION (part 2, 26 Nov 2026) ──────────────────
+ *
+ * The places list's #general row is the Discussion row, which opens the
+ * page. A door that names a message or a reply thread in #general (a
+ * notification, a message link: AppView._landOnDiscussion) lands on the
+ * page, which opens the post it is in, brings the message into view and
+ * marks it (DiscussionFeed.place). What the posts do not show, an old
+ * message's own thread or a message further back than PLACE_PAGES pages,
+ * goes on to #general's chat with the same target (`onMissing`). The chat
+ * is still the room's other drawing, one stream oldest to newest with files,
+ * formatting and editing: the page's "Open as chat", and the channel's own
+ * address. Its topics are untouched.
  *
  * ── Island rules ───────────────────────────────────────────────────────
  *
@@ -52,7 +64,7 @@
  */
 
 import {
-  useEffect, useId, useMemo, useRef, useState,
+  useCallback, useEffect, useId, useMemo, useRef, useState,
   type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type RefObject,
 } from 'react';
 
@@ -78,12 +90,19 @@ import {
   type DiscussionItem, type DiscussionPerson, type DiscussionSort, type DiscussionSource, type DiscussionSummary,
   type EarlierFold, type Said,
 } from './discussion-feed';
-import { PageBack } from './page-back';
+import { takeDiscussionTarget, type DiscussionTarget } from './project-discussion';
 
 /** How often the card reads the room again while it is on screen. */
 export const REFRESH_MS = 60_000;
 /** At most this many older posts with a new reply are brought in by one read. */
 const ACTIVE_ROOTS_READ = 5;
+/** Older pages of the room a door's message is looked for in before #general's chat takes it. */
+export const PLACE_PAGES = 3;
+/** How long a message a door named stays marked. */
+const FOCUS_MS = 2400;
+
+/** Where a door's message is on the Discussion: the post it is drawn in. */
+export interface Placed { key: string; messageId: number }
 
 type Channel = NonNullable<CommunityPayload['channel']>;
 
@@ -118,6 +137,8 @@ export class DiscussionFeed {
   private holders = 0;
   private timer: ReturnType<typeof setInterval> | null = null;
   private marked = 0;
+  /** The first read, while it runs and once it has: what a door waits for. */
+  private loaded: Promise<void> | null = null;
 
   constructor(source: DiscussionSource, summary: DiscussionSummary | null, viewer: { current: string | null }) {
     this.source = source;
@@ -184,7 +205,12 @@ export class DiscussionFeed {
     };
   }
 
-  async load(): Promise<void> {
+  load(): Promise<void> {
+    this.loaded = this.readFirst();
+    return this.loaded;
+  }
+
+  private async readFirst(): Promise<void> {
     this.set({ status: 'loading' });
     try {
       const page = await this.source.page(null);
@@ -305,6 +331,41 @@ export class DiscussionFeed {
     this.merge([{ ...now, reactions: answer || said.reactions }]);
   }
 
+  /**
+   * Where the message a door named is on the Discussion, read far enough
+   * back to draw it: its post, with the replies box open when it is a reply
+   * or the door named the thread. Null when the posts do not show it (an old
+   * message's own thread, one further back than PLACE_PAGES pages, one gone),
+   * for #general's chat to take.
+   */
+  async place(target: Pick<DiscussionTarget, 'threadRootId' | 'focusMessageId'>): Promise<Placed | null> {
+    await (this.loaded || this.load());
+    if (this.state.status !== 'ready') return null;
+    const rootId = target.threadRootId || null;
+    const wanted = target.focusMessageId || rootId;
+    if (!wanted) return null;
+    const have = () => this.state.messages.get(wanted) || null;
+    if (rootId && !have()) await this.readThread(rootId, false);
+    for (let i = 0; !have() && i < PLACE_PAGES && this.state.more && this.state.oldest != null; i += 1) {
+      try {
+        const page = await this.source.page(this.state.oldest);
+        this.merge(page.messages, { oldest: oldestMain(page.messages) ?? this.state.oldest, more: page.more });
+      } catch { break; }
+    }
+    const said = have();
+    if (!said) return null;
+    if (said.rootId != null && !this.state.messages.has(said.rootId)) await this.readThread(said.rootId, false);
+    const item = this.items().find((it) => (it.kind === 'post' && it.root.id === said.id) || it.replies.some((r) => r.id === said.id));
+    if (!item) return null;
+    const asReply = item.kind === 'earlier' || item.root.id !== said.id;
+    if (asReply || rootId) {
+      const open = item.kind === 'post' ? item.root.id : item.fold.lastId;
+      if (item.kind === 'post' && item.replies.length < item.replyCount) await this.readThread(open, true);
+      else this.set({ opened: new Set([...this.state.opened, open]) });
+    }
+    return { key: item.key, messageId: said.id };
+  }
+
   /** The viewer has seen the room up to its newest post: their reading moves there, once. */
   markSeen(): void {
     const newest = Math.max(0, ...[...this.state.messages.values()].filter((m) => m.rootId == null).map((m) => m.id));
@@ -381,7 +442,7 @@ function nameOf(who: DiscussionPerson): string {
 function openInGeneral(slug: string, channel: Channel, threadRootId: number): void {
   const conversationId = Number((channel as { conversation_id?: unknown }).conversation_id) || null;
   (window as unknown as { AppView?: { _landOnDiscussion?: (slug: string, target: object) => void } })
-    .AppView?._landOnDiscussion?.(slug, { threadRootId, ...(conversationId ? { conversationId } : {}) });
+    .AppView?._landOnDiscussion?.(slug, { threadRootId, asChat: true, ...(conversationId ? { conversationId } : {}) });
 }
 
 // ── The card ───────────────────────────────────────────────────────────
@@ -394,12 +455,14 @@ export interface DiscussionCardProps {
   mode: 'full' | 'preview' | 'page';
   /** The phone's card: open the page. */
   onOpenPage?: () => void;
-  /** The page: back to the Hub. */
-  onBack?: () => void;
+  /** The page: show #general as a chat (its "Open as chat"). */
+  onChat?: () => void;
+  /** The page: a door's message the posts do not show, for #general's chat to take. */
+  onMissing?: (target: DiscussionTarget) => void;
 }
 
-export function DiscussionCard({ slug, name, data, mode, onOpenPage, onBack }: DiscussionCardProps): ReactNode {
-  const t = useMessages('project');
+export function DiscussionCard({ slug, name, data, mode, onOpenPage, onChat, onMissing }: DiscussionCardProps): ReactNode {
+  useMessages('project');
   useMessages('messages');
   const headId = useId();
   const { viewer, known } = useViewer();
@@ -407,6 +470,10 @@ export function DiscussionCard({ slug, name, data, mode, onOpenPage, onBack }: D
   const me = viewer ? viewer.username : null;
   const feed = useMemo(() => (channel ? feedFor(slug, channel, me) : null), [slug, channel, me]);
   const host = useRef<HTMLElement | null>(null);
+  const [focus, setFocus] = useState<Placed | null>(null);
+  const missing = useRef(onMissing);
+  missing.current = onMissing;
+  const focused = useCallback(() => setFocus(null), []);
 
   // Read once the viewer is known, so their own reactions read as theirs.
   useEffect(() => (feed && known ? feed.hold() : undefined), [feed, known]);
@@ -416,6 +483,31 @@ export function DiscussionCard({ slug, name, data, mode, onOpenPage, onBack }: D
     window.addEventListener('focus', again);
     return () => window.removeEventListener('focus', again);
   }, [feed]);
+  // The page takes a door's target (AppView._stashDiscussionTarget): when it
+  // mounts, and when a door is followed while it is up.
+  useEffect(() => {
+    if (mode !== 'page' || !feed || !known) return undefined;
+    let gone = false;
+    const room = Number((channel as { conversation_id?: unknown } | null)?.conversation_id) || null;
+    const take = () => {
+      const target = takeDiscussionTarget(slug, null, 'posts');
+      if (!target || !(target.threadRootId || target.focusMessageId)) return;
+      // A message of another room than the one this page reads (a demo
+      // #general, an old conversation) is the chat's at once.
+      if (target.conversationId && room && target.conversationId !== room) { missing.current?.(target); return; }
+      void feed.place(target).then((found) => {
+        if (gone) return;
+        if (found) setFocus(found);
+        else missing.current?.(target);
+      });
+    };
+    take();
+    const heard = (event: Event) => {
+      if ((event as CustomEvent<{ slug?: string }>).detail?.slug === slug) take();
+    };
+    window.addEventListener('usernode:workshop-discussion', heard);
+    return () => { gone = true; window.removeEventListener('usernode:workshop-discussion', heard); };
+  }, [mode, feed, known, slug, channel]);
 
   if (!channel || !feed) return null;
   const card = (
@@ -425,20 +517,27 @@ export function DiscussionCard({ slug, name, data, mode, onOpenPage, onBack }: D
       data-ws-hub-discussion={mode}
       aria-labelledby={headId}
     >
-      <FeedView feed={feed} slug={slug} name={name} channel={channel} mode={mode} headId={headId} host={host} viewer={viewer} onOpenPage={onOpenPage} />
+      <FeedView
+        feed={feed}
+        slug={slug}
+        name={name}
+        channel={channel}
+        mode={mode}
+        headId={headId}
+        host={host}
+        viewer={viewer}
+        focus={focus}
+        onFocused={focused}
+        onOpenPage={onOpenPage}
+        onChat={onChat}
+      />
     </section>
   );
-  // The page leads with the way back up to the Hub, as every page under a place does.
-  if (mode !== 'page' || !onBack) return card;
-  return (
-    <div className="dev-ws-discussion-page" data-ws-discussion-page="">
-      <PageBack label={t('project:places.bar.hub')} title={t('project:hub.discussion.title')} onBack={onBack} />
-      {card}
-    </div>
-  );
+  if (mode !== 'page') return card;
+  return <div className="dev-ws-discussion-page" data-ws-discussion-page="">{card}</div>;
 }
 
-function FeedView({ feed, slug, name, channel, mode, headId, host, viewer, onOpenPage }: {
+function FeedView({ feed, slug, name, channel, mode, headId, host, viewer, focus, onFocused, onOpenPage, onChat }: {
   feed: DiscussionFeed;
   slug: string;
   name: string;
@@ -447,7 +546,11 @@ function FeedView({ feed, slug, name, channel, mode, headId, host, viewer, onOpe
   headId: string;
   host: RefObject<HTMLElement | null>;
   viewer: Viewer | null;
+  /** The message a door named, to bring into view and mark once. */
+  focus: Placed | null;
+  onFocused: () => void;
   onOpenPage?: () => void;
+  onChat?: () => void;
 }): ReactNode {
   const t = useMessages('project');
   const state = useStoreState(feed);
@@ -475,12 +578,36 @@ function FeedView({ feed, slug, name, channel, mode, headId, host, viewer, onOpe
     startRef.current?.focus({ preventScroll: false });
   }, [mode]);
 
-  // The page's own heading already says "Discussion" (its PageBack), so the
-  // card under it keeps the one line about what it holds.
+  // A door's message: its post drawn (the list grows to it), then brought
+  // into view and marked for a moment.
+  const [marked, setMarked] = useState<number | null>(null);
+  useEffect(() => {
+    if (!focus) return;
+    const at = items.findIndex((item) => item.key === focus.key);
+    if (at >= limit) { setLimit(at + 1); return; }
+    const node = host.current?.querySelector(`[data-ws-discussion-message="${focus.messageId}"]`);
+    if (!node) return;
+    node.scrollIntoView?.({ block: 'center' });
+    setMarked(focus.messageId);
+    onFocused();
+  }, [focus, items, limit, host, onFocused]);
+  useEffect(() => {
+    if (marked == null) return undefined;
+    const clear = setTimeout(() => setMarked(null), FOCUS_MS);
+    return () => clearTimeout(clear);
+  }, [marked]);
+
+  // The page's heading is the place's name; its far end shows the same room as a chat.
   const head = (
     <div className="dev-ws-hub-discussion-head">
-      <h2 id={headId} className={mode === 'page' ? 'dev-ws-hub-discussion-title sr-only' : 'dev-ws-hub-discussion-title'}>{t('project:hub.discussion.title')}</h2>
+      <h2 id={headId} className="dev-ws-hub-discussion-title">{t('project:hub.discussion.title')}</h2>
       <p className="dev-ws-hub-discussion-about">{t('project:hub.discussion.about', { project: name })}</p>
+      {mode === 'page' && onChat ? (
+        <button type="button" className="dh-as-chat" data-ws-discussion-as-chat="" onClick={onChat}>
+          <HashIcon aria-hidden="true" />
+          {t('project:hub.discussion.asChat')}
+        </button>
+      ) : null}
     </div>
   );
 
@@ -544,7 +671,7 @@ function FeedView({ feed, slug, name, channel, mode, headId, host, viewer, onOpe
       ) : shown.length ? (
         <div className="dh-list" data-ws-discussion-posts={String(shown.length)}>
           {shown.map((item) => (
-            <Thread key={item.key} item={item} feed={feed} slug={slug} channel={channel} viewer={viewer} readId={state.readId} busy={state.busy} opened={state.opened} />
+            <Thread key={item.key} item={item} feed={feed} slug={slug} channel={channel} viewer={viewer} readId={state.readId} busy={state.busy} opened={state.opened} marked={marked} />
           ))}
         </div>
       ) : (
@@ -598,7 +725,7 @@ function ViewerFace({ viewer }: { viewer: Viewer | null }): ReactNode {
 
 // ── A post and its replies ─────────────────────────────────────────────
 
-function Thread({ item, feed, slug, channel, viewer, readId, busy, opened }: {
+function Thread({ item, feed, slug, channel, viewer, readId, busy, opened, marked }: {
   item: DiscussionItem;
   feed: DiscussionFeed;
   slug: string;
@@ -607,6 +734,8 @@ function Thread({ item, feed, slug, channel, viewer, readId, busy, opened }: {
   readId: number | null;
   busy: boolean;
   opened: ReadonlySet<number>;
+  /** The message a door named, marked for a moment. */
+  marked: number | null;
 }): ReactNode {
   const t = useMessages('project');
   const [replying, setReplying] = useState(false);
@@ -632,7 +761,7 @@ function Thread({ item, feed, slug, channel, viewer, readId, busy, opened }: {
   return (
     <div className="dh-thread" data-ws-discussion-thread={item.key}>
       {item.kind === 'post' ? (
-        <Message said={item.root} feed={feed} me={me} className="dh-post" onReply={startReply}>
+        <Message said={item.root} feed={feed} me={me} className="dh-post" marked={marked === item.root.id} onReply={startReply}>
           <PostHeader item={item} readId={readId} me={me} onReply={startReply} />
           <PostWords item={item} />
           <Pills said={item.root} feed={feed} me={me} />
@@ -653,7 +782,7 @@ function Thread({ item, feed, slug, channel, viewer, readId, busy, opened }: {
             </button>
           ) : null}
           {shown.map((reply) => (
-            <Message key={reply.id} said={reply} feed={feed} me={me} className="dh-reply" onReply={startReply}>
+            <Message key={reply.id} said={reply} feed={feed} me={me} className="dh-reply" marked={marked === reply.id} onReply={startReply}>
               <ReplyRow said={reply}>
                 <Pills said={reply} feed={feed} me={me} small />
                 {item.kind === 'earlier' && reply.rootId == null && oldThreadCount(item, reply) > 0 ? (
@@ -811,11 +940,12 @@ function Pills({ said, feed, me, small = false }: { said: Said; feed: Discussion
  * pointer, the long-press sheet on a touch screen. Nobody signed in, or a
  * deleted message: neither.
  */
-function Message({ said, feed, me, className, onReply, children }: {
+function Message({ said, feed, me, className, marked = false, onReply, children }: {
   said: Said;
   feed: DiscussionFeed;
   me: string | null;
   className: string;
+  marked?: boolean;
   onReply: () => void;
   children: ReactNode;
 }): ReactNode {
@@ -832,7 +962,12 @@ function Message({ said, feed, me, className, onReply, children }: {
   const react = (emoji: string) => { rememberReaction(emoji); void feed.react(said.id, emoji); };
   const Tag = className === 'dh-post' ? 'article' : 'div';
   return (
-    <Tag className={`${className} dh-msg`} data-ws-discussion-message={String(said.id)} {...(can ? press : {})}>
+    <Tag
+      className={`${className} dh-msg`}
+      data-ws-discussion-message={String(said.id)}
+      data-ws-discussion-marked={marked ? '' : undefined}
+      {...(can ? press : {})}
+    >
       {children}
       {can ? (
         <MessageActionBar

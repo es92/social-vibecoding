@@ -25770,7 +25770,7 @@ html[data-community-tint] body:has(#app-view:not(.hidden)) #platform-header {
 }
 /* A channel's count is new to read, not waiting on you (#18): the grey the
    tab bar's unread count wears. Needs you keeps the accent. */
-.dev-ws-place:is([data-place="discussion"], [data-place^="c:"]) .dev-ws-place-count {
+.dev-ws-place:is([data-place="posts"], [data-place="discussion"], [data-place^="c:"]) .dev-ws-place-count {
   background: var(--text-faint, #8e8e93);
 }
 .dev-ws-place .dev-ws-filter-dot { position: static; flex-shrink: 0; background: var(--accent); }
@@ -31031,7 +31031,7 @@ html.un-android #back-btn > #back-icon-arrow:not(.hidden) + .back-icon-android {
   }
   /* A conversation's and a channel's count is new to read (#18): grey, as
      the Messages tab's is. Needs you's votes keep the accent. */
-  .platform-rail-nest :is(.platform-rail-sub-count, :is([data-place="discussion"], [data-place^="c:"]) > .dev-ws-place-count) {
+  .platform-rail-nest :is(.platform-rail-sub-count, :is([data-place="posts"], [data-place="discussion"], [data-place^="c:"]) > .dev-ws-place-count) {
     background: var(--text-faint, #8e8e93);
   }
   .platform-rail-nest :is(.dev-ws-places-head, .platform-rail-subhead),
@@ -36521,8 +36521,49 @@ html:root #dev-workshop .dh-preview-row .dh-words { margin-top: 4px; font-size: 
 html:root #dev-workshop .dh-clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
 html:root #dev-workshop .dh-composer-door { margin-top: 8px; border: 0; }
 html:root #dev-workshop .dh-composer-door > .dh-send { background-color: var(--one-quiet); color: var(--one-ink-3); }
-/* THE PAGE: the way back to the Hub, then the card, the whole width. */
+/* THE PAGE: the Discussion place, the card the whole width. Its head's far
+   end shows the same room as #general's chat. */
 html:root #dev-workshop .dev-ws-discussion-page { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+html:root #dev-workshop .dev-ws-discussion-page .dev-ws-hub-discussion-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
+  align-items: center;
+}
+html:root #dev-workshop .dev-ws-discussion-page .dev-ws-hub-discussion-head > :not(.dh-as-chat) { grid-column: 1; }
+html:root #dev-workshop .dh-as-chat {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background-color: var(--one-quiet);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--one-ink-2);
+}
+html:root #dev-workshop .dh-as-chat > svg { width: 14px; height: 14px; stroke-width: 1.8; }
+/* A message a link pointed at is marked once, as Messages marks one (#2387):
+   a ring and a wash that fade back to the post's own ground. */
+html:root #dev-workshop .dh-msg[data-ws-discussion-marked] {
+  border-radius: 8px;
+  outline: 2px solid transparent;
+  outline-offset: 3px;
+  animation: dh-marked 2.4s ease-out;
+}
+@keyframes dh-marked {
+  0%, 40% { background-color: var(--accent-wash); outline-color: var(--accent); }
+  100% { outline-color: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html:root #dev-workshop .dh-msg[data-ws-discussion-marked] { animation: none; outline-color: var(--accent); }
+}
+html:root:where([data-motion="reduce"]) #dev-workshop .dh-msg[data-ws-discussion-marked] { animation: none; outline-color: var(--accent); }
 @media (max-width: 767.98px) {
   html:root #dev-workshop .dh-list { padding: 0 10px; gap: 14px; }
   html:root #dev-workshop .dh-post { padding: 12px; }

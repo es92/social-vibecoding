@@ -69,9 +69,10 @@ test('an unread count is grey wherever it is, and said in words on a full row', 
   assert.match(inbox, /bottom=\{unread \? t\('messages:inbox\.newCount', \{ count: conversation\.unreadCount \}\) : null\}/,
     'a conversation says it in words');
   assert.equal(message('messages:inbox.newCount', { count: 2 }), '2 new');
-  // The sidebar's chats and a project's channels: grey; Needs you keeps the accent.
-  assert.match(CSS, /\.platform-rail-nest :is\(\.platform-rail-sub-count, :is\(\[data-place="discussion"\], \[data-place\^="c:"\]\) > \.dev-ws-place-count\) \{\s*background: var\(--text-faint, #8e8e93\);/);
-  assert.match(CSS, /\.dev-ws-place:is\(\[data-place="discussion"\], \[data-place\^="c:"\]\) \.dev-ws-place-count \{\s*background: var\(--text-faint, #8e8e93\);/);
+  // The sidebar's chats and a project's channels (the Discussion is
+  // #general's): grey; Needs you keeps the accent.
+  assert.match(CSS, /\.platform-rail-nest :is\(\.platform-rail-sub-count, :is\(\[data-place="posts"\], \[data-place="discussion"\], \[data-place\^="c:"\]\) > \.dev-ws-place-count\) \{\s*background: var\(--text-faint, #8e8e93\);/);
+  assert.match(CSS, /\.dev-ws-place:is\(\[data-place="posts"\], \[data-place="discussion"\], \[data-place\^="c:"\]\) \.dev-ws-place-count \{\s*background: var\(--text-faint, #8e8e93\);/);
   assert.match(rule('\n.dev-ws-place-count'), /background: var\(--accent\);/, 'the votes owed stay blue');
   // Red is the bell's alone: the place bar's "something waits" dot is not.
   assert.match(rule('\n.dev-ws-places-dot'), /background: #fff;/, 'white on the community\'s colour');

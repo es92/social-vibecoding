@@ -59,7 +59,7 @@ test('the places: the column\'s own list, with no topic rows and no fold', () =>
     assert.doesNotMatch(html, /data-place="c:/, 'no topic channel row');
     assert.doesNotMatch(html, /data-places-group="topics"/, 'no Topics group');
     assert.doesNotMatch(html, /data-places-more/, 'and no "Show N more"');
-    assert.match(html, /data-place="discussion"/, 'the list ends after #general');
+    assert.match(html, /data-place="posts"/, 'the list ends after the Discussion, #general as posts');
   }
   // Before the page has said where it is, nothing is lit.
   const unknown = renderComponent('frontend/src/features/dev-board/workshop/project-places.tsx', 'ProjectPlaces', props(null));

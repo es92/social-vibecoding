@@ -2047,6 +2047,10 @@
     "text": "Discussion",
     "description": "Heading of the card on a project's Hub that shows its #general as posts, each with its replies under it. A noun: the place where the project's members talk."
   },
+  "hub.discussion.asChat": {
+    "text": "Open as chat",
+    "description": "Small button at the top right of a project's Discussion page (its #general shown as posts with replies): shows the same #general as one chat, oldest to newest, where files, text formatting and editing a message are."
+  },
   "hub.discussion.about": {
     "text": "Posts and replies from everyone in {{project}}",
     "description": "One line under the Discussion card's heading on a project's Hub, saying what the card holds. {{project}} is the project's name, for example \"Lakeside Book Club\"."
@@ -5833,7 +5837,11 @@
   },
   "places.list.channels": {
     "text": "Channels",
-    "description": "Small upper-case heading in a project's list of places, over the project's own chat channel (#general)."
+    "description": "Small upper-case heading in a project's list of places, over the project's Discussion (its own channel, #general, drawn as posts with replies)."
+  },
+  "places.list.discussion": {
+    "text": "Discussion",
+    "description": "Entry under Channels in a project's list of places: opens the project's Discussion, its #general channel shown as posts, each with its replies under it. A count of unread posts may follow it. A noun, the name of the place."
   },
   "places.list.switchCommunity": {
     "text": "Switch community",
@@ -5890,6 +5898,10 @@
   "places.bar.hub": {
     "text": "Hub",
     "description": "Title of the bar at the top of a project's page while its Hub (or the plan under it) is on show: names the place you are on. A noun, the name of the place."
+  },
+  "places.bar.discussion": {
+    "text": "Discussion",
+    "description": "Title of the bar at the top of a project's page while its Discussion (its #general channel shown as posts with replies) is on show, and the place the bar's back button names from #general's chat view. A noun, the name of the place."
   },
   "places.bar.needsYou": {
     "text": "Needs you",

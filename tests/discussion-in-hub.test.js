@@ -76,11 +76,13 @@ function withAppView(fn) {
 
 test('a door names its place in the room for the tab, which takes it once, for its project only', () => {
   withAppView((AppView, events, stored) => {
+    // #general IS THE DISCUSSION (26 Nov 2026): a message or a thread in
+    // #general lands on the Discussion's posts, which open its post.
     AppView._landOnDiscussion('garden-ab12', { threadRootId: '70', focusMessageId: 88 });
-    assert.equal(stored.get(`${AppView.WORKSHOP_TAB_KEY}:garden-ab12`), 'discussion', 'the page opens on its Discussion tab');
+    assert.equal(stored.get(`${AppView.WORKSHOP_TAB_KEY}:garden-ab12`), 'posts', 'the page opens on its Discussion');
     assert.deepEqual(events.map((e) => e[0]), ['usernode:workshop-discussion', 'usernode:workshop-tab'],
       'the target is in place before the page is told to turn');
-    assert.deepEqual(events[1][1], { slug: 'garden-ab12', tab: 'discussion' });
+    assert.deepEqual(events[1][1], { slug: 'garden-ab12', tab: 'posts' });
     assert.equal(AppView._peekDiscussionTarget('recipes-cd34'), null, 'another project\'s tab does not take it');
     const t = AppView._takeDiscussionTarget('garden-ab12');
     assert.equal(t.threadRootId, 70);
@@ -97,6 +99,20 @@ test('a door names its place in the room for the tab, which takes it once, for i
     AppView._stashDiscussionTarget('garden-ab12', { threadRootId: 5 });
     AppView._discussionTarget.at -= AppView.DISCUSSION_TARGET_TTL_MS + 1;
     assert.equal(AppView._takeDiscussionTarget('garden-ab12'), null);
+
+    // The room itself, a topic's place in it, and what the posts hand on
+    // (`asChat`) open #general's chat, the same room as one stream.
+    for (const [target, tab] of [
+      [null, 'discussion'],
+      [{ focusMessageId: 9, topicRef: 4 }, 'discussion'],
+      [{ threadRootId: 70, asChat: true }, 'discussion'],
+      [{ focusMessageId: 9 }, 'posts'],
+    ]) {
+      events.length = 0;
+      AppView._landOnDiscussion('garden-ab12', target);
+      assert.deepEqual(events[1][1], { slug: 'garden-ab12', tab }, JSON.stringify(target));
+      AppView._takeDiscussionTarget('garden-ab12');
+    }
   });
 });
 

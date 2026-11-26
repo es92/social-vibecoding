@@ -2548,10 +2548,10 @@
       "expectText": "Recently live"
     },
     {
-      "name": "A project page's places are Hub, Needs you and Workshop, a line, then #general under Channels, with no Topics group (#4417)",
+      "name": "A project page's places are Hub, Needs you and Workshop, a line, then the Discussion (its #general, as posts) under Channels, with no Topics group (#4417)",
       "path": "/?demo=1&ws=status#app/usernode-2d5619/workshop",
-      "expectSelector": "[data-places=\"usernode-2d5619\"] > nav > [data-place=\"status\"][aria-current=\"page\"] + [data-place=\"needs\"] + [data-place=\"workshop\"] + [role=\"separator\"] + [data-places-group=\"channels\"]:last-child > [data-place=\"discussion\"]",
-      "expectText": "general"
+      "expectSelector": "[data-places=\"usernode-2d5619\"] > nav > [data-place=\"status\"][aria-current=\"page\"] + [data-place=\"needs\"] + [data-place=\"workshop\"] + [role=\"separator\"] + [data-places-group=\"channels\"]:last-child > [data-place=\"posts\"]",
+      "expectText": "Discussion"
     },
     {
       "name": "On a wide window the sidebar's Recents lists your communities with the one you are on lit, each row carrying its pin at the row's end (#3709, D; One Home #6361; #7070)",
@@ -2566,10 +2566,10 @@
       "expectText": "Discussion"
     },
     {
-      "name": "A phone's Discussion opens as a page under the Hub: the way back to the Hub, then the posts with the box to start one (26 Nov 2026)",
+      "name": "The Discussion is a place of its own: #general as posts with the box to start one, and Open as chat at the end of its heading (26 Nov 2026)",
       "path": "/?demo=1&ws=posts#app/usernode-2d5619/workshop",
-      "expectSelector": "#dev-workshop .dev-ws[data-ws-tab=\"posts\"] [data-ws-discussion-page] > [data-ws-pagehead]:has(button[data-ws-page-back]) + [data-ws-hub-discussion=\"page\"] > form[data-ws-discussion-compose=\"post\"]",
-      "expectText": "Posts and replies from everyone in Homeroom"
+      "expectSelector": "#dev-workshop .dev-ws[data-ws-tab=\"posts\"] [data-ws-discussion-page] > [data-ws-hub-discussion=\"page\"]:has(> .dev-ws-hub-discussion-head > button[data-ws-discussion-as-chat]) > form[data-ws-discussion-compose=\"post\"]",
+      "expectText": "Open as chat"
     },
     {
       "name": "The Workshop's path: four stops a change travels, in order, under In the workshop now, the approval rule its last line, and for an admin Private requests' quiet row at the page's foot (#3487, #3528, #5048; 24 Nov 2026)",
@@ -4743,9 +4743,9 @@
       "expectText": "3 replies"
     },
     {
-      "name": "#2387: a link to a reply in an app channel opens the reply thread it is in, beside the channel, in its project page's Discussion tab (#3653)",
+      "name": "#2387: a link to a reply in an app channel opens its project's Discussion on the post it is under, with that post's replies open (#3653; #general as posts, 26 Nov 2026)",
       "path": "/?demo=1#messages/app/staging-demo-app/m/9902022",
-      "expectSelector": "#app-view:not(.hidden) .dev-ws[data-ws-tab=\"discussion\"] .dev-ws-discussion.dev-ws-discussion-threaded[data-discussion-app=\"staging-demo-app\"] > .messages-reply-pane-app[data-reply-thread=\"9902003\"] .messages-reply-host",
+      "expectSelector": "#app-view:not(.hidden) .dev-ws[data-ws-tab=\"posts\"] [data-ws-hub-discussion=\"page\"] [data-ws-discussion-thread=\"post:9902003\"] > [data-ws-discussion-replies] > [data-ws-discussion-message=\"9902022\"]",
       "expectText": "Replies stay in here"
     },
     {

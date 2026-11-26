@@ -121,20 +121,28 @@ export function generalRoom(data: CommunityPayload | null | undefined): number |
 }
 
 /**
- * The target waiting for `slug`'s room, taken, or null. #4417 follow-up: a
+ * The target waiting for `slug`'s room, taken, or null. `place` is the one
+ * asking: #general's chat or the Discussion's posts. #4417 follow-up: a
  * target names the topic whose channel it is in (`topicRef`, a registry
  * row), and only that channel's place takes it; #general's takes one that
  * names none. Another channel's target is left where it is, for its place.
  */
-export function takeDiscussionTarget(slug: string, topicRef: number | null = null): DiscussionTarget | null {
+export function takeDiscussionTarget(slug: string, topicRef: number | null = null, place: 'discussion' | 'posts' = 'discussion'): DiscussionTarget | null {
   const view = (window as unknown as {
     AppView?: {
       _peekDiscussionTarget?: (slug: string) => { topicRef?: number | null } | null;
       _takeDiscussionTarget?: (slug: string) => Partial<DiscussionTarget> | null;
+      _discussionPlaceFor?: (target: object | null) => string;
     };
   }).AppView;
   const waiting = view?._peekDiscussionTarget?.(slug) || null;
   if (waiting && (Number(waiting.topicRef) || null) !== (topicRef || null)) return null;
+  // #general IS THE DISCUSSION (26 Nov 2026): a message or a thread in
+  // #general is the Discussion's posts' to take (./hub-discussion.tsx), the
+  // room itself and what the posts hand on are the chat's. The door tells
+  // the page it is waiting a moment before it turns the page, so the place
+  // being left must not take what is for the other.
+  if (waiting && !topicRef && (view?._discussionPlaceFor?.(waiting) || 'discussion') !== place) return null;
   const t = view?._takeDiscussionTarget?.(slug) || null;
   if (!t) return null;
   return {

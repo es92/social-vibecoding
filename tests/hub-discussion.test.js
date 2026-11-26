@@ -163,9 +163,11 @@ test('the card draws its frame first and reads in effects; no channel, no card',
   assert.match(preview, /data-ws-discussion-open=""/, 'the phone\'s card is a door to the page');
   assert.match(preview, /data-ws-discussion-start-door=""/);
   assert.doesNotMatch(preview, /<textarea/, 'and writes nothing itself');
-  const page = renderToHtml(createElement(DiscussionCard, { slug: 'book-club', name: 'Book Club', data: data(channel), mode: 'page', onBack: () => {} }));
-  assert.match(page, /^<div class="dev-ws-discussion-page" data-ws-discussion-page=""><div class="dev-ws-pagehead" data-ws-pagehead="">/);
-  assert.match(page, /data-ws-hub-discussion="page"/);
+  // The page is a place (part 2): its own heading, and "Open as chat" at its far end.
+  const page = renderToHtml(createElement(DiscussionCard, { slug: 'book-club', name: 'Book Club', data: data(channel), mode: 'page', onChat: () => {} }));
+  assert.match(page, /^<div class="dev-ws-discussion-page" data-ws-discussion-page=""><section class="dev-ws-hub-section dev-ws-hub-discussion" data-ws-hub-discussion="page"/);
+  assert.match(page, /<h2 id="[^"]+" class="dev-ws-hub-discussion-title">Discussion<\/h2><p class="dev-ws-hub-discussion-about">Posts and replies from everyone in Book Club<\/p><button type="button" class="dh-as-chat" data-ws-discussion-as-chat="">[\s\S]*?Open as chat<\/button><\/div>/);
+  assert.doesNotMatch(page, /data-ws-pagehead/, 'no way back of its own: the bar and the list say where it is');
 });
 
 test('reactions and replies are the platform\'s own: the hover bar, the long-press sheet, Enter sends', () => {
@@ -192,14 +194,81 @@ test('For you has no #general row where the hub draws the Discussion', () => {
   assert.match(here, /data-ws-workshop-row/, 'Needs you and the Workshop stay');
 });
 
-test('the hub mounts the card beside its thin column, and the phone\'s card opens the page under the Hub', () => {
+test('the hub mounts the card beside its thin column, and the phone\'s card opens the Discussion place', () => {
   const lander = read('frontend/src/features/dev-board/workshop/workshop.tsx');
   assert.match(lander, /<DiscussionCard slug=\{slug\} name=\{projectName\} data=\{community\} mode="full" \/>/);
   assert.match(lander, /<DiscussionCard slug=\{slug\} name=\{projectName\} data=\{community\} mode="preview" onOpenPage=\{\(\) => openTab\('posts'\)\} \/>/);
-  assert.match(lander, /\{tab === 'posts' && slug \? \(\s*<DiscussionCard slug=\{slug\} name=\{app\.name \|\| community\?\.name \|\| slug\} data=\{community\} mode="page" onBack=\{\(\) => upTab\('status'\)\} \/>/);
+  // Part 2: the place draws the page, "Open as chat" turns to #general's chat,
+  // and a link the posts cannot show goes on there in place of this entry.
+  const place = lander.slice(lander.indexOf("{tab === 'posts' && slug && community ? (community.channel ? ("), lander.indexOf('{isChannelPlace(tab) ? ('));
+  assert.match(place, /mode="page"\s+onChat=\{\(\) => openTab\('discussion'\)\}/);
+  assert.match(place, /callAppView\('_stashDiscussionTarget', slug, \{ \.\.\.target, asChat: true \}\);\s*setTab\('discussion'\);\s*callAppView\('_setWorkshopTab', 'discussion', slug\);\s*callAppView\('_stampWorkshopTab', slug, 'discussion'\);/);
+  assert.match(place, /<ProjectDiscussion slug=\{slug\}[^>]*channel=\{null\}/, 'a viewer the record gives no channel gets the chat\'s own answer');
   const places = loadTsx('frontend/src/features/dev-board/workshop/places.ts');
   assert.equal(places.isPlaceKey('posts'), true);
-  assert.equal(places.litPlace('posts'), 'status');
+  assert.equal(places.litPlace('posts'), 'posts');
+});
+
+// Part 2: a link to a #general message lands on the Discussion, which opens
+// the post it is in and marks it; what the posts do not show goes to the chat.
+test('a link to a message finds its post: the thread opened, older pages read; or hands it on', async () => {
+  const { DiscussionFeed, PLACE_PAGES } = loadTsx(CARD);
+  assert.equal(PLACE_PAGES, 3);
+  const all = new Map();
+  const put = (m) => { all.set(m.id, m); return m; };
+  [said(10, { replyCount: 5 }), said(20), said(30)].forEach(put);
+  for (let id = 11; id <= 15; id += 1) put(said(id, { rootId: 10 }));
+  [said(1), said(2), said(3), said(4, { rootId: 2 })].forEach(put);
+  const pages = [];
+  const source = {
+    key: 'test', streamHoldsReplies: true,
+    async page(before) {
+      pages.push(before);
+      // The newest page holds the posts since 20 and the last two replies of 10;
+      // older pages hold 10 and its first replies, then the oldest posts.
+      if (before == null) return { messages: [all.get(14), all.get(15), all.get(20), all.get(30)], more: true, readId: 0 };
+      if (before === 14) return { messages: [10, 11, 12, 13].map((i) => all.get(i)), more: true, readId: null };
+      return { messages: [1, 2, 3, 4].map((i) => all.get(i)), more: false, readId: null };
+    },
+    async thread(rootId) {
+      return { root: all.get(rootId) || null, replies: [...all.values()].filter((m) => m.rootId === rootId).sort((a, b) => a.id - b.id) };
+    },
+    async post() { return null; }, async react() { return null; },
+    async readPosition() { return 0; }, async markRead() {},
+  };
+  const feedOf = () => new DiscussionFeed(source, { since: null, fold_at: 8, earlier: null }, { current: 'me' });
+
+  // A reply: its post, with the whole thread read and open.
+  let room = feedOf();
+  assert.deepEqual(await room.place({ threadRootId: 10, focusMessageId: 12 }), { key: 'post:10', messageId: 12 });
+  assert.ok(room.get().opened.has(10), 'its replies box is open');
+  assert.deepEqual(room.items().find((i) => i.key === 'post:10').replies.map((r) => r.id), [11, 12, 13, 14, 15]);
+
+  // A post further back: older pages read until it is there; not opened.
+  room = feedOf();
+  assert.deepEqual(await room.place({ threadRootId: null, focusMessageId: 2 }), { key: 'post:2', messageId: 2 });
+  assert.equal(room.get().opened.size, 0, 'a post alone opens nothing');
+
+  // Gone, or past what the posts show: the chat takes it.
+  room = feedOf();
+  assert.equal(await room.place({ threadRootId: null, focusMessageId: 999 }), null);
+  assert.equal(await feedOf().place({ threadRootId: null, focusMessageId: null }), null);
+
+  // With the fold, an old message's own thread is the chat's.
+  const folded = new DiscussionFeed(source, { since: SINCE, fold_at: 8, earlier: { count: 12, from: SINCE, to: SINCE, last_id: 3 } }, { current: 'me' });
+  assert.equal(await folded.place({ threadRootId: 2, focusMessageId: 4 }), null, 'a reply to an old message is not on the posts');
+  const old = await folded.place({ threadRootId: null, focusMessageId: 2 });
+  assert.deepEqual(old, { key: 'earlier', messageId: 2 }, 'an old message is a reply of the Earlier post');
+  assert.ok(folded.get().opened.has(3), 'which opens');
+
+  // The page takes only the targets that are its own; the chat the rest.
+  const card = read(CARD);
+  assert.match(card, /const target = takeDiscussionTarget\(slug, null, 'posts'\);/);
+  assert.match(card, /if \(found\) setFocus\(found\);\s*else missing\.current\?\.\(target\);/);
+  assert.match(card, /_landOnDiscussion\?\.\(slug, \{ threadRootId, asChat: true,/, 'its own links into #general ask for the chat');
+  assert.match(read('frontend/src/features/dev-board/workshop/project-discussion.tsx'),
+    /if \(waiting && !topicRef && \(view\?\._discussionPlaceFor\?\.\(waiting\) \|\| 'discussion'\) !== place\) return null;/);
+  assert.match(read('public/css/app.css'), /\.dh-msg\[data-ws-discussion-marked\] \{[^}]*animation: dh-marked 2\.4s ease-out;/);
 });
 
 test('the server says what was said before Discussion, best-effort, beside the channel', async () => {
