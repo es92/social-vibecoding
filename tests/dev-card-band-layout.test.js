@@ -405,9 +405,9 @@ test('the detail head (noNav) collapses its empty bands instead of reserving', (
   assert.doesNotMatch(head, /dev-card-status/, 'no reserved status band');
   assert.doesNotMatch(head, /dev-card-title-clamp/, 'and no two-line clamp');
   assert.match(head, /dev-card-title/, 'it still uses the shared title cell');
-  // Its pill is the inline capsule, and it is inside the (collapsible) badge
-  // row rather than a band of its own.
-  assert.match(head, /gc-vote-count/);
+  // Its pill is the inline one, the one tag (dev-card.tsx ChangeTag), and it
+  // is inside the (collapsible) badge row rather than a band of its own.
+  assert.match(head, /data-state-tag=/);
   assert.doesNotMatch(head, /dev-status-pill-block/);
 });
 

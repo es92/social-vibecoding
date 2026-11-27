@@ -13,6 +13,8 @@
  */
 
 import { Button } from '@/components/ui/button';
+import { GroupedList, ListRow } from '@/components/ui/grouped-list';
+import { Switch } from '@/components/ui/switch';
 
 import { useMessages } from '../../lib/i18n/react';
 import { useStoreState } from '../../lib/use-store-state';
@@ -42,9 +44,6 @@ function controller(): any {
   return (typeof window !== 'undefined' ? (window as any).Settings : null) || null;
 }
 
-/** Matches ROW_CLASS in ./grants-list.tsx — one row language on this screen. */
-const ROW_CLASS = 'ui-mini rounded-lg bg-white dark:bg-zinc-900 px-3 py-2 text-xs';
-
 export function NotificationPrefsList() {
   const t = useMessages('settings');
   const state = useStoreState<State>(notificationPrefsStore);
@@ -57,45 +56,57 @@ export function NotificationPrefsList() {
   }
   return (
     <>
-      <div className="ui-card space-y-3">
+      {/* The shared rows, each the label of its switch (one row language
+          with the push categories above, ./sections/alerts.tsx). */}
+      <GroupedList className="mx-0">
         {state.categories.map((category) => (
-          <label
+          <ListRow
             key={category.key}
-            className="ui-row flex items-start justify-between gap-4 cursor-pointer select-none"
+            as="label"
             data-notification-default={category.key}
-          >
-            <span className="ui-row-tx min-w-0">
-              <span className="ui-row-t block text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                {category.label}
-              </span>
-              <span className="ui-row-s block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                {category.description}
-              </span>
-            </span>
-            <input
-              type="checkbox"
-              className="un-switch mt-0.5 shrink-0"
-              checked={category.enabled}
-              onChange={(event) => {
-                void controller()?._onNotificationDefaultChange?.(
-                  category.key, event.currentTarget.checked
-                );
-              }}
-            />
-          </label>
+            title={category.label}
+            titleClassName="whitespace-normal"
+            subtitle={category.description}
+            subtitleClassName="whitespace-normal"
+            trailing={(
+              <Switch
+                checked={category.enabled}
+                onChange={(event) => {
+                  void controller()?._onNotificationDefaultChange?.(
+                    category.key, event.currentTarget.checked
+                  );
+                }}
+              />
+            )}
+            chevron={false}
+          />
         ))}
-      </div>
+      </GroupedList>
 
       <div className="mt-5 pt-5 border-t border-zinc-200 dark:border-zinc-800">
         <p className="ui-cap text-sm font-medium text-zinc-800 mb-2 dark:text-zinc-200">{t('settings:alerts.apps.overridesHeading')}</p>
         {state.apps.length ? (
-          <div className="ui-card space-y-2">
+          <GroupedList className="mx-0">
             {state.apps.map((app) => (
-              <div key={app.appId} className={ROW_CLASS}>
-                <div className="flex items-center gap-2">
-                  <span className="min-w-0 flex-1 truncate font-medium text-zinc-900 dark:text-zinc-100">
-                    {app.appName}
-                  </span>
+              // An app set differently: its name, what it does differently
+              // (one line a category, under the name), and the way back.
+              <ListRow
+                key={app.appId}
+                title={app.appName}
+                subtitle={(
+                  <ul>
+                    {app.categories.map((category) => (
+                      <li key={category.key}>
+                        {category.enabled
+                          ? t('settings:alerts.apps.categoryOn', { category: category.label })
+                          : t('settings:alerts.apps.categoryOff', { category: category.label })}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                subtitleClassName="whitespace-normal"
+                trailing={(
+                  <span className="shrink-0 text-xs">
                   <Button
                     type="button"
                     data-role="reset-app-notifications"
@@ -108,19 +119,12 @@ export function NotificationPrefsList() {
                   >
                     {t('settings:alerts.apps.useDefaults')}
                   </Button>
-                </div>
-                <ul className="mt-1 text-zinc-500 dark:text-zinc-400">
-                  {app.categories.map((category) => (
-                    <li key={category.key}>
-                      {category.enabled
-                        ? t('settings:alerts.apps.categoryOn', { category: category.label })
-                        : t('settings:alerts.apps.categoryOff', { category: category.label })}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                  </span>
+                )}
+                chevron={false}
+              />
             ))}
-          </div>
+          </GroupedList>
         ) : (
           <p className="ui-note text-xs text-zinc-500 dark:text-zinc-400">
             {t('settings:alerts.apps.noOverrides')}

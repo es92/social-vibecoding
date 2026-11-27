@@ -302,7 +302,8 @@ test('For you: Needs you counts the votes you owe, not the requests nobody has c
   const mixed = card([row('c1', 'Fix login', 'claim'), row('v1', 'Dark mode', 'vote'), row('c2', 'Tags', 'claim')]);
   assert.match(mixed, /data-ws-hub-needs-votes="1"/);
   // One look (25 Nov 2026): the count is the shared strong tag.
-  assert.match(mixed, /<span class="dev-ws-foryou-pill one-tag one-tag-strong">1 to vote<\/span>/);
+  // The one tag (@/components/ui/state-tag): votes owed are its needs-you state.
+  assert.match(mixed, /<span data-state-tag="needs" class="one-tag one-tag-strong">1 to vote<\/span>/);
   assert.match(mixed, /<span data-ws-hub-needs-first="">Dark mode<\/span>/, 'the first VOTE leads, not the first row');
   assert.doesNotMatch(mixed, /Fix login/);
   // #3408: requests owe no vote, so the hub draws no Needs you row, only
@@ -314,7 +315,7 @@ test('For you: Needs you counts the votes you owe, not the requests nobody has c
   const claimsOnly = renderToHtml(createElement(NothingToVote, { unclaimed: 2, onOpen: () => {} }));
   // The line is a card of For you's row: a tile, "Needs you", then the sentence under it.
   assert.match(claimsOnly, /^<div class="dev-ws-week-note wip-hub-door" data-ws-hub-needs-none="">[\s\S]*?<span class="wip-hub-door-title">Needs you<\/span><span class="wip-hub-door-sub">Nothing more to vote on · <button type="button" class="dev-ws-link un-touch-target" data-ws-hub-needs-requests="">2 requests nobody has picked up<\/button><\/span><\/span><\/div>$/);
-  assert.doesNotMatch(claimsOnly, /dev-ws-foryou-pill/, 'no count');
+  assert.doesNotMatch(claimsOnly, /data-state-tag/, 'no count');
   const one = renderToHtml(createElement(NothingToVote, { unclaimed: 1, onOpen: () => {} }));
   assert.match(one, />1 request nobody has picked up</);
   assert.match(renderToHtml(createElement(NothingToVote, { unclaimed: 0, onOpen: () => {} })), />Nothing more to vote on\.</);
@@ -651,14 +652,15 @@ test('For you for somebody not in it: "Up for a vote · Join to vote on these." 
   assert.ok(outside.includes(`>${message('project:hub.needs.upForVote')}<`));
   assert.match(outside, /<span data-ws-hub-needs-join="">Join to vote on these\.<\/span>/);
   // One look (25 Nov 2026): the light count is the shared tag.
-  assert.match(outside, /class="dev-ws-foryou-pill dev-ws-foryou-pill-light one-tag" data-ws-hub-needs-count=""><span aria-hidden="true">13<\/span><span class="sr-only">13 changes up for a vote<\/span>/);
+  // How many, not how many wait on them: the one tag, plain.
+  assert.match(outside, /<span data-state-tag="plain" class="one-tag one-tag-plain" data-ws-hub-needs-count=""><span aria-hidden="true">13<\/span><span class="sr-only">13 changes up for a vote<\/span>/);
   assert.doesNotMatch(outside, /to vote<\/span>|data-ws-channel-unread/);
   // A member's: Needs you, "13 to vote", and the room's unread count.
   const inside = card(true);
   assert.doesNotMatch(inside, /data-ws-hub-needs-outsider/);
   assert.match(inside, />13 to vote</);
   assert.match(inside, /data-ws-channel-unread="5"/);
-  assert.match(CSS, /\.dev-ws-foryou-pill\.dev-ws-foryou-pill-light \{ background: color-mix\(in srgb, var\(--accent\) 12%, transparent\); color: var\(--accent\); \}/);
+  assert.doesNotMatch(CSS, /dev-ws-foryou-pill/, 'the count is the one tag, with no look of its own');
 });
 
 test('every hub\'s Recently live ends with how many more went live this month, opening the Workshop, and nothing at zero', () => {

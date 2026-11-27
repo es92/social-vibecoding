@@ -334,6 +334,12 @@ export function pickLiveProject(slug: string): void { liveStartActs?.pick(slug);
 /** True where the preview's column is drawn beside New chat, with the button in it. */
 export const LiveStartBeside = createContext(false);
 /**
+ * Set where that column was closed (../ai/live-column.ts): the head's Live
+ * preview brings it back by calling this, and starts nothing. It is offered
+ * whatever About says, since the column is where a project is picked.
+ */
+export const LiveStartReopen = createContext<(() => void) | null>(null);
+/**
  * The thread a live start just made, until Homeroom bot's draft is there:
  * the column beside it says the draft is opening instead of going away.
  */
@@ -344,6 +350,7 @@ export function NewThreadPanel({ conversationId }: { conversationId: number }): 
   const t = useMessages('messages');
   const docked = useContext(NewThreadDocked);
   const beside = useContext(LiveStartBeside);
+  const reopen = useContext(LiveStartReopen);
   // #6963: the bot tab's list is hidden, and a new chat under its own head
   // offers the same way back to it.
   const showList = useShowListButton();
@@ -654,7 +661,8 @@ export function NewThreadPanel({ conversationId }: { conversationId: number }): 
     liveStartActs = { start: () => acts.current.start(), pick: (slug) => acts.current.pick(slug) };
     return () => { liveStartActs = null; liveStartStore.set(null); };
   }, []);
-  const liveInHead = liveReady && !beside;
+  // In the head: the start itself where there is no column beside, or the way back to a column that was closed.
+  const liveInHead = reopen ? !own && !setup : liveReady && !beside;
 
   // Where the count turns amber, as in every other box.
   const nearLimit = words.length > 7600;
@@ -692,11 +700,12 @@ export function NewThreadPanel({ conversationId }: { conversationId: number }): 
           </div>
         </div>
         {liveInHead ? (
-          <Button type="button" variant="unstyled" size="none" ink="none" className="messages-live-start" data-bot-new-thread-live="" disabled={holding}
-            aria-label={t('messages:newThread.live.startLabel', { app: appName })} title={t('messages:newThread.live.startLabel', { app: appName })}
+          <Button type="button" variant="unstyled" size="none" ink="none" className="messages-live-start" data-bot-new-thread-live={reopen ? 'show' : ''} disabled={reopen ? false : holding}
+            aria-label={reopen ? t('messages:newThread.live.showLabel') : t('messages:newThread.live.startLabel', { app: appName })}
+            title={reopen ? t('messages:newThread.live.showLabel') : t('messages:newThread.live.startLabel', { app: appName })}
             // The field keeps the keyboard if it had it.
             onMouseDown={(event) => event.preventDefault()}
-            onClick={startLive}>
+            onClick={reopen || startLive}>
             <PlayIcon aria-hidden="true" />
             <span>{t('messages:newThread.live.button')}</span>
           </Button>

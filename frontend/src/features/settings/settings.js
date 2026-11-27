@@ -1497,13 +1497,18 @@
     // app.css): the lit tint fills it, the lit line rings it, the lit ink
     // names it, a weight heavier than its neighbours. It was the action
     // accent's 10% wash, which hardly told it from a hovered row.
+    //
+    // The row itself is the shared ListRow (settings-nav.tsx), which lays it
+    // out (a flex row, full width, start-aligned) and sizes its name, so this
+    // string holds only what the sidebar adds to it: its inset, the room the
+    // pin strip takes at the end, and the state.
     _navView() {
       const active = Settings._section;
       const item = (p) => ({
         key: p.key,
         label: Settings.str(p.label),
         active: p.key === active,
-        className: 'settings-nav-item flex w-full items-center gap-2.5 text-start rounded-lg ps-3 pe-9 py-2 text-sm transition-colors '
+        className: 'settings-nav-item gap-2.5 rounded-lg ps-3 pe-9 py-2 transition-colors '
           + (p.key === active
             ? 'font-semibold bg-[color:var(--lit-tint)] text-[color:var(--lit-ink)] shadow-[inset_0_0_0_1px_var(--lit-line)]'
             : 'font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'),
@@ -1925,6 +1930,12 @@
     // across renders, so a later render can take back exactly what it added:
     // the fresh list may no longer offer a language this page's older one did.
     _appendLiveLanguages(select) {
+      // Request 7165: a page in English boots without the server's list of
+      // languages, which this pane lists from. Ask for it while Settings is
+      // open; `homeroom:languages-changed` draws this again when it arrives.
+      if (Settings._open) {
+        try { window.PlatformI18n?.ensureLiveLanguages?.(); } catch { /* no runtime: the build's languages stand */ }
+      }
       this._liveLanguageTags ||= new Set();
       for (const { tag, name } of window.PlatformI18n?.getLanguages?.() || []) {
         if ([...select.options].some((o) => o.value === tag)) continue;

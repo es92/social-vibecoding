@@ -2183,10 +2183,22 @@ test('#6124: every list of changes reads the chosen title before the session nam
     'the shared-sessions list carries proposed_pr_title');
   // The Workshop's own cards and the project hub's "Your work" row are
   // built on the client from /api/me/active-sessions rows.
+  // One change, one name: the card label, and what a change carries into a
+  // message or to Homeroom bot, read AppView._changeTitle (the share card
+  // and the bot's doors used to lead with the session's old name).
   const appView = fs.readFileSync(path.join(__dirname, '../public/js/app-view.js'), 'utf8');
   assert.match(appView,
-    /_sessionCardLabel\(s\) \{[\s\S]*?return String\(s\.pr_title \|\| s\.proposed_pr_title \|\| s\.session_title \|\| s\.branch_name/,
-    'the Workshop card label reads the chosen title before the session name');
+    /_sessionCardLabel\(s\) \{\s*return String\(AppView\._changeTitle\(s\) \|\| s\.branch_name/,
+    'the Workshop card label reads the change\'s one name before the branch');
+  assert.match(appView,
+    /_changeTitle\(s\) \{\s*return \(s && \(s\.pr_title \|\| s\.proposed_pr_title \|\| s\.session_title\)\) \|\| null;/,
+    'the change\'s one name reads the chosen title before the session name');
+  assert.doesNotMatch(appView, /\.session_title \|\| (item|pr)\.pr_title \|\| null/,
+    'no door names a change by its session before its pull request');
+  // The card a shared change is drawn as reads the same order.
+  const shared = fs.readFileSync(path.join(__dirname, '../src/services/shared-objects.js'), 'utf8');
+  assert.match(shared, /function changeTitle\(row\) \{\s*return \(row && \(row\.pr_title \|\| row\.proposed_pr_title \|\| row\.session_title\)\) \|\| null;/);
+  assert.match(shared, /title: changeTitle\(row\) \|\| `Change #\$\{row\.id\}`/);
 });
 
 test('a same-commit resubmit with a title renames an existing PR, votes untouched', async () => {

@@ -715,9 +715,17 @@ carry most of them.
   line a second row would carry is its tooltip; a phone, where nothing
   hovers, shows it as a 12px second line only where it is news (a request
   the bot handed back, a vote that frees a build slot). The word on the
-  right is the row's one pill, in the accent when it asks for you ("Vote",
-  "Build it"), plain when it only says where things stand. Do not copy the
-  one-line row into a list without that reason.
+  right is the row's one tag, in its needs-you state when it asks for you
+  ("Vote", "Read"), plain when it only says where things stand. Do not copy
+  the one-line row into a list without that reason.
+- **Where something stands is one tag, in three states** (`StateTag`,
+  `frontend/@/components/ui/state-tag.tsx`, drawn once as app.css's
+  `.one-tag`): `plain` for where it stands, `working` with the turning mark
+  while it is under way (checking, building, going live), `needs` for what
+  asks for you ("3 to vote"). A change's state is `ChangeTag`
+  (`card/dev-card.tsx`), its words the server's. Do not draw another tag,
+  tone or count pill for a state; an area's rule may place the tag, never
+  repaint it.
 - **A label over a card is small caps; a title inside a card is a
   sentence.** `SectionHeader` is 12px bold uppercase, tracked `0.06em`, muted
   (Messages' `.messages-section-head` matches it). It is the only uppercase

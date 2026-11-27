@@ -296,8 +296,8 @@ test('New chat offers a live preview once a project of its own is picked: a butt
   assert.equal(leadWith('just words'), 'just words', 'an ordinary send is the box alone');
   assert.match(read(NEW), /const liveReady = live && !own && !setup;\s+const startLive = \(\) => \{ if \(liveReady\) void send\(undefined, liveWords\); \};/);
   assert.match(read(NEW), /const content = leadWith\(words, lead\);/);
-  assert.match(read(NEW), /\{liveInHead \? \(\s+<Button type="button" variant="unstyled" size="none" ink="none" className="messages-live-start" data-bot-new-thread-live="" disabled=\{holding\}/);
-  assert.match(read(NEW), /onClick=\{startLive\}>\s+<PlayIcon aria-hidden="true" \/>\s+<span>\{t\('messages:newThread\.live\.button'\)\}<\/span>/);
+  assert.match(read(NEW), /\{liveInHead \? \(\s+<Button type="button" variant="unstyled" size="none" ink="none" className="messages-live-start" data-bot-new-thread-live=\{reopen \? 'show' : ''\} disabled=\{reopen \? false : holding\}/);
+  assert.match(read(NEW), /onClick=\{reopen \|\| startLive\}>\s+<PlayIcon aria-hidden="true" \/>\s+<span>\{t\('messages:newThread\.live\.button'\)\}<\/span>/);
   // A secondary action, flat in the sky tint: Send stays the one sun.
   assert.match(read('public/css/app.css'), /html:root \[data-bot-new-thread-pane\] \.messages-live-start \{\s+display: inline-flex;[^}]*background: var\(--one-sky-tint\); color: var\(--one-sky-ink\);/);
   // Homeroom bot is what opens it: the chat's tool, named for that start.
@@ -343,17 +343,17 @@ test('from 1500px the preview\'s column waits beside New chat: Start for a picke
   const fresh = read(NEW);
   assert.match(fresh, /liveStartStore\.set\(\{ conversationId, project, name: appName, offered: liveReady, bot: !own, busy: holding \}\);/);
   assert.match(fresh, /return \(\) => \{ liveStartActs = null; liveStartStore\.set\(null\); \};/);
-  assert.match(fresh, /const liveInHead = liveReady && !beside;/, 'with the column beside it, the head has no button');
+  assert.match(fresh, /const liveInHead = reopen \? !own && !setup : liveReady && !beside;/, 'with the column beside it, the head has no button');
   assert.match(fresh, /openThread\(made\.rootId\);\s+\/\/[^\n]*\n\s+if \(lead\) liveOpeningStore\.set\(\{ rootId: made\.rootId, name: appName \}\);/);
   // The bot page draws it only where three columns fit, beside a new chat with Homeroom bot, in the preview's own pane.
   const ai = read('frontend/src/features/ai/index.tsx');
   assert.match(ai, /const roomForLive = !!botId && docked && !phone && fits === 'three' && !panel\.open && !detailHere;/);
-  assert.match(ai, /const waitingNew = roomForLive && column\?\.at === 'new' && !!liveChat && liveChat\.bot;/);
+  assert.match(ai, /const liveNew = roomForLive && column\?\.at === 'new' && !!liveChat && liveChat\.bot;\s+const waitingNew = liveNew && !liveClosed;/);
   assert.match(ai, /const openingHere = roomForLive && column\?\.at === 'thread' && !!liveOpening && liveOpening\.rootId === column\.rootId;/);
   assert.match(ai, /const previewHere = detailHere \|\| waitingHere;/);
   assert.match(ai, /<LiveStartBeside\.Provider value=\{waitingNew\}>/);
   assert.match(ai, /\) : waitingHere \? \([\s\S]{0,260}<aside\s+ref=\{previewRef\}\s+id="ai-preview-pane"\s+className="ai-preview-pane"\s+data-ai-preview-pane=\{layout\}\s+data-ai-live-start=""/);
-  assert.match(ai, /<LiveStartPane opening=\{openingHere && liveOpening \? \{ name: liveOpening\.name \} : null\} \/>/);
+  assert.match(ai, /<LiveStartPane\s+opening=\{openingHere && liveOpening \? \{ name: liveOpening\.name \} : null\}/);
   // Waiting, the two edges remember widths of their own, in a real preview's rules, so each drags on its own
   // (27 Nov 2026: clamping the column to the chat's width made one edge move the other).
   assert.match(ai, /data-ai-live-wait=\{waitingHere \? '' : undefined\}/);
@@ -387,4 +387,48 @@ test('from 1500px the preview\'s column waits beside New chat: Start for a picke
   // The draft arriving, or the person going elsewhere, ends the wait; so does two minutes.
   assert.match(ai, /if \(detailHere \|\| elsewhere\) \{ liveOpeningStore\.set\(null\); return undefined; \}/);
   assert.match(ai, /const LIVE_OPENING_MS = 120_000;/);
+});
+
+test('the waiting column can be closed: a choice kept on this device, and New chat\'s head brings it back', () => {
+  const COLUMN = 'frontend/src/features/ai/live-column.ts';
+  const PANE = 'frontend/src/features/messages/live-start-pane.tsx';
+  const NEW = 'frontend/src/features/messages/new-thread.tsx';
+  const column = loadTsx(COLUMN);
+  // One key, '1' while closed, nothing kept while it is open; storage that is absent or throws is "not closed".
+  const mem = new Map();
+  const store = { getItem: (k) => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: (k) => mem.delete(k) };
+  assert.equal(column.readLiveColumnClosed(store), false);
+  column.writeLiveColumnClosed(true, store);
+  assert.deepEqual([...mem], [[column.AI_LIVE_COLUMN_CLOSED_KEY, '1']]);
+  assert.equal(column.readLiveColumnClosed(store), true);
+  column.writeLiveColumnClosed(false, store);
+  assert.equal(mem.size, 0);
+  assert.equal(column.readLiveColumnClosed(null), false);
+  const broken = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); }, removeItem() { throw new Error('blocked'); } };
+  assert.equal(column.readLiveColumnClosed(broken), false);
+  assert.doesNotThrow(() => column.writeLiveColumnClosed(true, broken));
+  assert.notEqual(column.AI_LIVE_COLUMN_CLOSED_KEY, loadTsx('frontend/src/features/side-panel/resize.ts').AI_LIST_CLOSED_KEY, 'not the list\'s choice');
+  // The in-memory answer follows the choice.
+  assert.equal(column.isLiveColumnClosed(), false);
+  column.setLiveColumnClosed(true);
+  assert.equal(column.isLiveColumnClosed(), true);
+  column.setLiveColumnClosed(false);
+  assert.equal(column.isLiveColumnClosed(), false);
+  // The column's title card has the close, drawn as a real preview's is, only when it is given one.
+  assert.doesNotMatch(renderComponent(PANE, 'LiveStartPane', {}), /data-live-start-close/);
+  const closable = renderComponent(PANE, 'LiveStartPane', { onClose() {} });
+  const close = message('messages:newThread.live.pane.close');
+  assert.ok(closable.includes(`<span class="detail-card-exits"><button type="button" data-live-start-close="" aria-label="${close}" title="${close}" class="detail-card-disc">`));
+  assert.match(renderComponent(PANE, 'LiveStartPane', { opening: { name: 'Gym' }, onClose() {} }), /data-live-start-close=""/, 'and while a draft is opening');
+  // The page: closed, the column is not drawn beside a new chat, and the head is handed the way back.
+  const ai = read('frontend/src/features/ai/index.tsx');
+  assert.match(ai, /const liveClosed = useLiveColumnClosed\(\);/);
+  assert.match(ai, /<LiveStartReopen\.Provider value=\{liveNew && liveClosed \? showLiveColumn : null\}>/);
+  assert.match(ai, /onClose=\{openingHere \? stopLiveOpening : closeLiveColumn\}/);
+  assert.match(ai, /const closeLiveColumn = \(\): void => setLiveColumnClosed\(true\);\s+const showLiveColumn = \(\): void => setLiveColumnClosed\(false\);\s+const stopLiveOpening = \(\): void => \{ liveOpeningStore\.set\(null\); \};/);
+  // The head's button there shows the column and starts nothing, whatever About says.
+  const fresh = read(NEW);
+  assert.match(fresh, /export const LiveStartReopen = createContext<\(\(\) => void\) \| null>\(null\);/);
+  assert.match(fresh, /aria-label=\{reopen \? t\('messages:newThread\.live\.showLabel'\) : t\('messages:newThread\.live\.startLabel', \{ app: appName \}\)\}/);
+  assert.equal(message('messages:newThread.live.showLabel'), 'Show the live preview column');
 });

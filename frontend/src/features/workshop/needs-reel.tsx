@@ -5,8 +5,10 @@
  * It mixes everything: every decision owed by you across all the projects you
  * are a member of, newest first (GET /api/workshop/needs-feed,
  * src/routes/workshop-overview.js), each item naming the project it belongs
- * to. `reelRows` builds those rows, and `plainSummary` flattens a change's
- * markdown summary to the one line a voter reads.
+ * to. `reelRows` builds those rows, each change's words (its name, its
+ * summary as one plain line, what this person's Yes is) read off the one
+ * model of a change (../dev-board/card/change.ts `changeFromFeed`), as the
+ * review flow reads them.
  *
  * ── Island rules ────────────────────────────────────────────────────────
  *
@@ -16,6 +18,7 @@
 import type { ReactNode } from 'react';
 
 import type { DevWorkshopView } from '../dev-board/card/model';
+import { changeFromFeed } from '../dev-board/card/change';
 import { callAppView } from '../dev-board/card/fold';
 import { AppIconContent, AppIconLink, appIconKind } from '../apps/app-card-view';
 import { listText, t as translate } from '../../lib/i18n/runtime';
@@ -113,23 +116,6 @@ function feedVisuals(item: NeedsFeedItem): FeedRow['visuals'] {
 type FeedRow = DevWorkshopView['queue'][number];
 
 /**
- * A proposal's summary is Markdown written for its own page. On the item it
- * is a paragraph: headings, emphasis, code ticks and list markers go, a link
- * keeps its words, and the whitespace collapses. The caption's "more" has
- * it rendered.
- */
-export function plainSummary(md: string | null | undefined): string {
-  return String(md || '')
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .replace(/^\s{0,3}(#{1,6}|[-*+]|\d+\.)\s+/gm, '')
-    .replace(/[*_`>~]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-/**
  * The feed's rows, in the shape a project's Needs you builds its own
  * (app-view.js `_workshopView`'s queue): the card's page, the question and
  * what Yes and No DO, who asked and when, the words, the ask box's address
@@ -216,10 +202,11 @@ export function reelRows(
     .filter((item) => !(item.waitingOn && item.waitingOn.length))
     .map((item) => {
     if (item.kind === 'ballot' || item.kind === 'question') return requestRow(item);
-    const change = item.kind !== 'governance';
-    const key = `${change ? 'proposal' : 'governance'}:${item.id}`;
-    const rev = item.epoch == null ? [] : [item.epoch];
-    const summary = plainSummary(item.summary) || null;
+    const facts = changeFromFeed(item);
+    const change = facts.kind === 'proposal';
+    const key = `${facts.kind}:${item.id}`;
+    const rev = facts.epoch == null ? [] : [facts.epoch];
+    const summary = facts.summary || null;
     const attrs: Record<string, string> = change ? { 'data-proposal-row': String(item.id) } : { 'data-gov-row': String(item.id) };
     const row: FeedRow = {
       t: 'card',
@@ -229,7 +216,7 @@ export function reelRows(
         cls: '',
         attrs,
         icon: null,
-        title: { text: item.title || (change ? translate('communities:reel.fallbackTitle.change') : translate('communities:reel.fallbackTitle.decision')), title: '' },
+        title: { text: facts.title || (change ? translate('communities:reel.fallbackTitle.change') : translate('communities:reel.fallbackTitle.decision')), title: '' },
         // #6531: a conflicting change only a yes can move names the conflict
         // here, as the Homeroom bot tab's Vote row does.
         meta: change && item.conflictOnYes ? [{ t: 'text', s: translate('core:work.line.conflictOnYes') }] : [],
@@ -251,20 +238,20 @@ export function reelRows(
       yes: change
         ? {
           label: translate('communities:reel.yes'),
-          act: { fn: 'castVote', args: [item.id, 'yes', ...rev] },
-          ...(item.approve ? { approve: true } : {}),
+          act: { fn: 'castVote', args: [facts.id, 'yes', ...rev] },
+          ...(facts.approve ? { approve: true } : {}),
           // #5365: the flags the sheet's picker reads its line from, next to
           // `approve` — only ever set together on a real server, and the
           // test-account line wins in the picker.
-          ...(item.uncounted ? { uncounted: true } : {}),
-          ...(item.advisory ? { advisory: true } : {}),
+          ...(facts.uncounted ? { uncounted: true } : {}),
+          ...(facts.advisory ? { advisory: true } : {}),
         }
         : null,
-      no: change ? { label: translate('communities:reel.no'), act: { fn: 'castVote', args: [item.id, 'no', ...rev] } } : null,
-      ...(change && item.codeMissing ? { codeMissing: true } : {}),
-      who: item.author || null,
-      ago: item.at ? agoStamp(item.at).text : '',
-      number: item.number,
+      no: change ? { label: translate('communities:reel.no'), act: { fn: 'castVote', args: [facts.id, 'no', ...rev] } } : null,
+      ...(change && facts.codeMissing ? { codeMissing: true } : {}),
+      who: facts.author,
+      ago: facts.at ? agoStamp(facts.at).text : '',
+      number: facts.number,
       summary,
       descriptionHtml: item.summary ? html(item.summary) : '',
       visuals: feedVisuals(item),

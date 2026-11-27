@@ -100,7 +100,9 @@ test('the editorial serif uses the shipped variable weight', () => {
 
 test('only duplicate Settings profile summary decoration is hidden beside the real editor', () => {
   const hidden = rules().filter((rule) => /display:\s*none|visibility:\s*hidden/.test(rule.body)).map((rule) => rule.selector);
-  assert.deepEqual(hidden, [`${SCOPE} #settings-root:has(#settings-section-content:not(.hidden)) > .settings-frame-head`, `${SCOPE} #settings-profile-card .ui-row-tx`, `${SCOPE} #settings-profile-card > svg`]);
+  // The card is the shared ListRow: its name and handle are the row's text
+  // column (.ui-lrow-tx), and its chevron the row's own (> svg).
+  assert.deepEqual(hidden, [`${SCOPE} #settings-root:has(#settings-section-content:not(.hidden)) > .settings-frame-head`, `${SCOPE} #settings-profile-card .ui-lrow-tx`, `${SCOPE} #settings-profile-card > svg`]);
   assert.match(block(), /@media \(max-width: 1023\.98px\) \{\s*html:root #settings-root:has\(#settings-section-content:not\(\.hidden\)\) > \.settings-frame-head \{ display: none; \}/);
 });
 

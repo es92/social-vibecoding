@@ -183,7 +183,8 @@ test('a card says up to two lines, what needs you first and in the accent, and a
   assert.match(html, /<svg[^>]*class="wip-activity-chevron h-4 w-4 /);
   assert.match(html, /<b class="wip-item-title block truncate text-\[15px\] font-\[650\] leading-5">Plant Pal<\/b>/);
   // One look (25 Nov 2026): the count that asks for you carries the shared tag part.
-  assert.match(html, /<span class="one-tag block truncate text-\[13px\] font-semibold leading-\[18px\] text-violet-600 dark:text-violet-400" data-home-activity-line="needs" data-ask="">21 need you<\/span>/);
+  // What needs you is the one tag (@/components/ui/state-tag) in its needs-you state.
+  assert.match(html, /<span data-state-tag="needs" class="one-tag one-tag-strong" data-home-activity-line="needs" data-ask="">21 need you<\/span>/);
   assert.match(html, /<span class="block truncate text-\[13px\] leading-\[18px\] text-zinc-500 dark:text-zinc-400" data-home-activity-line="progress">3 in progress<\/span>/);
   assert.doesNotMatch(html, /live this week/, 'two lines at most');
   assert.match(html, /<span class="wip-activity-when block truncate text-xs leading-4 text-zinc-500 dark:text-zinc-400"><time datetime="[^"]+" title="[^"]+">24m ago<\/time><\/span>/i);

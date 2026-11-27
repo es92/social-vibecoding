@@ -121,7 +121,9 @@ test('searching Settings for Sign out (or Log out) finds it, and choosing it pre
     assert.equal(find(mobile, noMatch).length, 0, 'not "No settings match"');
     const hit = find(desktop, (n) => n.props['data-settings-sign-out'] !== undefined)[0];
     assert.ok(hit, `${query}: and in the sidebar`);
-    assert.match(hit.props.className, /text-red-700/, 'in the button\'s own red');
+    // The sidebar's hit is the shared row too: its title is in the red.
+    assert.equal(hit.props.title, 'Sign out');
+    assert.match(hit.props.titleClassName, /text-red-700/, 'in the button\'s own red');
   }
   // "sign" also finds Password (sign in), first; Sign out comes after the pages.
   const { mobile } = menuWith('sign');

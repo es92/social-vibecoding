@@ -50,6 +50,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { ChevronRightIcon } from '@/components/ui/icons';
+import { StateTag } from '@/components/ui/state-tag';
 
 import { useMessages } from '../../lib/i18n/react';
 import { agoStamp } from '../../lib/timestamp';
@@ -173,12 +174,11 @@ export function ActivityCardLink({ card }: { card: ActivityCard }): ReactNode {
         <b className="wip-item-title block truncate text-[15px] font-[650] leading-5">{name}</b>
         {stateLines(card).map(({ key, count }) => (
           key === 'needs' ? (
-            // What asks for the viewer, in the accent: the one line that is theirs to do.
-            // A count that asks for you is a tag in the standard look (`one-tag`,
-            // app.css ONE LOOK); the other looks keep the accent words.
-            <span key={key} className="one-tag block truncate text-[13px] font-semibold leading-[18px] text-violet-600 dark:text-violet-400" data-home-activity-line={key} data-ask="">
+            // What asks for the viewer: the one line that is theirs to do, the
+            // one tag in its needs-you state (@/components/ui/state-tag).
+            <StateTag key={key} state="needs" data-home-activity-line={key} data-ask="">
               {t(STATE_IDS[key], { count })}
-            </span>
+            </StateTag>
           ) : (
             <span key={key} className="block truncate text-[13px] leading-[18px] text-zinc-500 dark:text-zinc-400" data-home-activity-line={key}>
               {t(STATE_IDS[key], { count })}

@@ -44,7 +44,7 @@ import { CheckIcon, ChevronRightIcon, PencilSquareIcon, PlusIcon, SearchIcon, XI
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
-import { ActionButton, DevCard, StatusPill } from '../card/dev-card';
+import { ActionButton, ChangeTag, DevCard } from '../card/dev-card';
 import { useInlineImageViewer } from '../../image-viewer/image-viewer';
 import { topicHeadStore, TopicPageContext } from './topic-store';
 import { askFix, useChecksExplanation } from './failed-checks';
@@ -1350,7 +1350,7 @@ function VoteTally({ v }: { v: NonNullable<StepRow['vote']> }): ReactNode {
   return (
     <div className="dev-step-vote">
       <span className="dev-step-vote-bar" aria-hidden="true"><i style={{ width: `${pct}%` }} /></span>
-      {v.pill ? <StatusPill s={v.pill} inline /> : null}
+      {v.pill ? <ChangeTag s={v.pill} /> : null}
       <span className="dev-step-vote-tally">{t('project:topic.steps.voteTally', { yes: v.yes, no: v.no })}</span>
       {v.was ? <span className="dev-step-vote-was">{v.was}</span> : null}
     </div>

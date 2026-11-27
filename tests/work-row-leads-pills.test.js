@@ -94,7 +94,8 @@ test('a change\'s line under a request wears the row\'s pill, never "Vote · 0/2
   assert.match(held, /Taking screenshots/);
   assert.doesNotMatch(held, /Vote · 0\/2/);
   assert.match(held, /data-thread-change-status="needs_vote"/, 'the attribute stays the live vote\'s key');
-  assert.match(line(failing()), /gc-vote-count-blocked/);
+  // A blocked state is the one tag, plain (dev-card.tsx ChangeTag): no red tone of its own.
+  assert.match(line(failing()), /data-state-tag="plain" class="one-tag one-tag-plain"/);
   assert.match(line(upForVote()), /Vote · 0\/2/, 'up for a vote: the vote\'s own pill');
   assert.match(line(null), /Vote · 0\/2/);
 });
@@ -130,7 +131,7 @@ test('a competing change folded under the ballot wears its row\'s pill too', () 
   assert.doesNotMatch(held, /Vote · 0\/2/, 'never a vote it is not open for');
   assert.match(held, /data-thread-change-status="needs_vote"/, 'the attribute stays the live vote\'s key');
   assert.match(folded(syncing()), /Syncing with main/);
-  assert.match(folded(failing()), /gc-vote-count-blocked/);
+  assert.match(folded(failing()), /data-state-tag="plain" class="one-tag one-tag-plain"/);
   assert.match(folded(upForVote()), /Vote · 0\/2/, 'up for a vote: the vote\'s own pill');
   assert.match(folded(null), /Vote · 0\/2/);
 });
@@ -163,7 +164,7 @@ test('the request\'s bar pill is its row\'s word and tone, whatever its thread\'
   assert.equal(stopped.tone, 'blocked');
   const drawn = bar(stopped);
   assert.match(drawn, /data-request-status="stopped"/);
-  assert.match(drawn, /gc-vote-count-blocked/);
+  assert.match(drawn, /data-state-tag="plain" class="one-tag one-tag-plain"/, 'the one tag, plain: its words say it stopped');
   assert.ok(drawn.includes(message('core:work.reason.fixStopped')), drawn);
 
   // Its screenshots are being taken: the row's word, its line on hover.

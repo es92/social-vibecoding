@@ -377,7 +377,7 @@ test('the change bar publishes the page\'s pill and its ⋯ key for the column b
     'and nothing is published where the page keeps its own bar');
 });
 
-test('the header shows the status pill beside "Change #N", in the card\'s capsule form', () => {
+test('the header shows the status pill beside "Change #N", as the one tag', () => {
   const head = 'frontend/src/features/dev-board/topic/change-head.tsx';
   const failed = renderComponent(head, 'ChangeBar', {
     v: view({ tier: 0, key: 'delivery_failed', label: message('changes:badge.pill.failed'), tone: 'blocked',
@@ -388,20 +388,22 @@ test('the header shows the status pill beside "Change #N", in the card\'s capsul
   // title under it is the change's own (its number until it has one).
   assert.match(failed, /<div class="messages-thread-kicker min-w-0" data-change-kicker="">Change #81<\/div><span class="shrink-0" data-change-status="delivery_failed">/);
   assert.match(failed, /<div class="messages-thread-name min-w-0"><span class="dev-thread-bar-title">Change #81<\/span><\/div>/);
-  assert.match(failed, /<span class="shrink-0" data-change-status="delivery_failed"><span class="gc-vote-count gc-vote-count-blocked dev-status-pill"/);
-  assert.doesNotMatch(failed, /dev-status-pill-block|dev-status-pill-vote/, 'the capsule form, not the board card\'s bar');
+  // The one tag (@/components/ui/state-tag, dev-card.tsx ChangeTag): a
+  // change that could not go live is plain, its words saying so; no red tone.
+  assert.match(failed, /<span class="shrink-0" data-change-status="delivery_failed"><span data-state-tag="plain" class="one-tag one-tag-plain"/);
+  assert.doesNotMatch(failed, /dev-status-pill-block|dev-status-pill-vote/, 'a tag, not the board card\'s bar');
   assert.match(failed, new RegExp(`>${message('changes:badge.pill.failed')}<`));
   assert.match(failed, /title="This change was approved, but the app failed to rebuild with it\."/);
-  // A live change reads "✓ Live" in the ok tone; no pill, no attribute.
+  // A live change reads "✓ Live", plain.
   const live = renderComponent(head, 'ChangeBar', {
     v: view({ tier: 0, key: 'deployed', label: message('changes:badge.pill.live'), tone: 'ok' }),
     menuKey: '',
   });
-  assert.match(live, /data-change-status="deployed"[^>]*><span class="gc-vote-count gc-vote-count-ok dev-status-pill"/);
+  assert.match(live, /data-change-status="deployed"[^>]*><span data-state-tag="plain" class="one-tag one-tag-plain"/);
   assert.match(live, new RegExp(`>${message('changes:badge.pill.live')}<`));
   // Being built or closed: the header is as it was.
   const none = renderComponent(head, 'ChangeBar', { v: view(null), menuKey: '' });
-  assert.doesNotMatch(none, /data-change-status|gc-vote-count/);
+  assert.doesNotMatch(none, /data-change-status|data-state-tag/);
   assert.match(none, /<div class="messages-thread-name min-w-0"><span class="dev-thread-bar-title">Change #81<\/span><\/div>/);
   // #5683: a change being voted on keeps its pill beside the title, as it
   // always did (snait asked for it back). The Votes card under the title
@@ -410,7 +412,7 @@ test('the header shows the status pill beside "Change #N", in the card\'s capsul
     const vote = renderComponent(head, 'ChangeBar', {
       v: view({ tier: 4, key, label: 'Goes live in ~2 h', tone: 'ok' }), menuKey: '',
     });
-    assert.match(vote, new RegExp(`<span class="shrink-0" data-change-status="${key}"><span class="gc-vote-count gc-vote-count-ok dev-status-pill"`), `${key} keeps its pill`);
+    assert.match(vote, new RegExp(`<span class="shrink-0" data-change-status="${key}"><span data-state-tag="plain" class="one-tag one-tag-plain`), `${key} keeps its pill`);
     assert.match(vote, />Goes live in ~2 h</);
   }
 });

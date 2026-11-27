@@ -64,8 +64,9 @@ COPY public ./public
 RUN --mount=type=bind,from=asset-deps,source=/build/frontend/node_modules,target=/build/frontend/node_modules,rw \
     node scripts/build-tailwind.js
 
-# The legacy scripts and app.css as the image serves them: without their
-# comments and indentation, names and paths unchanged (#6798). After
+# The legacy scripts, app.css and the kit (the bridge, native.js and
+# native.css) as the image serves them: without their comments and
+# indentation, names and paths unchanged (#6798, #7165). After
 # Tailwind, which scans public/js as it is written, and above the commit id,
 # which it does not read: a commit that left these files alone reuses it.
 COPY scripts/minify-legacy-assets.js ./scripts/minify-legacy-assets.js

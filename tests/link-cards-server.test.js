@@ -203,6 +203,27 @@ test('a change named by its pull request number is the same card, at that addres
   );
 });
 
+test('a shared change is named as every other screen names it: its pull request first', async () => {
+  // The share card led with the session's old name while the board, Needs
+  // you and the vote card read the pull request's title (the one model of a
+  // change, frontend/src/features/dev-board/card/change.ts).
+  const named = (row) => {
+    const base = fakePool();
+    return {
+      query: async (sql, params) => {
+        const out = await base.query(sql, params);
+        return /FROM chat_sessions cs LEFT JOIN users/.test(sql) && out.rows[0] ? { rows: [{ ...out.rows[0], ...row }] } : out;
+      },
+    };
+  };
+  const card = (row) => sharedObjects.hydrateLink(named(row), viewer, { type: 'proposal', app_slug: 'open', session_id: 41 });
+  assert.equal((await card({ session_title: 'make the button blue pls', pr_title: 'Blue button' })).title, 'Blue button');
+  assert.equal((await card({ session_title: 'make the button blue pls', proposed_pr_title: 'Blue button' })).title, 'Blue button',
+    'a title chosen before the pull request outranks the session\'s name (#6124)');
+  assert.equal((await card({ session_title: 'Sort by date' })).title, 'Sort by date');
+  assert.equal((await card({ session_title: null })).title, 'Change #41');
+});
+
 test('a request is the issue card, read through the same public GitHub read', async (t) => {
   const original = github.fetchPublicIssue;
   t.after(() => { github.fetchPublicIssue = original; });

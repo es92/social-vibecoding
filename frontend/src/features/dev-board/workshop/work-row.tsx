@@ -58,11 +58,12 @@ import {
   BallotIcon, ChatBubbleTailIcon, CheckIcon, EyeIcon, LockIcon, PencilSquareIcon,
   SparklesIcon,
 } from '@/components/ui/icons';
+import { StateTag } from '@/components/ui/state-tag';
 
 import { RichMessage, useMessages } from '../../../lib/i18n/react';
 import { t as translate } from '../../../lib/i18n/runtime';
-import { CategoryChip, ChatCount, ChecksBar, MenuTrigger, VoteButton } from '../card/dev-card';
-import { itemHooks, LiveTally, openHref, RowBand, StatePill, voteSpecs } from '../card/fold';
+import { CategoryChip, ChangeTag, ChatCount, ChecksBar, MenuTrigger, VoteButton } from '../card/dev-card';
+import { itemHooks, LiveTally, openHref, RowBand, voteSpecs } from '../card/fold';
 import type { DevCardModel, ListRow, RowBrief, RowTag, StatusPillState } from '../card/model';
 
 export type CardRow = Extract<ListRow, { t: 'card' }>;
@@ -194,17 +195,26 @@ export const TILE: Record<RowBrief['kind'], typeof CheckIcon> = {
   vote: BallotIcon,
 };
 
+/**
+ * A small tag for what is happening on an item ("Picked up · zura", "Checks
+ * passed", AppView._workshopBrief): the one tag (@/components/ui/state-tag),
+ * turning while the work is under way (`run`, and Homeroom bot's own `bot`),
+ * plain otherwise. `dev-ws-tag` stays for the declared checks that name it.
+ */
 function Tag({ t }: { t: RowTag }): ReactNode {
   return (
-    <span className="dev-ws-tag" data-tone={t.tone} title={t.title || (t.short ? t.label : undefined)}>
-      {t.tone === 'run' || t.tone === 'bot' ? <span className="dc-status-spinner-arc" aria-hidden="true" /> : null}
+    <StateTag
+      state={t.tone === 'run' || t.tone === 'bot' ? 'working' : 'plain'}
+      className="dev-ws-tag"
+      title={t.title || (t.short ? t.label : undefined)}
+    >
       {t.tone === 'ok' ? <CheckIcon aria-hidden="true" /> : null}
       {t.glyph === 'eye' ? <EyeIcon aria-hidden="true" /> : null}
       {t.glyph === 'lock' ? <LockIcon aria-hidden="true" /> : null}
       {t.glyph === 'bot' ? <SparklesIcon aria-hidden="true" /> : null}
       {t.short ? <><span aria-hidden="true">{t.short}</span><span className="sr-only">{t.label}</span></> : t.label}
       {t.progress ? <ChecksBar progress={t.progress} /> : null}
-    </span>
+    </StateTag>
   );
 }
 
@@ -223,7 +233,7 @@ function Votes({ card, pill = null }: { card: DevCardModel; pill?: StatusPillSta
   if (!s && !specs) return null;
   return (
     <span className="dev-ws-wvote" data-ws-vote="">
-      {s ? <StatePill s={s} className="dev-ws-wvote-state" /> : null}
+      {s ? <ChangeTag s={s} detail={false} className="dev-ws-wvote-state" /> : null}
       {specs ? <span className="dev-ws-wvote-btn"><VoteButton yes={specs.yes} no={specs.no} /></span> : null}
     </span>
   );
@@ -310,7 +320,7 @@ export function WorkRow({
         ) : null}
         {status ? (
           <span className="dev-ws-wrow-status">
-            {live && pill ? <StatePill s={pill} className="dev-ws-wrow-live" /> : null}
+            {live && pill ? <ChangeTag s={pill} detail={false} className="dev-ws-wrow-live" /> : null}
             {live ? <LiveTally s={pill} /> : null}
             {chip}
             {chat}

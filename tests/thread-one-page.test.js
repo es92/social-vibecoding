@@ -141,7 +141,7 @@ test('D1: a change\'s line has its pill and its own ⋯, and its title is no doo
   const src = read(`${TOPIC}/thread-changes.tsx`);
   assert.match(src, /const key = view\?\.card\.rail\?\.menuKey \|\| '';/, 'its view\'s own rows (AppView._topicCard registers them)');
   assert.match(src, /<button type="button" className="dev-thread-change-menu" data-card-menu=\{key\} aria-haspopup="true"/);
-  assert.match(src, /data-thread-change-status=\{status\.key\}><StatusPill s=\{pill\} inline \/>/);
+  assert.match(src, /data-thread-change-status=\{status\.key\}><ChangeTag s=\{pill\} \/>/);
   assert.match(src, /<h3 [^>]*data-thread-change-title=\{item\.id\}>/);
   assert.doesNotMatch(src, /openTopic\('proposal'/, 'nothing here opens a change page any more');
   assert.doesNotMatch(src, /data-thread-earlier/, 'the fold of its earlier replies is gone: they are in the discussion');

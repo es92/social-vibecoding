@@ -42,8 +42,10 @@ test('settings renders clear user-facing category labels and descriptions', () =
     const id = `settings:alerts.push.${key.replace(/_(\w)/g, (_, c) => c.toUpperCase())}`;
     const row = block.slice(block.indexOf(`data-mobile-push-category="${key}"`));
     assert.match(block, new RegExp(`data-mobile-push-category="${key}"`));
-    assert.ok(row.slice(0, 600).includes(`>{t('${id}.label')}<`), `${key}: its row shows its label`);
-    assert.ok(row.slice(0, 600).includes(`>{t('${id}.description')}<`), `${key}: and its description`);
+    // The rows are the shared ListRow since the Settings rows moved onto it:
+    // the label is the row's title and the description its subtitle.
+    assert.ok(row.slice(0, 600).includes(`title={t('${id}.label')}`), `${key}: its row shows its label`);
+    assert.ok(row.slice(0, 600).includes(`subtitle={t('${id}.description')}`), `${key}: and its description`);
     assert.equal(message(`${id}.label`), label);
   }
   assert.match(message('settings:alerts.push.directInteractions.description'), /Mentions, replies to your messages, and friend requests/);
@@ -51,6 +53,15 @@ test('settings renders clear user-facing category labels and descriptions', () =
   assert.match(message('settings:alerts.push.lightweightActivity.description'), /^Reactions on your work\.$/);
   assert.doesNotMatch(block, />\s*(mention|reply|stale_pr|check_failed|pr_proposed|spec_shared)\s*</,
     'internal notification identifiers never become visible labels');
+  // A row's words are its title and subtitle props now, so the check above
+  // would see none of them: every one of those is a catalog message instead.
+  const rows = block.slice(0, block.indexOf('data-mobile-push-status'));
+  const words = rows.match(/\b(?:title|subtitle)=[^\n]*/g) || [];
+  assert.ok(words.length >= CATEGORIES.length * 2, 'every row names itself and says what it covers');
+  for (const said of words.slice(1)) {
+    assert.match(said, /^(?:title|subtitle)=\{t\('settings:alerts\.push\.\w+\.(?:label|description)'\)\}$/,
+      `a row's words come from the catalog, never an identifier: ${said}`);
+  }
 });
 
 function harness(saved) {

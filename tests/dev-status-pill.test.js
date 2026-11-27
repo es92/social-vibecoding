@@ -830,7 +830,7 @@ test('an armed set-aside wins over the at-least-N approvals pill, in both pills'
   assert.equal(state.tone, 'blocked');
 });
 
-test('the pill is FULL WIDTH on a card, and a capsule in the detail head', () => {
+test('the pill is FULL WIDTH on a card, and the one tag in the detail head', () => {
   const AppView = makeAppView();
   const pr = PR({ my_vote: 'yes', check_state: 'passing', yes_count: 1, votes_required: 4 });
   // Default (the board): a block that spans the card's content width, so the
@@ -838,15 +838,18 @@ test('the pill is FULL WIDTH on a card, and a capsule in the detail head', () =>
   // capsule wedged between chips.
   const block = pillHtml(AppView, pr);
   assert.match(block, /dev-status-pill-block/);
-  // opts.inline keeps the capsule for the detail head, which already has the
-  // full page width — a second full-width bar there is just a rule.
+  assert.match(block, /gc-vote-fill gc-vote-fill-yes" style="width:25%/, 'the bar scales with the tally');
+  // opts.inline is the one tag (dev-card.tsx ChangeTag, @/components/ui/
+  // state-tag): where a change's state is a tag, it is the same tag as
+  // every other state's, its words the server's and no fill of its own.
   const inline = pillHtml(AppView, pr, { inline: true });
-  assert.doesNotMatch(inline, /dev-status-pill-block/);
-  assert.match(inline, /gc-vote-count /);
-  // Both forms keep the same fill markup, so the bar scales with the tally.
-  for (const html of [block, inline]) {
-    assert.match(html, /gc-vote-fill gc-vote-fill-yes" style="width:25%/);
-  }
+  assert.doesNotMatch(inline, /dev-status-pill-block|gc-vote-count|gc-vote-fill/);
+  assert.match(inline, /^<span data-state-tag="plain" class="one-tag one-tag-plain" data-pill-key="tally"[^>]*><span class="one-tag-words">1 \/ 4<\/span><\/span>$/);
+  // Its three states: turning while under way, strong while it waits on you.
+  const going = pillHtml(AppView, PR({ status: 'merging' }), { inline: true });
+  assert.match(going, /^<span data-state-tag="working" class="one-tag one-tag-plain one-tag-working"[^>]*><span class="dc-status-spinner-arc" aria-hidden="true"><\/span>/);
+  const owed = pillHtml(AppView, PR({ check_state: 'passing', yes_count: 0, votes_required: 2 }), { inline: true });
+  assert.match(owed, /^<span data-state-tag="needs" class="one-tag one-tag-strong" data-pill-key="needs_vote"/);
 });
 
 test('the fill still stretches the whole pill at every level', () => {
@@ -1145,4 +1148,49 @@ test('the main_healthy gate carries "Resume merges" for an admin, and for nobody
   }
   // Never on any other gate, whatever its state.
   assert.equal(admin._requirementAction({ key: 'checks', state: 'blocked', actor: 'author' }, { isAdmin: true }), null);
+});
+
+// ── One tag for where something stands ──────────────────────────────────
+//
+// How far along a change or a request is used to be drawn by about seven
+// tags of their own, each in its own tones: the inline pill on a change's
+// and a request's page, the rows' state pill (fold.tsx StatePill), the
+// Workshop rows' small tags, the Homeroom bot tab's row-end pills, This
+// week's tags, the hub's count pills and Home's. They are one part now,
+// in three states, drawn once.
+test('the one tag has three states, drawn once, and no surface keeps a tag look of its own', () => {
+  const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
+  const { StateTag } = loadTsx('frontend/@/components/ui/state-tag.tsx');
+  const html = (props) => renderToHtml(createElement(StateTag, props, 'Words'));
+  assert.equal(html({}), '<span data-state-tag="plain" class="one-tag one-tag-plain">Words</span>', 'plain by default');
+  assert.equal(html({ state: 'working' }),
+    '<span data-state-tag="working" class="one-tag one-tag-plain one-tag-working"><span class="dc-status-spinner-arc" aria-hidden="true"></span>Words</span>',
+    'working is plain with the turning mark');
+  assert.equal(html({ state: 'needs' }), '<span data-state-tag="needs" class="one-tag one-tag-strong">Words</span>');
+  assert.match(html({ state: 'needs', className: 'cm-card-votes', 'data-x': '1' }), /^<span data-state-tag="needs" class="one-tag one-tag-strong cm-card-votes" data-x="1">/,
+    'a caller adds its hooks, never a colour');
+  const src = read('frontend/@/components/ui/state-tag.tsx');
+  assert.match(src, /plain: 'one-tag-plain',\n\s*working: 'one-tag-plain one-tag-working',\n\s*needs: 'one-tag-strong',\n\s*\},/, 'three states and no fourth');
+
+  // Drawn once, in ONE LOOK · SHARED PARTS.
+  const css = read('public/css/app.css');
+  assert.match(css, /html:root \.one-tag \{ display: inline-flex;[^}]*background: transparent; color: var\(--one-ink-2\);[^}]*box-shadow: inset 0 0 0 1px var\(--one-field-line\);/);
+  assert.match(css, /html:root \.one-tag\.one-tag-strong \{ background: var\(--one-tag-strong-bg\); color: var\(--one-tag-strong-ink\); box-shadow: none; \}/);
+  assert.doesNotMatch(css, /one-tag-(?:grey|quiet)|--one-tag-bg|--one-tag-ink\b/, 'the grey, quiet and blue tags are gone');
+  assert.doesNotMatch(css, /\.dev-ws-tag\[data-tone|\.dev-ws-hrow-tag\[data-tone|\.dev-ws-row-state|\.dev-ws-foryou-pill/, 'no surface repaints its tag by tone');
+  // Each surface draws it.
+  const uses = {
+    'frontend/src/features/dev-board/card/dev-card.tsx': /<StateTag\n\s*state=\{tagStateOf\(s\)\}/,
+    'frontend/src/features/dev-board/card/fold.tsx': /<ChangeTag s=\{afterVote\} detail=\{false\} \/>/,
+    'frontend/src/features/dev-board/workshop/work-row.tsx': /<StateTag\n\s*state=\{t\.tone === 'run' \|\| t\.tone === 'bot' \? 'working' : 'plain'\}/,
+    'frontend/src/features/dev-board/workshop/week-pages.tsx': /<StateTag state="working" className="dev-ws-hrow-tag">/,
+    'frontend/src/features/dev-board/workshop/hub-cards.tsx': /<StateTag state="needs">/,
+    'frontend/src/features/ai/lists.tsx': /<StateTag state="needs" data-ai-row-end="act">/,
+    'frontend/src/features/home/needs-you-card.tsx': /<StateTag key=\{key\} state="needs"/,
+    'frontend/src/features/communities/card.tsx': /<StateTag state="needs" className="cm-card-votes"/,
+  };
+  for (const [file, re] of Object.entries(uses)) assert.match(read(file), re, file);
+  for (const file of ['request-head', 'change-head', 'governance-head', 'thread-changes', 'topic-head']) {
+    assert.doesNotMatch(read(`frontend/src/features/dev-board/topic/${file}.tsx`), /<StatusPill /, `${file}: a page's head wears the tag`);
+  }
 });

@@ -46,6 +46,7 @@
 import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 
 import { CheckIcon, PlusIcon } from '@/components/ui/icons';
+import { StateTag } from '@/components/ui/state-tag';
 
 import { bandWash, useIconMainColor } from '../../lib/community-color';
 import { RichMessage, useMessages } from '../../lib/i18n/react';
@@ -320,7 +321,7 @@ export function CommunityPageCard({ community, votes, editing, compact = false, 
   const named = tagged ? (
     <span className="cm-card-name-row">
       <span className="cm-card-name">{name}</span>
-      <span className="one-tag cm-card-votes" data-home-community-votes={String(votes)}>{tc('communities:row.toVote', { count: votes })}</span>
+      <StateTag state="needs" className="cm-card-votes" data-home-community-votes={String(votes)}>{tc('communities:row.toVote', { count: votes })}</StateTag>
     </span>
   ) : undefined;
   const face = (

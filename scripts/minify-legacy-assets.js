@@ -7,6 +7,10 @@
 // copy the image serves; a checkout keeps its readable files, and so do the
 // tests, which read these sources by path.
 //
+// The kit goes through it too (#7165, point 3): the bridge, native.js and
+// native.css are loaded by the shell on every first visit and by every app,
+// and were still 687 KB as written, about half of it comments.
+//
 // What it will not change:
 //   - names. No identifier is renamed: these are classic scripts that reach
 //     each other through top-level bindings (`App`, `AppView`, ...).
@@ -44,10 +48,21 @@ function scripts(publicDir) {
   return out;
 }
 
-// The shell's hand-written sheet. tailwind.css is compiled by its own build,
-// and native.css is the kit every app loads from its own versioned address,
-// which is not this step's to rewrite.
-const STYLESHEETS = ['css/app.css'];
+// The kit's hand-written scripts, by path: the bridge at both of its
+// addresses (the shell's and the one apps load, which a test holds to be one
+// file) and the native kit. Its address and its name stay as they are, so an
+// app's script tag and the worker's asset list still find it. snapdom.js and
+// the Tailwind runtime beside them are other people's builds, already
+// minified, and are left alone.
+const KIT_SCRIPTS = [
+  'usernode-bridge.js',
+  'usernode-bridge/v1/bridge.js',
+  'usernode-native/v1/native.js',
+];
+
+// The hand-written sheets: the shell's own and the kit's. tailwind.css is
+// compiled, and minified, by its own build.
+const STYLESHEETS = ['css/app.css', 'usernode-native/v1/native.css'];
 
 function minifyScript(esbuild, source) {
   return esbuild.transformSync(source, {
@@ -84,6 +99,10 @@ function minifyLegacyAssets({ publicDir = path.join(ROOT, 'public'), esbuild = l
     results.push({ file: path.relative(publicDir, file), before, after });
   };
   for (const file of scripts(publicDir)) one(file, minifyScript);
+  for (const rel of KIT_SCRIPTS) {
+    const file = path.join(publicDir, rel);
+    if (fs.existsSync(file)) one(file, minifyScript);
+  }
   for (const rel of STYLESHEETS) {
     const file = path.join(publicDir, rel);
     if (fs.existsSync(file)) one(file, minifyStylesheet);
@@ -98,4 +117,4 @@ if (require.main === module) {
   console.log(`[minify-legacy-assets] ${results.length} files, ${kb(sum('before'))} -> ${kb(sum('after'))}`);
 }
 
-module.exports = { minifyLegacyAssets, minifyScript, minifyStylesheet, loadEsbuild, STYLESHEETS };
+module.exports = { minifyLegacyAssets, minifyScript, minifyStylesheet, loadEsbuild, STYLESHEETS, KIT_SCRIPTS };

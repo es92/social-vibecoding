@@ -32,6 +32,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { SectionHeading } from '@/components/ui/field';
+import { GroupedList } from '@/components/ui/grouped-list';
 
 import { useMessages } from '../../../lib/i18n/react';
 import { useWindowEvent } from '../../../lib/legacy-dom';
@@ -187,8 +188,7 @@ export function PrivacySection() {
           <SectionHeading title={t('settings:privacy.discoverable.title')} blurbClassName="dark:text-zinc-400">
             {t('settings:privacy.discoverable.intro')}
           </SectionHeading>
-          {/* A neutral wrapper (looks v2): the kit's card round the switch row under a look. */}
-          <div className="ui-card">
+          <GroupedList className="mx-0">
           <PrivacySwitch
             id="settings-profile-discoverable"
             label={t('settings:privacy.discoverable.label')}
@@ -200,7 +200,7 @@ export function PrivacySection() {
               : 'settings:privacy.discoverable.descriptionOff')}
             onChange={(e) => { void save({ discoverable: e.currentTarget.checked }); }}
           />
-          </div>
+          </GroupedList>
         </div>
         <SaveStatus id="settings-contact-privacy-status" saved={saved} error={error} />
       </div>

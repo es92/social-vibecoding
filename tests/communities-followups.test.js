@@ -29,9 +29,12 @@ const route = require('../src/routes/workshop-overview');
 test('#3270, #3488: the feed\'s rows are a project\'s own Needs you rows, each carrying its project', () => {
   const reel = loadTsx('frontend/src/features/workshop/needs-reel.tsx');
   const app = { slug: 'my garden', name: 'Garden', icon_url: null, icon_emoji: null };
-  assert.equal(reel.plainSummary('## What\n\n- Adds **rating** sort\n- See [the docs](https://x.y)\n\n```js\nx()\n```'),
+  // The summary is flattened by the one model of a change, which the review
+  // flow reads too (it had a copy of its own, word for word).
+  const { plainSummary } = loadTsx('frontend/src/features/dev-board/card/change.ts');
+  assert.equal(plainSummary('## What\n\n- Adds **rating** sort\n- See [the docs](https://x.y)\n\n```js\nx()\n```'),
     'What Adds rating sort See the docs', 'a paragraph, not a document');
-  assert.equal(reel.plainSummary(null), '');
+  assert.equal(plainSummary(null), '');
   const [change, decision, unrevised] = reel.reelRows([
     { kind: 'proposal', id: 8, title: 'Sort', summary: '**Adds** a sort', author: 'ada', number: 12, epoch: 3, at: null, yes: 2, no: 1, app },
     { kind: 'governance', id: 9, title: '', summary: null, author: null, number: null, epoch: null, at: null, yes: null, no: null, app },

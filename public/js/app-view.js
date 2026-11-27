@@ -7417,7 +7417,7 @@ const AppView = {
         rows.push({
           label: PlatformI18n.t('changes:page.menu.askForChanges'), icon: 'generate',
           title: PlatformI18n.t('changes:page.menu.askForChangesTitle'),
-          act: () => AppView.askBotForChanges(item.id, item.session_title || item.pr_title || null, item.pr_number),
+          act: () => AppView.askBotForChanges(item.id, AppView._changeTitle(item), item.pr_number),
         });
         // Explore opens the same thread: one row for it, not two.
         for (let i = menu.length - 1; i >= 0; i -= 1) if (menu[i].askBot) menu.splice(i, 1);
@@ -9149,7 +9149,7 @@ const AppView = {
     return {
       changeId: Number(item.id),
       prNumber: parseInt(item.pr_number, 10) || null,
-      title: item.session_title || item.pr_title || null,
+      title: AppView._changeTitle(item),
     };
   },
 
@@ -9556,7 +9556,7 @@ const AppView = {
       if (AppView._showExplorePill(item) && !AppView.readOnly) {
         pills.push({
           key: 'explore', label: PlatformI18n.t('changes:card.actions.explore'), title: AppView.EXPLORE_CHAT_TITLE,
-          explore: item.id, exploreTitle: item.session_title || item.pr_title || null, exploreNumber: item.pr_number || null,
+          explore: item.id, exploreTitle: AppView._changeTitle(item), exploreNumber: item.pr_number || null,
         });
       }
       if (!AppView.readOnly && !isMerged && mine && item.status === 'promoted') {
@@ -17917,10 +17917,18 @@ const AppView = {
   // so a title with a quote or an ampersand read `&quot;` / `&amp;` on the
   // card.
   _sessionCardLabel(s) {
-    // #6124: a title chosen before the change has a pull request lands in
-    // proposed_pr_title, which outranks the session's old name on every
-    // card. A pull request's own title still comes first.
-    return String(s.pr_title || s.proposed_pr_title || s.session_title || s.branch_name || PlatformI18n.t('changes:session.fallbackTitle', { id: s.id }));
+    return String(AppView._changeTitle(s) || s.branch_name || PlatformI18n.t('changes:session.fallbackTitle', { id: s.id }));
+  },
+
+  // The name a change is known by on every screen, or null when it has none.
+  // #6124: a title chosen before the change has a pull request lands in
+  // proposed_pr_title, which outranks the session's old name on every card;
+  // a pull request's own title still comes first. The share card
+  // (src/services/shared-objects.js changeTitle) and the Needs you feed read
+  // the same order, and what a change carries to Homeroom bot or into a
+  // message is named this way too, so no two screens name it differently.
+  _changeTitle(s) {
+    return (s && (s.pr_title || s.proposed_pr_title || s.session_title)) || null;
   },
 
   // #1038: busy is read live from window.SessionState, falling back to the
@@ -19926,7 +19934,7 @@ const AppView = {
         askBot: true,
         icon: 'explore',
         title: AppView.EXPLORE_CHAT_TITLE,
-        act: () => AppView.askBotForChanges(pr.id, pr.session_title || pr.pr_title || null, pr.pr_number),
+        act: () => AppView.askBotForChanges(pr.id, AppView._changeTitle(pr), pr.pr_number),
       });
     }
     if (!ro && !pr.staging_url && pr.staging_error) {
@@ -19958,7 +19966,7 @@ const AppView = {
       icon: 'share',
       title: PlatformI18n.t('changes:proposal.menu.shareTitle'),
       act: () => AppView._shareCardToMessages({
-        type: 'proposal', sessionId: pr.id, title: pr.session_title || pr.pr_title || null,
+        type: 'proposal', sessionId: pr.id, title: AppView._changeTitle(pr),
       }),
     });
     const code = pr.pr_url

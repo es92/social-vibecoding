@@ -129,10 +129,11 @@ test('helper text is 13px in rem and lighter in the dark theme (#5926)', () => {
   // lifted. Every other small line wears the shared helper style.
   assert.doesNotMatch(html, /class="(?![^"]*\bmb-3\b)[^"]*\btext-xs text-zinc-500/, 'no helper line keeps the 12px size');
   const count = html.split(HELP).length - 1;
-  // #6044 adds two: the Email & texts block's two switches' lines. Usage
-  // data adds one: what is kept, recorded and never recorded, and where to
-  // write to be left out. It has no switch.
-  assert.equal(count, 6, `both choices, the three switches and what usage data keeps wear the helper style, found ${count}`);
+  // Usage data adds one: what is kept, recorded and never recorded, and
+  // where to write to be left out. It has no switch. The three switches'
+  // lines are their rows' second lines since the switches became the shared
+  // ListRow: the row's own size, in rem as this rule asks, and its dark ink.
+  assert.equal(count, 3, `both choices and what usage data keeps wear the helper style, found ${count}`);
 });
 
 test('both switches are announced as switches and say Off before the account is read (#5926)', () => {
@@ -145,7 +146,8 @@ test('both switches are announced as switches and say Off before the account is 
     assert.match(input[0], /class="un-switch"/);
     assert.doesNotMatch(input[0], /checked/);
   }
-  const off = `<span aria-hidden="true" class="ms-2 text-[0.8125rem] text-zinc-500 dark:text-zinc-400">${message('settings:privacy.state.off')}</span>`;
+  // In the row's semibold title, so the word says its normal weight itself.
+  const off = `<span aria-hidden="true" class="ms-2 text-[0.8125rem] font-normal text-zinc-500 dark:text-zinc-400">${message('settings:privacy.state.off')}</span>`;
   assert.equal(html.split(off).length - 1, 3, 'every switch, the two Email & texts ones (#6044) too');
   assert.ok(!html.includes(`>${message('settings:privacy.state.on')}</span>`));
   assert.doesNotMatch(html, /id="settings-usage-analytics"/, 'usage data has no switch');
@@ -215,7 +217,9 @@ test('the switch\'s name stays its label when the description joins the label (#
     describedBy: 's-help', description: 'Longer words',
   }));
   assert.match(html.match(/<input[^>]*>/)[0], /aria-label="Name"/);
-  assert.match(html, /<span id="s-help" class="[^"]*">Longer words<\/span>/);
+  // The description is the shared row's second line (its classes are the
+  // row's), wrapped in the span that carries its id.
+  assert.match(html, /<span id="s-help">Longer words<\/span>/);
   const bare = renderToHtml(createElement(PrivacySwitch, {
     id: 's', label: 'Name', checked: false, disabled: false, onChange: () => {},
   }));

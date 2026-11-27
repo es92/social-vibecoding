@@ -42,7 +42,9 @@ test('the change page hands the change over with its project', () => {
   assert.match(fn, /appSlug: app\.slug \|\| App\.currentApp \|\| undefined,/);
   assert.match(fn, /number: Number\(number\) > 0 \? Number\(number\) : undefined,/, 'its pull request\'s number, for the thread about it');
   assert.match(fn, /messages\.openBot\(reference\)/);
-  assert.match(view, /act: \(\) => AppView\.askBotForChanges\(item\.id, item\.session_title \|\| item\.pr_title \|\| null, item\.pr_number\),/);
+  // The change carries the name it has on every screen (AppView._changeTitle),
+  // not its session's old one: the one model of a change's title order.
+  assert.match(view, /act: \(\) => AppView\.askBotForChanges\(item\.id, AppView\._changeTitle\(item\), item\.pr_number\),/);
 });
 
 test('openBot opens the thread about a change it can name, and carries any other item into a new chat', async () => {

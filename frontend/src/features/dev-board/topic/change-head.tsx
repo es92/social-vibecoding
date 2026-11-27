@@ -56,7 +56,7 @@ import { swatchFor } from '../../group-chat/swatch';
 import { AppIconContent, appIconKind } from '../../apps/app-card-view';
 import { askToFit, upstreamAction } from '../../versions/upstream';
 import { useInlineImageViewer } from '../../image-viewer/image-viewer';
-import { ActionButton, StatusPill, TitleContent, TitleEditButton, VoteButton, isVoteSpec } from '../card/dev-card';
+import { ActionButton, ChangeTag, TitleContent, TitleEditButton, VoteButton, isVoteSpec } from '../card/dev-card';
 import type { ActionSpec, DevCardModel, StatusPillState, TitleSpec } from '../card/model';
 import { ThreadHeadCard } from './thread-head';
 import type { ChangeGateView, ChangeMergeView, ChangeThreadView, ChangeUpstreamView, FixChecksView, TopicBody } from './model';
@@ -146,7 +146,7 @@ export function ChangeBar({ v, menuKey, detailsId = null, titleSpec = null }: {
           <div className="messages-thread-kicker min-w-0" data-change-kicker="">{title}</div>
           {pill ? (
             <span className="shrink-0" data-change-status={pill.key}>
-              <StatusPill s={pill} inline />
+              <ChangeTag s={pill} />
             </span>
           ) : null}
         </div>

@@ -706,6 +706,90 @@ test('parallel packs share one refresh, and a failed refresh keeps the first err
   assert.equal(runtime.getLanguage(), 'en');
 });
 
+// Request 7165: the list is 47 KB on every load, and English needs none of
+// it, so a page whose device, saved choice and last language shown are all
+// English boots without it.
+test('a page in English boots without the list; anything else asks at boot as before', (t) => {
+  const { bootWantsLive } = loadTsx('frontend/src/lib/i18n/core.ts');
+  const wants = (deviceLanguages, stored = {}) => {
+    browser(t, { root: ROOT, deviceLanguages, storage: new Map(Object.entries(stored)) });
+    return bootWantsLive();
+  };
+  assert.equal(wants(['en-US']), false);
+  assert.equal(wants(['en-GB', 'en']), false, 'English in any region');
+  assert.equal(wants(['en-US'], { 'homeroom:language:shown': 'en', [DEVICE_KEY]: 'en' }), false);
+  assert.equal(wants(['es-AR']), true);
+  assert.equal(wants(['en-US', 'fr']), true, 'a second language may be the one the list adds');
+  assert.equal(wants(['en-US'], { [DEVICE_KEY]: 'es' }), true, 'a choice made on this device');
+  assert.equal(wants(['en-US'], { 'homeroom:language:shown': 'es' }), true, 'the account\'s language, last shown here');
+  assert.equal(wants([]), true, 'a device that names no language is not known to be English');
+  const runtime = read('frontend/src/lib/i18n/runtime.ts');
+  assert.match(runtime, /if \(bootWantsLive\(\)\) runtime\.waitForLive\(loadLiveLanguages\(\)\);\n {2}else runtime\.deferLive\(\);/);
+});
+
+test('a page that put the list off asks for it once, when a language other than English is first wanted', async (t) => {
+  const { page, live, runtime } = liveSetup(t);
+  let asked = 0;
+  runtime.setLiveRefresh(async () => { asked += 1; return runtime.setLiveCatalogs(live); });
+  runtime.deferLive();
+  await runtime.applySessionLanguage(null);
+  await runtime.applySessionLanguage({ id: 1, locale: null });
+  await runtime.applySessionLanguage({ id: 1, locale: 'en' });
+  assert.equal(asked, 0, 'English never asks');
+  assert.equal(page.requests.length, 0);
+  await runtime.applySessionLanguage({ id: 1, locale: 'es' });
+  await until(() => runtime.getLanguage() === 'es', 'the session to show Spanish');
+  assert.equal(asked, 1, 'the account\'s language is one only the list has');
+  const switches = page.events.filter((event) => event.type === 'homeroom:language-changed' && !event.detail.namespace);
+  assert.deepEqual(switches.map((event) => event.detail.language), ['es'], 'straight to Spanish');
+  await runtime.applySessionLanguage({ id: 1, locale: 'es' });
+  assert.equal(runtime.ensureLive(true), false, 'the list is in hand');
+  assert.equal(asked, 1);
+});
+
+test('a language the build ships waits for the list a deferred page asks for, so its packs are the newest', async (t) => {
+  const fixture = catalogFixture(t);
+  const { catalogs } = fixture.build();
+  const page = browser(t, { root: fixture.root });
+  const runtime = runtimeFor(catalogs);
+  let asked = 0;
+  runtime.setLiveRefresh(async () => { asked += 1; return runtime.setLiveCatalogs({ languages: catalogs.languages, manifest: catalogs.manifest }); });
+  runtime.deferLive();
+  await runtime.applySessionLanguage({ id: 1, locale: 'es' });
+  assert.equal(runtime.getLanguage(), 'es');
+  assert.equal(asked, 1);
+  assert.equal(page.requests.length, 1, 'its pack was fetched once, after the list');
+});
+
+test('Settings opening asks for the list a page put off, and again after an answer it could not use', async (t) => {
+  const { live, runtime } = liveSetup(t);
+  let asked = 0;
+  let answer = null;
+  runtime.setLiveRefresh(async () => { asked += 1; return runtime.setLiveCatalogs(answer); });
+  runtime.deferLive();
+  assert.equal(runtime.ensureLive(true), true);
+  assert.equal(runtime.ensureLive(true), false, 'one ask at a time');
+  await until(() => runtime.ensureLive() === false && asked === 1 && runtime.getLanguages().length === 1);
+  await new Promise((resolve) => { setTimeout(resolve, 5); });
+  // A session does not ask again after a list that could not be used.
+  await runtime.applySessionLanguage({ id: 1, locale: 'es' });
+  assert.equal(asked, 1);
+  assert.equal(runtime.getLanguage(), 'en');
+  answer = live;
+  assert.equal(runtime.ensureLive(true), true, 'Settings does');
+  await until(() => runtime.getLanguages().length === 2, 'the list to arrive');
+  assert.deepEqual(runtime.getLanguages().map((language) => language.tag), ['en', 'es']);
+  assert.equal(asked, 2);
+  await new Promise((resolve) => { setTimeout(resolve, 5); });
+  assert.equal(runtime.ensureLive(true), false, 'nothing more to ask for');
+  const shell = read('frontend/src/lib/i18n/runtime.ts');
+  assert.match(shell, /export function ensureLiveLanguages\(\): void \{\n {2}runtime\.ensureLive\(true\);\n\}/);
+  assert.match(shell, /\n {2}ensureLiveLanguages,\n/, 'the legacy Settings module reaches it');
+  const settings = read('frontend/src/features/settings/settings.js');
+  assert.match(settings, /_appendLiveLanguages\(select\) \{\n(?:\s+\/\/.*\n)+\s+if \(Settings\._open\) \{\n\s+try \{ window\.PlatformI18n\?\.ensureLiveLanguages\?\.\(\); \}/,
+    'asked when the Language pane is drawn with Settings open; the pane lists what arrives');
+});
+
 test('the shell asks for the list once it boots, and Settings lists what it adds', () => {
   const runtime = read('frontend/src/lib/i18n/runtime.ts');
   assert.match(runtime, /fetch\('\/api\/languages', \{ credentials: 'same-origin', signal: controller\.signal, redirect: 'error', cache: 'no-cache' \}\)/,

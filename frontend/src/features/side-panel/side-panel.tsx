@@ -72,7 +72,7 @@ import { useStoreState } from '../../lib/use-store-state';
 import { AppIconContent, appIconKind } from '../apps/app-card-view';
 import { pageLinkFor } from '../ai/door';
 import { useShowListButton } from '../ai/list-closed';
-import { StatusPill } from '../dev-board/card/dev-card';
+import { ChangeTag } from '../dev-board/card/dev-card';
 import type { StatusPillState } from '../dev-board/card/model';
 import { copyToClipboard } from '../message-actions/clipboard';
 import { SidePanel as controller, type PanelMenuRow } from './controller';
@@ -318,7 +318,7 @@ function PanelHeading({ route, place, reported, label, head }: {
             </span>
             {pill ? (
               <span className="side-panel-place-status" data-side-panel-status={pill.key}>
-                <StatusPill s={pill} inline />
+                <ChangeTag s={pill} />
               </span>
             ) : null}
           </span>

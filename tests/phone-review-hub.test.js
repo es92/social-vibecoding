@@ -92,7 +92,7 @@ test('#91: a door\'s one pill is on its title line, so the line under it has the
   assert.equal((src.match(/titleClassName=\{TITLE_WITH_PILL\}/g) || []).length, 4, 'Needs you (both), the Discussion and each topic');
   assert.doesNotMatch(src.slice(src.indexOf('function NeedsRow'), src.indexOf('export const HUB_TOPICS_SHOWN')), /trailing=/, 'no pill beside the two lines');
   assert.match(CSS, /\.dev-ws-foryou-title \{ display: flex; align-items: center; gap: 8px; \}/);
-  assert.match(CSS, /\.dev-ws-foryou-title > \.dev-ws-foryou-pill \{ margin-inline-start: auto; \}/);
+  assert.match(CSS, /\.dev-ws-foryou-title > \.one-tag \{ margin-inline-start: auto; \}/);
 });
 
 test('#139 and #76: Recently live shares its row by width; the hero\'s words stop short of its picture', () => {

@@ -220,7 +220,8 @@ test('the project is chosen from the "Your communities" rows, Any project first'
   assert.match(src, /useSheet\(\{\n\s+kind: 'sheet',/);
   assert.match(src, /className="community-switcher community-switcher-sheet"/);
   assert.match(src, /className="community-switcher community-switcher-menu"/);
-  assert.match(src, /import \{ switcherRecent, switcherSub \} from '\.\.\/workshop\/community-switcher';/, 'the switcher\'s Recent and its "Public · 23 members" line');
+  // And the switcher's own row (the shared ListRow with its inset) and tick.
+  assert.match(src, /import \{ SWITCHER_ROW, SwitcherTick, switcherRecent, switcherSub \} from '\.\.\/workshop\/community-switcher';/, 'the switcher\'s Recent and its "Public · 23 members" line');
   assert.doesNotMatch(src, /id="community-switcher/, 'its own ids, never the switcher\'s');
   assert.doesNotMatch(src, /goToCommunity/, 'picking a project goes nowhere');
 });

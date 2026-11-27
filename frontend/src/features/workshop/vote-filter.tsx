@@ -11,7 +11,9 @@
  *   (the viewer is outside the change's deciders, #4747) and `uncounted` (a
  *   test account's vote, recorded but not counted). Either one makes the
  *   vote advisory; everything else — a plain change, a group decision, a
- *   ballot, the bot's question — decides.
+ *   ballot, the bot's question — decides. The rule is the one model of a
+ *   change's (../dev-board/card/change.ts `voteTypeOf`), which the review
+ *   flow hands these helpers.
  * - The chips narrow the feed to one kind: All, Votes that decide, Advisory,
  *   each with its count. All is picked whenever Needs you opens (the choice
  *   is not remembered), and the chips show only when the feed holds both
@@ -26,26 +28,10 @@
 import { Chip, ChipRail } from '@/components/ui/chip';
 
 import { useMessages } from '../../lib/i18n/react';
-import type { NeedsFeedItem } from './needs-reel';
+import type { VoteType } from '../dev-board/card/change';
 
 /** Which chip is pressed above the feed. */
 export type VoteFilter = 'all' | 'deciding' | 'advisory';
-/** The two kinds a vote falls into. */
-export type VoteType = 'deciding' | 'advisory';
-
-/**
- * A feed item's kind: advisory when the server marks it so, either because
- * the viewer is outside the change's deciders or because a test account's
- * vote is recorded but not counted. Everything else decides.
- */
-export function itemVoteType(item: NeedsFeedItem): VoteType {
-  return item.advisory || item.uncounted ? 'advisory' : 'deciding';
-}
-
-/** A Needs you row's kind, from the flags `reelRows` puts on its Yes. */
-export function rowVoteType(row: { yes?: { advisory?: boolean; uncounted?: boolean } | null }): VoteType {
-  return row.yes && (row.yes.advisory || row.yes.uncounted) ? 'advisory' : 'deciding';
-}
 
 /**
  * The list narrowed to the pressed kind, in the order it came. `'all'`

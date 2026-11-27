@@ -54,6 +54,7 @@ import { createPortal } from 'react-dom';
 import { Alert } from '@/components/ui/alert';
 import { Bars3Icon, CheckIcon, ChevronDownIcon, ChevronRightIcon, EyeIcon, EyeOffIcon, Glyph, PencilSquareIcon, WarningTriangleIcon, XIcon } from '@/components/ui/icons';
 import { Input } from '@/components/ui/input';
+import { StateTag, type TagState } from '@/components/ui/state-tag';
 import { useMessages } from '../../../lib/i18n/react';
 import { radioGroupKeys } from '../../../lib/radio-group';
 import { t as translate } from '../../../lib/i18n/runtime';
@@ -189,14 +190,96 @@ export function Chevron(): ReactNode {
   return <ChevronRightIcon className="w-4 h-4 text-zinc-500 dark:text-zinc-500 shrink-0" aria-hidden="true" />;
 }
 
+/** The countdown's words, re-derived on the 30s tick; before the first tick the baked label carries the paint. */
+function pillLabel(s: StatusPillState, now: number, t: (id: string, values?: Record<string, string | number>) => string): string {
+  if (!s.countdown || now <= 0) return s.label;
+  const time = fmtCountdown(s.countdown - now);
+  return `${s.reject ? t('project:card.pill.setAsideIn', { time }) : t('project:card.pill.goesLiveIn', { time })}${s.suffix || ''}`;
+}
+
+/** The pill's tooltip: its title, or its first reason and "and N more". */
+function pillTooltip(s: StatusPillState, t: (id: string, values?: Record<string, string | number>) => string): string | undefined {
+  const extra = Array.isArray(s.reasons) ? Math.max(0, s.reasons.length - 1) : 0;
+  const titleParts: string[] = [];
+  if (s.title) titleParts.push(s.title);
+  else if (s.reasons && s.reasons[0]) titleParts.push(s.reasons[0].detail);
+  // The first reason and "and N more" are one message, so a language can
+  // order and punctuate them; with no first reason the count stands alone.
+  return s.tier === 2 && extra > 0
+    ? (titleParts.length
+      ? t('project:card.pill.reasonAndMore', { reason: titleParts[0] ?? '', count: extra })
+      : t('project:card.pill.moreReasons', { count: extra }))
+    : (titleParts.length ? titleParts.join(' · ') : undefined);
+}
+
 /**
- * The composite status pill (`statusPillHtml`'s markup). The derived STATE
- * stays `AppView.statusPillState`'s; this only draws it.
+ * Which of the one tag's three states a change's pill is (@/components/ui/
+ * state-tag.tsx): turning while the change is under way (checks, going
+ * live), strong while its vote waits on the viewer (the tier that carries
+ * the dot: "Vote · 0/1", "Your approval"), plain for everything else. The
+ * words are the server's reading of the change (`statusPillState`, from the
+ * row the server worded), never re-derived here.
+ */
+export function tagStateOf(s: StatusPillState): TagState {
+  if (s.spinner) return 'working';
+  if (s.dot) return 'needs';
+  return 'plain';
+}
+
+/**
+ * The tag for a change's state: its pill's words on the one tag, wherever a
+ * change's state is a tag (a change's and a request's page, the side
+ * panel's head, a governance vote's head, the board's and the Workshop's
+ * rows). The board card's full-width bar is `StatusPill` below.
+ *
+ * `detail` (a page's head, the default) keeps what the head always said
+ * beside the words: the advisory surplus, a live change's final count and
+ * the lock of an explicit approval. A row (`detail={false}`) says the words
+ * alone, as its pill did; the row's own line carries the rest.
+ */
+export function ChangeTag({ s, className, detail = true }: { s: StatusPillState; className?: string; detail?: boolean }): ReactNode {
+  const { now } = useStoreState(cardNowStore);
+  const t = useMessages('project');
+  if (!s || !s.label) return null;
+  const tally = detail ? liveTally(s) : null;
+  // The countdown keeps the ticker's contract (AppView._COUNTDOWN_SEL): its
+  // class and data-window-ends are how the 30s timer knows one is on screen.
+  const cd = s.countdown ? (s.reject ? 'gc-reject-countdown' : 'gc-merge-countdown') : '';
+  return (
+    <StateTag
+      state={tagStateOf(s)}
+      className={[cd, className].filter(Boolean).join(' ') || undefined}
+      data-pill-key={s.key}
+      data-window-ends={s.countdown ? String(s.countdown) : undefined}
+      data-label-suffix={s.countdown && s.suffix ? s.suffix : undefined}
+      title={pillTooltip(s, t)}
+    >
+      <span className="one-tag-words">
+        {pillLabel(s, now, t)}
+        {detail && s.advisory > 0 ? (
+          <span title={t('project:card.pill.advisoryVotes', { count: s.advisory })}>{` +${s.advisory}`}</span>
+        ) : null}
+        {tally ? <span title={tally.title}>{` · ${tally.text}`}</span> : null}
+      </span>
+      {detail && s.lock ? (
+        <span aria-hidden="true" title={s.lockTitle || t('project:card.pill.lockFallback')}>{'\u{1F512}'}</span>
+      ) : null}
+    </StateTag>
+  );
+}
+
+/**
+ * The board card's state bar (`statusPillHtml`'s block markup): the pill
+ * drawn across the card, its tally as a fill. The derived STATE stays
+ * `AppView.statusPillState`'s; this only draws it. Anywhere a change's state
+ * is a tag rather than the card's bar, it is `ChangeTag` above, and so is
+ * this when the card asks for its pill `inline`.
  */
 export function StatusPill({ s, inline }: { s: StatusPillState; inline?: boolean }): ReactNode {
   const { now } = useStoreState(cardNowStore);
   const t = useMessages('project');
   if (!s || !s.label) return null;
+  if (inline) return <ChangeTag s={s} />;
   let fills: ReactNode = null;
   const fullFill = (side: 'yes' | 'no') => (
     <span className={`gc-vote-fill gc-vote-fill-full gc-vote-fill-full-${side}`}></span>
@@ -223,22 +306,8 @@ export function StatusPill({ s, inline }: { s: StatusPillState; inline?: boolean
   }
   // The 30s tick: re-derive the countdown label from the store's `now`;
   // before the first tick the baked label carries the paint.
-  const label = s.countdown && now > 0
-    ? `${s.reject
-      ? t('project:card.pill.setAsideIn', { time: fmtCountdown(s.countdown - now) })
-      : t('project:card.pill.goesLiveIn', { time: fmtCountdown(s.countdown - now) })}${s.suffix || ''}`
-    : s.label;
-  const extra = Array.isArray(s.reasons) ? Math.max(0, s.reasons.length - 1) : 0;
-  const titleParts: string[] = [];
-  if (s.title) titleParts.push(s.title);
-  else if (s.reasons && s.reasons[0]) titleParts.push(s.reasons[0].detail);
-  // The first reason and "and N more" are one message, so a language can
-  // order and punctuate them; with no first reason the count stands alone.
-  const tooltip = s.tier === 2 && extra > 0
-    ? (titleParts.length
-      ? t('project:card.pill.reasonAndMore', { reason: titleParts[0] ?? '', count: extra })
-      : t('project:card.pill.moreReasons', { count: extra }))
-    : (titleParts.length ? titleParts.join(' · ') : undefined);
+  const label = pillLabel(s, now, t);
+  const tooltip = pillTooltip(s, t);
   // #6075: a live pill keeps its final counted vote beside its words, the
   // same phrase the Workshop's rows draw (fold.tsx `liveTally`). Read-only
   // history: a settled change has no vote to cast again.
@@ -247,11 +316,10 @@ export function StatusPill({ s, inline }: { s: StatusPillState; inline?: boolean
   // An OPEN vote is the bar's own tone on a board card — accent blue, with an
   // accent fill — where the tier's `progress` violet is kept for the merge
   // pipeline. app.css keys `.dev-status-pill-vote`; edgeFor mirrors the rule.
-  const vote = !inline && isOpenVote(s) ? ' dev-status-pill-vote' : '';
-  const block = inline ? '' : ' dev-status-pill-block';
+  const vote = isOpenVote(s) ? ' dev-status-pill-vote' : '';
   return (
     <span
-      className={`gc-vote-count gc-vote-count-${s.tone} dev-status-pill${block}${vote}${cd}`}
+      className={`gc-vote-count gc-vote-count-${s.tone} dev-status-pill dev-status-pill-block${vote}${cd}`}
       data-window-ends={s.countdown ? String(s.countdown) : undefined}
       data-label-suffix={s.countdown && s.suffix ? s.suffix : undefined}
       title={tooltip}

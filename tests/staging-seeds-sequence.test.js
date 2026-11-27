@@ -98,7 +98,7 @@ const BOOT_ORDER = [
   'seedStagingVoteReasonOnRequest',
   'seedStagingLiveChangePrivateThread', 'seedStagingOlderFirstVersionThread', 'seedStagingFirstVersionBuildingThread',
   'seedStagingRecentThreads', 'seedStagingRenamedChange', 'seedStagingScrollTestThread',
-  'seedStagingGroupInviteNote', 'seedStagingGroupFacesRows', 'seedStagingFollowUpBubbles',
+  'seedStagingGroupInviteNote', 'seedStagingGroupFacesRows', 'seedStagingFollowUpBubbles', 'seedStagingSharedRenamedChange',
   'seedStagingOwnReviewChange', 'seedStagingGroupChatAttachments', 'seedStagingAppFiles',
   'seedStagingComplicatedPlanSpec', 'seedStagingSpecUserShareFixtures', 'seedStagingChatEditFixtures',
   'seedStagingBotChatRequest', 'seedStagingNewProjectOfferThread', 'seedStagingLlmUsage',

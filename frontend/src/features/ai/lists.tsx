@@ -59,6 +59,7 @@ import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
 import {
   ChatIcon, CheckIcon, ChevronDownIcon, ClockIcon, FilterIcon, LockIcon, SearchIcon, UserIcon, XIcon,
 } from '@/components/ui/icons';
+import { StateTag } from '@/components/ui/state-tag';
 
 import { RichMessage, useMessages } from '../../lib/i18n/react';
 import { groupRows, holdOrder, openRows, type AiApp, type AiThread, type WorkRow } from './model';
@@ -108,19 +109,16 @@ const LIT_INK_ROW = `group relative flex min-h-[44px] w-full min-w-0 items-cente
  */
 const DOT = 'absolute start-1 top-1/2 h-[7px] w-[7px] -translate-y-1/2 rounded-full bg-violet-600 dark:bg-violet-300';
 
-// The one thing at a row's end (./lines.ts LineEnd). A pill never wraps: the
-// title truncates instead, so the pills keep one right edge down a band.
-const PILL = 'inline-flex h-6 shrink-0 items-center whitespace-nowrap rounded-full px-2.5 text-xs font-semibold leading-none';
-const PILL_ACT = `${PILL} bg-[color:var(--accent-tint)] text-[color:var(--accent-tint-ink)] group-hover:shadow-[inset_0_0_0_1px_var(--accent)] group-active:bg-violet-600/[0.16] dark:group-active:bg-violet-400/[0.24]`;
-const PILL_STATE = `${PILL} bg-zinc-900/[0.05] font-medium text-zinc-600 dark:bg-white/[0.08] dark:text-zinc-300`;
-
+// The one thing at a row's end (./lines.ts LineEnd). A tag never wraps: the
+// title truncates instead, so the tags keep one right edge down a band.
 function RowEnd({ line }: { line: Line }): ReactNode {
   const end = line.end;
   if (!end || !end.text) return null;
-  // One look (25 Nov 2026): the row is what you tap, so its pill is a tag,
-  // the shared part (app.css, ONE LOOK · SHARED PARTS): flat, no edge.
-  if (end.kind === 'act') return <span className={`${PILL_ACT} one-tag`} data-ai-row-end="act">{end.text}</span>;
-  if (end.kind === 'state') return <span className={`${PILL_STATE} one-tag one-tag-quiet`} data-ai-row-end="state">{end.text}</span>;
+  // The row is what you tap, so its word is the one tag (@/components/ui/
+  // state-tag): what asks for you ("Vote", "Read", "Review plan") in its
+  // needs-you state, where a thing stands ("Up for a vote") plain.
+  if (end.kind === 'act') return <StateTag state="needs" data-ai-row-end="act">{end.text}</StateTag>;
+  if (end.kind === 'state') return <StateTag data-ai-row-end="state">{end.text}</StateTag>;
   if (end.kind === 'tick') {
     // A finished thing gets no fill: the tick alone, its word for a screen reader.
     return (

@@ -900,7 +900,8 @@ test('the nav components render what the module shapes, and nothing else', () =>
   assert.match(nav.slice(0, 1200), /'font-medium text-zinc-600 dark:text-zinc-300/,
     'the other rows stay at the lighter weight');
   assert.doesNotMatch(nav.slice(0, 1200), /violet/, 'the action accent no longer marks where you are');
-  assert.match(navTsx, /className=\{`ui-row ui-row-sm \$\{item\.className\}`\}/,
+  // The row is the shared ListRow; the module's string is its className.
+  assert.match(navTsx, /className=\{item\.className\}/,
     'the component renders that string rather than recomputing it');
 
   // Section links on desktop, a LIST on mobile. dapp.json selects on
@@ -2066,9 +2067,9 @@ test('only a live, non-demo credential offers Revoke', () => {
   assert.match(html2, /sv_live_…abcd/);
   assert.match(html2, /staging-demo-cli-1/);
   // The hint is a monospace line and the metadata a muted one, as the two
-  // `document.createElement` nodes were.
-  assert.match(html2, /class="text-sm font-mono[^"]*">sv_live_…abcd</);
-  assert.match(html2, /class="text-xs text-zinc-500[^"]*">valid · created Jan 1</);
+  // `document.createElement` nodes were: the shared row's title and subtitle.
+  assert.match(html2, /class="ui-lrow-t [^"]*font-mono[^"]*">sv_live_…abcd</);
+  assert.match(html2, /class="ui-lrow-s [^"]*text-zinc-500[^"]*">valid · created Jan 1</);
 });
 
 test('settings.js publishes the rows rather than building them', () => {
@@ -2203,7 +2204,8 @@ test('camera, microphone and screen sharing carry a plain note; the other permis
     assert.match(text, /^Lets this app .* while it is open, once your browser allows it too\.$/, `${id} note is true on a revoked row`);
     assert.doesNotMatch(text, /can turn on/, `${id} note claims no live access`);
   }
-  assert.match(html, /data-role="capability-note" class="mt-0\.5 block text-zinc-500 dark:text-zinc-400"/,
+  // Inside the shared row's muted second line (ListRow's subtitle).
+  assert.match(html, /<div class="ui-lrow-s [^"]*text-zinc-500 dark:text-zinc-400[^"]*">(?:<time[^>]*>[^<]*<\/time>)?<span data-role="capability-note" class="mt-0\.5 block">/,
     'the note is the muted secondary line, not a pill');
   const screen = message('settings:appPermissions.note.screen');
   assert.match(screen, /choose a screen, window or tab/);
@@ -2361,7 +2363,8 @@ test('a device permission says when it was allowed or revoked, and a row without
       ],
     }],
   });
-  const lines = [...html.matchAll(/<time data-role="permission-at" dateTime="([^"]*)" title="[^"]+" class="mt-0\.5 block text-zinc-500 dark:text-zinc-400">([^<]*)<\/time>/g)]
+  // In the row's muted second line (the shared ListRow's subtitle).
+  const lines = [...html.matchAll(/<time data-role="permission-at" dateTime="([^"]*)" title="[^"]+" class="block">([^<]*)<\/time>/g)]
     .map((m) => [m[1], m[2]]);
   assert.deepEqual(lines, [[allowedAt, 'Allowed 3d ago'], [revokedAt, 'Revoked 2d ago']]);
   // The line sits under the permission's name and above its note.
@@ -2394,7 +2397,8 @@ test('a blocked app shows when it was blocked, and a row without a stamp shows n
     app: { slug: 'noisy', name: 'Noisy App', created_at: at }, busy: null, onUnblock: () => {},
   });
   assert.match(html, /Noisy App/);
-  assert.match(html, new RegExp(`<time data-role="blocked-at" dateTime="${at.replace(/\./g, '\\.')}" title="[^"]+" class="mt-0\\.5 block text-\\[13px\\] text-zinc-500 dark:text-zinc-400">Blocked 3d ago</time>`));
+  // The row's second line (the shared ListRow's subtitle wears its size and ink).
+  assert.match(html, new RegExp(`<time data-role="blocked-at" dateTime="${at.replace(/\./g, '\\.')}" title="[^"]+">Blocked 3d ago</time>`));
   assert.match(html, />Unblock</);
   const bare = renderComponent(BLOCKED, 'BlockedAppRow', {
     app: { slug: 'noisy', name: 'Noisy App' }, busy: null, onUnblock: () => {},

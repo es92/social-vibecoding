@@ -27,7 +27,7 @@ import { searchUsers } from '../messages/api';
 import type { ConversationUser } from '../messages/types';
 import { FriendButton } from './friend-button';
 import type { FriendState } from './api';
-import { PLANE_FILL } from '@/components/ui/grouped-list';
+import { GroupedList, ListRow } from '@/components/ui/grouped-list';
 
 type IdRow = { id: number };
 
@@ -102,35 +102,36 @@ export function FriendSearchResults({
   else if (loading && !users.length) note = t('messages:friends.search.searching');
   else if (!loading && !users.length) note = t('messages:friends.search.noMatch', { query: q });
   return (
-    <div
+    <GroupedList
       id="profile-friend-search-results"
       aria-live="polite"
-      className={`mt-2 rounded-2xl ${PLANE_FILL} divide-y divide-zinc-100 dark:divide-zinc-800`}
+      className="mx-0 mt-2"
+      tone="plane"
     >
       {users.map((user) => (
-        <div
+        // The shared row, as the friend requests above it are drawn
+        // (features/profile/friends-section.tsx): the name is the way to
+        // their page, and the row holds a button, which an anchor may not
+        // wrap.
+        <ListRow
           key={user.id}
           data-friend-search-result={user.username}
-          className="flex items-center gap-3 px-4 py-2.5"
-        >
-          <Initial username={user.username} />
-          <a
-            href={`#profile/${encodeURIComponent(user.username)}`}
-            className="min-w-0 flex-1 truncate text-base font-semibold hover:underline"
-          >
-            {`@${user.username}`}
-          </a>
-          <FriendButton
-            userId={user.id}
-            username={user.username}
-            initialState={friendStateFor(user.id, lists)}
-          />
-        </div>
+          leading={<Initial username={user.username} />}
+          title={<a href={`#profile/${encodeURIComponent(user.username)}`} className="hover:underline">{`@${user.username}`}</a>}
+          trailing={(
+            <FriendButton
+              userId={user.id}
+              username={user.username}
+              initialState={friendStateFor(user.id, lists)}
+            />
+          )}
+          chevron={false}
+        />
       ))}
       {note ? (
         <p className="px-4 py-3 text-sm text-zinc-500 dark:text-zinc-400">{note}</p>
       ) : null}
-    </div>
+    </GroupedList>
   );
 }
 

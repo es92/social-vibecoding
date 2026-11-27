@@ -267,13 +267,15 @@ test('the sidebar row keeps one button and adds the words after the label', () =
     if (n.props && n.props.item) navRows.push(n);
     if (n.props) walk(n.props.children);
   })(tree);
+  // The sidebar row is the shared ListRow, as a button: its name is the
+  // row's title and the words are its trailing content, after the name.
   const [connectors, account] = navRows.map((n) => n.type(n.props));
-  assert.equal(connectors.type, 'button');
+  assert.equal(connectors.props.as, 'button');
   assert.equal(connectors.props['data-settings-nav'], 'connectors');
-  const inner = connectors.props.children;
-  const [label, trailing] = inner.props.children;
-  assert.equal(label.props.children, 'Connectors & CLI');
+  assert.equal(connectors.props.title, 'Connectors & CLI');
+  const trailing = connectors.props.trailing;
   assert.equal(trailing.type(trailing.props).props.children, '3 connected');
   assert.equal(account.props['aria-current'], 'page');
-  assert.equal(account.props.children, 'Account', 'a plain row renders as before');
+  assert.equal(account.props.title, 'Account', 'a plain row is its name alone');
+  assert.equal(account.props.trailing.type(account.props.trailing.props), null, 'with nothing after it');
 });

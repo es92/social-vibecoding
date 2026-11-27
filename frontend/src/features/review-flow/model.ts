@@ -6,27 +6,15 @@
  * ../workshop/needs-reel.tsx `NeedsFeedItem`), and its pictures are the
  * change's before & after shots shaped the way every other feed shapes them
  * (`AppView._workshopVisuals`): screens, each a before and an after still of
- * the same viewport with the areas that differ.
+ * the same viewport with the areas that differ. What each item says about
+ * its change (its name, its summary, what this person's vote is) is the one
+ * model of a change (../dev-board/card/change.ts `changeFromFeed`), the same
+ * every other summary of it reads.
  */
 
 // Type only: the reel imports the project screen, which imports this flow.
 import type { NeedsFeedItem } from '../workshop/needs-reel';
-
-/**
- * A summary written in Markdown, as one plain paragraph: the reel's own rule
- * (../workshop/needs-reel.tsx plainSummary), kept here so this module does
- * not import the reel at runtime.
- */
-export function plainSummary(md: string | null | undefined): string {
-  return String(md || '')
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .replace(/^\s{0,3}(#{1,6}|[-*+]|\d+\.)\s+/gm, '')
-    .replace(/[*_`>~]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+import { changeFromFeed, cleanTitle, type ChangeModel } from '../dev-board/card/change';
 
 export type Box = { x: number; y: number; w: number; h: number };
 export type Region = {
@@ -74,17 +62,13 @@ export type BenefitKind = 'fixed' | 'stability' | 'clarity' | 'more' | 'results'
 export type DecisionKind = 'close_issue' | 'rename' | 'secret_change' | 'decision';
 export type AreaKind = 'agents' | 'proposals' | 'platform' | 'projects' | 'accounts' | 'admin' | 'messages' | 'challenges' | 'app';
 
-export type ReviewItem = {
+/**
+ * A change or a group decision as the flow draws it: the one model of a
+ * change (../dev-board/card/change.ts: its name, summary, epoch and what this
+ * person's vote is), with its pictures and its lines.
+ */
+export interface ReviewItem extends ChangeModel {
   key: string;
-  kind: 'proposal' | 'governance';
-  id: number;
-  title: string;
-  summary: string;
-  epoch: number | null;
-  author: string | null;
-  at: string | null;
-  number: number | null;
-  app: NeedsFeedItem['app'];
   stagingUrl: string | null;
   /** The screens to compare, phone screens first when there are any. */
   screens: ReviewScreen[];
@@ -99,16 +83,13 @@ export type ReviewItem = {
   line: string;
   /** Each declared change in one short line, by number less one: an opened screen's line. */
   claims: string[];
-  approve: boolean;
-  advisory: boolean;
-  uncounted: boolean;
   /**
    * #6439: on a group decision that is a vote to close a request, the
    * request's number: the page its vote is read and decided on. Null for
    * every other item.
    */
   request: number | null;
-};
+}
 
 /**
  * The ground under a change's picture: how much it changes, said in colour.
@@ -225,14 +206,6 @@ export function firstSentence(text: string): string {
   return (m ? m[1] : t).trim();
 }
 
-/** A title as people read it: the request prefix a bot change carries is dropped. */
-export function cleanTitle(title: string): string {
-  return String(title || '')
-    .replace(/^\s*implement this change in the app:\s*/i, '')
-    .replace(/^\s*title:\s*/i, '')
-    .trim();
-}
-
 /** A phone screen when there is one: this flow is drawn for the phone first. */
 export function pickScreens(screens: ReviewScreen[]): ReviewScreen[] {
   const phone = screens.filter((s) => s.viewport === 'mobile' || s.width < 500);
@@ -292,7 +265,8 @@ export function toReviewItems(
       benefit?: { kind?: string; area?: string; before?: string; after?: string } | null;
     };
     const claim = Array.isArray(shots.claims) && shots.claims[0] ? shots.claims[0].claim || '' : '';
-    const summary = plainSummary(item.summary);
+    const facts = changeFromFeed(item);
+    const { summary } = facts;
     const words = `${item.title || ''} ${summary}`;
     // The title shot's own still: the run's crop of the first change (the
     // shaped `after`), sized from its artifact so the plate keeps its shape.
@@ -324,16 +298,8 @@ export function toReviewItems(
       : picture.kind === 'decision' ? DRAWN_GROUNDS.decision
       : groundFor(screens);
     return {
-      key: `${change ? 'proposal' : 'governance'}:${item.id}`,
-      kind: change ? 'proposal' : 'governance',
-      id: item.id,
-      title: cleanTitle(item.title || ''),
-      summary,
-      epoch: item.epoch ?? null,
-      author: item.author || null,
-      at: item.at || null,
-      number: item.number ?? null,
-      app: item.app,
+      ...facts,
+      key: `${facts.kind}:${item.id}`,
       stagingUrl: typeof raw.staging_url === 'string' && raw.staging_url ? raw.staging_url : null,
       screens,
       pair,
@@ -342,9 +308,6 @@ export function toReviewItems(
       picture,
       line: changeLine(claim, summary),
       claims: (Array.isArray(shots.claims) ? shots.claims : []).map((c) => changeLine(c && c.claim, '')),
-      approve: !!item.approve,
-      advisory: !!item.advisory,
-      uncounted: !!item.uncounted,
       request: closeRequestOf(item),
     };
   });

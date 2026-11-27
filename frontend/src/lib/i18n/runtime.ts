@@ -1,6 +1,6 @@
 import catalogs from './catalogs.generated.json';
 import { saveAccountLocale } from './account';
-import { createLanguageRuntime } from './core';
+import { bootWantsLive, createLanguageRuntime } from './core';
 import { errorText } from './server-error';
 import {
   deviceTimeZone, getTimeZone, saveAccountTimeZone, setTimeZone, subscribeTimeZone, timeZoneLabel, zonedDay,
@@ -61,7 +61,19 @@ async function loadLiveLanguages(): Promise<boolean> {
 
 if (typeof document !== 'undefined' && typeof location !== 'undefined' && typeof fetch === 'function') {
   runtime.setLiveRefresh(loadLiveLanguages);
-  runtime.waitForLive(loadLiveLanguages());
+  // Request 7165: a page in English does not need the list to boot (47 KB
+  // on every load). It is asked for when it is first wanted, below.
+  if (bootWantsLive()) runtime.waitForLive(loadLiveLanguages());
+  else runtime.deferLive();
+}
+
+/**
+ * Settings › Language is opening: its list is the server's, so ask for it if
+ * this page booted without it, or its last answer could not be used. The
+ * pane hears `homeroom:languages-changed` when it arrives.
+ */
+export function ensureLiveLanguages(): void {
+  runtime.ensureLive(true);
 }
 
 /** The notice's way back: English, saved where this person's choice lives. */
@@ -94,6 +106,8 @@ export function switchToEnglish(): Promise<boolean> {
   capCount,
   // Settings › Language's Time zone list: its labels, Auto's zone, the save.
   timeZoneLabel, deviceTimeZone, saveAccountTimeZone,
+  // Settings asks for the server's list of languages when it opens.
+  ensureLiveLanguages,
   applySessionLanguage, saveAccountLocale, getLanguages,
 };
 

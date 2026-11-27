@@ -2848,7 +2848,10 @@ test('#6838: the list scrolls up and down only; a row never pushes past its band
   // 24 Nov 2026 (the three bands): no chip rail; a row's title truncates (or
   // takes two lines where the list is narrow) and its pill never wraps.
   assert.doesNotMatch(lists, /overflow-x-auto/, 'nothing of the list\'s own scrolls sideways');
-  assert.match(lists, /const PILL = 'inline-flex h-6 shrink-0 items-center whitespace-nowrap /);
+  // The row's word is the one tag now (@/components/ui/state-tag, app.css
+  // `.one-tag`), which never wraps: `white-space: nowrap` on the shared part.
+  assert.match(lists, /<StateTag state="needs" data-ai-row-end="act">/);
+  assert.match(css, /html:root \.one-tag \{[^}]*flex: none;[^}]*white-space: nowrap;/);
   assert.match(lists, /className=\{`ai-row-title block truncate /);
   assert.match(css, /#ai-screen \.ai-lists \.ai-row-title \{\n  display: -webkit-box;\n  -webkit-box-orient: vertical;\n  -webkit-line-clamp: 2;/);
   assert.match(lists, /<KindRail role="group"/, 'Done\'s kind chips ride the shared rail, which scrolls inside itself');

@@ -47,7 +47,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { SectionHeading } from '@/components/ui/field';
+import { GroupedList, ListRow, rowSeparator } from '@/components/ui/grouped-list';
 import { ChevronRightIcon } from '@/components/ui/icons';
+import { cn } from '@/lib/utils';
 
 import { useMessages } from '../../../lib/i18n/react';
 import { useWindowEvent } from '../../../lib/legacy-dom';
@@ -84,8 +86,6 @@ const STALE_AFTER_MS = 30 * 24 * 60 * 60 * 1000;
 
 const GROUP_HEAD = 'ui-cap text-xs font-semibold text-zinc-700 dark:text-zinc-300';
 const GROUP_NOTE = 'ui-note text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 mb-1 leading-relaxed';
-const ROW_FIRST = 'ui-row flex items-start justify-between gap-3 py-2.5';
-const ROW_NEXT = `${ROW_FIRST} border-t border-zinc-200 dark:border-zinc-800`;
 // Unlink and Sign out are NEUTRAL until pressed (phone review S16, 23 Nov
 // 2026): a red button on each of twenty-five rows made the page read as an
 // alarm. The first press asks on the row, and only then is the button red,
@@ -97,9 +97,12 @@ const UNLINK_ASKING_CLASS = 'ui-link ui-link-bad shrink-0 rounded bg-red-50 hove
 // "Older": the devices not used for 30 days, folded under one line at the
 // foot of their group (S16), so months-old installs do not stand among
 // today's. A native <details>, so the rows are in the page (and found by
-// search) and the browser opens and closes it.
-const OLDER = 'border-t border-zinc-200 dark:border-zinc-800';
-const OLDER_SUMMARY = 'ui-link ui-link-mut flex min-h-[44px] cursor-pointer list-none items-center gap-1.5 py-2.5 text-sm font-medium text-zinc-600 dark:text-zinc-300 [&::-webkit-details-marker]:hidden';
+// search) and the browser opens and closes it. The rows are the shared
+// ListRow, which draws the hairline under each row but the last; the fold's
+// line draws the same one under itself (`rowSeparator`), so the rows it
+// opens onto are ruled off from it as from each other.
+const OLDER_SUMMARY = 'ui-link ui-link-mut relative flex min-h-[44px] cursor-pointer list-none items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-zinc-600 dark:text-zinc-300 [&::-webkit-details-marker]:hidden';
+const EMPTY = 'ui-empty px-4 py-2.5 text-xs text-zinc-500 dark:text-zinc-400';
 const CANCEL_CLASS = 'ui-link ui-link-mut shrink-0 rounded px-2 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors touch-target-32 disabled:opacity-50';
 
 /** A device's sign-in count as the server sent it; one when it sent none. */
@@ -191,7 +194,6 @@ function reportPhones(count: number | null) {
 }
 
 interface DeviceRowProps {
-  first: boolean;
   name: string;
   /** "This phone" / "This browser", when the row is the device in hand. */
   here: string | null;
@@ -205,30 +207,38 @@ interface DeviceRowProps {
   attrs: Record<string, string>;
 }
 
-/** One device, in either group: its name, its line, and its action. */
-function DeviceRow({ first, name, here, detail, asking, busy, actionLabel, cancelLabel, onAction, onCancel, attrs }: DeviceRowProps) {
+/**
+ * One device, in either group: the shared row, its name (and "This phone"
+ * when it is the one in hand) over its line, and its action at the end.
+ */
+function DeviceRow({ name, here, detail, asking, busy, actionLabel, cancelLabel, onAction, onCancel, attrs }: DeviceRowProps) {
   return (
-    <div className={first ? ROW_FIRST : ROW_NEXT} {...attrs}>
-      <div className="ui-row-tx min-w-0">
-        <div className="ui-row-t text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+    <ListRow
+      {...attrs}
+      title={(
+        <>
           {name}
           {here ? (
             <span className="ui-pill ms-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">{here}</span>
           ) : null}
-        </div>
-        <div className="ui-row-s text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{detail}</div>
-      </div>
-      <div className="flex shrink-0 items-center gap-1">
-        {asking ? (
-          <button type="button" className={CANCEL_CLASS} disabled={busy} onClick={onCancel}>
-            {cancelLabel}
+        </>
+      )}
+      subtitle={detail}
+      subtitleClassName="whitespace-normal"
+      trailing={(
+        <div className="flex shrink-0 items-center gap-1">
+          {asking ? (
+            <button type="button" className={CANCEL_CLASS} disabled={busy} onClick={onCancel}>
+              {cancelLabel}
+            </button>
+          ) : null}
+          <button type="button" className={asking ? UNLINK_ASKING_CLASS : UNLINK_CLASS} disabled={busy} onClick={onAction}>
+            {actionLabel}
           </button>
-        ) : null}
-        <button type="button" className={asking ? UNLINK_ASKING_CLASS : UNLINK_CLASS} disabled={busy} onClick={onAction}>
-          {actionLabel}
-        </button>
-      </div>
-    </div>
+        </div>
+      )}
+      chevron={false}
+    />
   );
 }
 
@@ -239,27 +249,27 @@ function isOlder(device: { lastUsedAt: string | null; current: boolean }): boole
 
 /**
  * One group's rows: the recent ones, then the ones not used for 30 days
- * folded under "Older (N)". `render(device, first)` draws one row. A plain
+ * folded under "Older (N)". `render(device)` draws one row. A plain
  * function rather than a component, so the rows stay this pane's own
  * children.
  */
 function deviceGroup<T extends { key: string; lastUsedAt: string | null; current: boolean }>(
   devices: T[],
-  render: (device: T, first: boolean) => JSX.Element,
+  render: (device: T) => JSX.Element,
   olderLabel: (count: number) => string,
 ) {
   const recent = devices.filter((d) => !isOlder(d));
   const older = devices.filter(isOlder);
   return (
     <>
-      {recent.map((device, index) => render(device, index === 0))}
+      {recent.map((device) => render(device))}
       {older.length ? (
-        <details className={recent.length ? OLDER : undefined} data-linked-older="">
-          <summary className={OLDER_SUMMARY}>
+        <details data-linked-older="">
+          <summary className={cn(OLDER_SUMMARY, rowSeparator({ inset: 'text' }))}>
             <ChevronRightIcon className="h-4 w-4 shrink-0 transition-transform [details[open]>summary>&]:rotate-90" aria-hidden="true" />
             <span>{olderLabel(older.length)}</span>
           </summary>
-          {older.map((device) => render(device, false))}
+          {older.map((device) => render(device))}
         </details>
       ) : null}
     </>
@@ -377,11 +387,11 @@ export function LinkedPhonesSection() {
         </SectionHeading>
         <h4 className={GROUP_HEAD}>{t('settings:phones.group.phones')}</h4>
         <p className={GROUP_NOTE}>{t('settings:phones.phonesNote')}</p>
-        <div id="settings-phones-list" className="ui-card flex flex-col">
+        <GroupedList id="settings-phones-list" className="mx-0">
           {phones && !phones.length ? (
-            <p className="ui-empty text-xs text-zinc-500 dark:text-zinc-400 py-2.5">{t('settings:phones.empty')}</p>
+            <p className={EMPTY}>{t('settings:phones.empty')}</p>
           ) : null}
-          {deviceGroup(phones || [], (phone, first) => {
+          {deviceGroup(phones || [], (phone) => {
             // 'phone:' and 'browser:' keep the two groups' keys apart.
             const id = `phone:${phone.key}`;
             const asking = confirming === id;
@@ -391,7 +401,6 @@ export function LinkedPhonesSection() {
             return (
               <DeviceRow
                 key={phone.key}
-                first={first}
                 attrs={{ 'data-linked-phone': phone.key }}
                 name={t(phone.platform ? PLATFORM_LABEL[phone.platform] : 'settings:phones.platform.unknown')}
                 here={phone.current ? t('settings:phones.thisPhone') : null}
@@ -411,14 +420,14 @@ export function LinkedPhonesSection() {
               />
             );
           }, olderLabel)}
-        </div>
+        </GroupedList>
         <h4 className={`${GROUP_HEAD} mt-5`}>{t('settings:phones.group.browsers')}</h4>
         <p className={GROUP_NOTE}>{t('settings:phones.browsers.note')}</p>
-        <div id="settings-browsers-list" className="ui-card flex flex-col">
+        <GroupedList id="settings-browsers-list" className="mx-0">
           {browsers && !browsers.length ? (
-            <p className="ui-empty text-xs text-zinc-500 dark:text-zinc-400 py-2.5">{t('settings:phones.browsers.empty')}</p>
+            <p className={EMPTY}>{t('settings:phones.browsers.empty')}</p>
           ) : null}
-          {deviceGroup(browsers || [], (browser, first) => {
+          {deviceGroup(browsers || [], (browser) => {
             const id = `browser:${browser.key}`;
             const asking = confirming === id;
             const lastUsed = day(browser.lastUsedAt);
@@ -427,7 +436,6 @@ export function LinkedPhonesSection() {
             return (
               <DeviceRow
                 key={browser.key}
-                first={first}
                 attrs={{ 'data-linked-browser': browser.key }}
                 name={browserName(browser)}
                 here={browser.current ? t('settings:phones.browsers.thisBrowser') : null}
@@ -447,7 +455,7 @@ export function LinkedPhonesSection() {
               />
             );
           }, olderLabel)}
-        </div>
+        </GroupedList>
         {error ? (
           <p id="settings-phones-status" role="status" className="text-xs mt-3 text-red-700 dark:text-red-400">
             {error}
