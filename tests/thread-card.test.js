@@ -944,3 +944,22 @@ test('a request\'s page with one change: the foot is worded from the REQUEST\'s 
   assert.match(others, new RegExp(`<b class="dev-thread-foot-head">${message('core:work.whyOthers.question')}</b>`));
   assert.doesNotMatch(others, new RegExp(message('core:work.why.question')), 'the requester\'s wording is theirs alone');
 });
+
+test('Read plan draws the reader\'s plan: the HTML document\'s two tabs, with markdown kept as the fallback', () => {
+  const card = read(CARD);
+  const panel = read('frontend/src/features/group-chat/spec-panel.tsx');
+  // The reader's body is exported, so both places draw the same two tabs.
+  assert.match(panel, /export function SpecDocBody\(/);
+  assert.match(card, /import \{ SpecDocBody \} from '\.\.\/\.\.\/group-chat\/spec-panel';/);
+  assert.match(card, /import \{ renderSpecHtml \} from '\.\.\/\.\.\/\.\.\/lib\/spec-html';/);
+  // A plan's HTML document is kept beside its markdown, for a plan posted here and for the bot's GitHub copy.
+  assert.match(card, /html: typeof spec\.content_html === 'string' && spec\.content_html\.trim\(\) \? spec\.content_html : null/);
+  assert.match(card, /read\.kind === 'text' \? \{ markdown: read\.markdown \|\| '', html: read\.html \|\| null \}/);
+  // It is drawn by the reader's own body, under its own key.
+  assert.match(card, /renderSpecHtml\(loaded\.html, \{ key: `step-plan-\$\{key\}` \}\)/);
+  assert.match(card, /<SpecDocBody body=\{\{ kind: 'spec' as const, \.\.\.doc \}\} \/>/);
+  // An old plan still opens as the one markdown document it is, and loading and failure are unchanged.
+  assert.match(card, /if \(loaded\) return <div className="dev-step-doc" data-step-plan="" dangerouslySetInnerHTML=\{inner\} \/>;/);
+  assert.match(card, /markdownHtml\(loaded\?\.markdown \|\| ''\)/);
+  assert.match(card, /t\('project:topic\.card\.layer\.planFailed'\) : t\('project:topic\.card\.layer\.planLoading'\)/);
+});

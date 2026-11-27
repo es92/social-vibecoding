@@ -24,6 +24,8 @@ import { SparklesIcon, XIcon } from '@/components/ui/icons';
 
 import { useInnerHtml } from '../../../lib/html';
 import { useMessages } from '../../../lib/i18n/react';
+import { renderSpecHtml } from '../../../lib/spec-html';
+import { SpecDocBody } from '../../group-chat/spec-panel';
 import type { Standing } from '../../../lib/work-state';
 import { AppIconContent, appIconKind } from '../../apps/app-card-view';
 import type { FootTone } from './card-model';
@@ -381,35 +383,54 @@ export function markdownHtml(markdown: string): string {
 }
 
 /**
- * A plan's text, for the layer. A plan posted on Homeroom is read from its
- * session (the same read the reader beside the thread makes); the bot's
- * GitHub copy carries its own text.
+ * A plan in the layer, as the reader beside the thread draws it: the HTML
+ * document's User-facing tab first, with its before and after pictures, and
+ * its Technical tab one press away for the code and the files. A plan with no
+ * HTML document (older, or HTML specs off) falls back to its markdown, as
+ * before. A plan posted on Homeroom is read from its session (the same read
+ * the reader makes); the bot's GitHub copy carries its own two halves.
  */
 export function PlanWords({ plan }: { plan: RequestSpecCard }): ReactNode {
   const t = useMessages('project');
   const read = plan.read;
-  const own = read.kind === 'text' ? markdownHtml(read.markdown || '') : null;
-  const [state, setState] = useState<{ key: string; html: string | null; failed: boolean }>({ key: '', html: null, failed: false });
+  const own = read.kind === 'text' ? { markdown: read.markdown || '', html: read.html || null } : null;
+  const [state, setState] = useState<{ key: string; markdown: string; html: string | null; failed: boolean }>({ key: '', markdown: '', html: null, failed: false });
   const key = read.kind === 'shared' ? `${read.sessionId}:${read.version}` : '';
   useEffect(() => {
     if (read.kind !== 'shared') return undefined;
     let live = true;
-    setState({ key, html: null, failed: false });
+    setState({ key, markdown: '', html: null, failed: false });
     fetch(`/api/sessions/${read.sessionId}/specs/${read.version}${demoQuery()}`, { credentials: 'same-origin' })
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
       .then((data) => {
         if (!live) return;
         const spec = data?.spec || data || {};
-        setState({ key, html: markdownHtml(String(spec.content || '')), failed: false });
+        setState({
+          key,
+          markdown: String(spec.content || ''),
+          html: typeof spec.content_html === 'string' && spec.content_html.trim() ? spec.content_html : null,
+          failed: false,
+        });
       })
-      .catch(() => { if (live) setState({ key, html: null, failed: true }); });
+      .catch(() => { if (live) setState({ key, markdown: '', html: null, failed: true }); });
     return () => { live = false; };
     // `key` names the plan and its version.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
-  const html = own ?? (state.key === key ? state.html : null);
-  const inner = useInnerHtml(html || '');
-  if (html) return <div className="dev-step-doc" data-step-plan="" dangerouslySetInnerHTML={inner} />;
+  const loaded = own ?? (state.key === key && !state.failed ? state : null);
+  const markup = useMemo(() => markdownHtml(loaded?.markdown || ''), [loaded?.markdown]);
+  // A key of its own, so the screens' radio names never clash with the
+  // reader's while both show the same plan.
+  const doc = useMemo(() => (loaded?.html ? renderSpecHtml(loaded.html, { key: `step-plan-${key}` }) : null), [loaded?.html, key]);
+  const inner = useInnerHtml(markup);
+  if (doc) {
+    return (
+      <div className="dev-step-doc" data-step-plan="">
+        <SpecDocBody body={{ kind: 'spec' as const, ...doc }} />
+      </div>
+    );
+  }
+  if (loaded) return <div className="dev-step-doc" data-step-plan="" dangerouslySetInnerHTML={inner} />;
   return (
     <p className="dev-step-plain" role="status">
       {state.failed ? t('project:topic.card.layer.planFailed') : t('project:topic.card.layer.planLoading')}

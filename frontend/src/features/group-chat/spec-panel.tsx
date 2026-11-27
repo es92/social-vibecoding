@@ -57,7 +57,7 @@ function HtmlPart({ html, className, role }: { html: string; className?: string;
  * An HTML spec with its two tabs, the plain-language half first. The tab is this panel's own and goes back to User-facing for each
  * new spec.
  */
-function SpecDocBody({ body }: { body: Extract<SpecPanelBody, { kind: 'spec' }> }) {
+export function SpecDocBody({ body }: { body: Extract<SpecPanelBody, { kind: 'spec' }> }) {
   const t = useMessages('chat');
   const [tab, setTab] = useState<'user' | 'tech'>('user');
   useEffect(() => { setTab('user'); }, [body.userHtml, body.html]);

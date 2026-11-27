@@ -33594,6 +33594,8 @@ html.in-side-panel.side-panel-beside-ai .dev-thread-kicker { display: none; }
 .dev-step-body { padding-top: 12px; }
 .dev-step-doc { font-size: 15px; line-height: 24px; color: var(--text-secondary); overflow-wrap: anywhere; }
 .dev-step-doc .dev-issue-body { font-size: inherit; color: inherit; }
+/* The plan reader's body inside the layer: the sheet already carries its inset. */
+.dev-step-doc .gc-spec-panel-body { padding: 0; }
 .dev-step-plain { margin: 0; font-size: 14px; line-height: 20px; color: var(--text-secondary); }
 .dev-step-who { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 14px; color: var(--text-secondary); }
 .dev-step-who > b { font-weight: 650; color: var(--text-primary); }
