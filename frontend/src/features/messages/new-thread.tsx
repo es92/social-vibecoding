@@ -686,8 +686,9 @@ export function NewThreadPanel({ conversationId }: { conversationId: number }): 
             {setup
               ? t('messages:newThread.builder.setup.sub')
               : own ? t('messages:newThread.builder.sub', { builder: ownName, product: BUILDER_PRODUCT[own] })
-              // On a phone the button shares the head's one line with these words, so they are the short ones.
-              : inBar && liveInHead ? t('messages:newThread.barSub') : t('messages:newThread.sub')}
+              // The button shares the head's one line with these words, so they are the short ones:
+              // in a narrow column the long line was cut to "With Homeroom bo…" beside it.
+              : liveInHead ? t('messages:newThread.barSub') : t('messages:newThread.sub')}
           </div>
         </div>
         {liveInHead ? (

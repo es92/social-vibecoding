@@ -1470,6 +1470,8 @@ export function AiScreen(): ReactNode {
       data-ai-open={columnOpen ? '' : undefined}
       data-ai-drawer={phone ? level : undefined}
       data-ai-preview={previewHere ? layout : undefined}
+      // The column is only waiting for a live preview: it is never wider than the chat (app.css).
+      data-ai-live-wait={waitingHere ? '' : undefined}
       data-ai-list-closed={oneUp ? '' : undefined}
       style={{ position: 'relative' }}
     >

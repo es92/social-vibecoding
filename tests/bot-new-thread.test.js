@@ -475,11 +475,14 @@ test('New chat is a title card and then one card at every width; on a phone the 
   assert.doesNotMatch(css, /border-radius: var\(--thread-card-r\) var\(--thread-card-r\) 0 0; background: none; box-shadow: inset 0 -1px 0 var\(--one-hair\);/);
   assert.match(css, new RegExp(`${docked}::before \\{ margin-top: 10px; \\}`));
   assert.match(css, new RegExp(`${docked} > :is\\(\\.messages-thread-scroll, \\.messages-builder-setup\\) \\{ margin-top: 10px; \\}`));
+  // About and With stack when the column has no room for both on a line (27 Nov 2026).
+  assert.match(css, /html:root \[data-bot-new-thread-pane\] \.messages-project-row \{ flex-wrap: wrap; gap: 8px; padding-bottom: 6px; \}/);
   // The bar says the tab's name beside its back disc; the title card names the chat, name over line.
   assert.match(thread, /const barTitle = t\('messages:ai\.hero\.name'\);\s+const barSub = '';/);
   assert.match(thread, /<div className="messages-thread-name">\{setup \? t\('messages:newThread\.builder\.setup\.title', \{ builder: ownName \}\) : t\('messages:newThread\.title'\)\}<\/div>\s+<div className="messages-thread-sub">/);
   // The bar's back disc is the way out there, so the head has no ✕.
   assert.match(thread, /\{docked \|\| inBar \? null : \(/);
   assert.equal(message('messages:newThread.barSub'), 'Only you can see it');
-  assert.match(thread, /: inBar && liveInHead \? t\('messages:newThread\.barSub'\) : t\('messages:newThread\.sub'\)\}/, 'the short line where the button shares the card');
+  assert.match(thread, /: liveInHead \? t\('messages:newThread\.barSub'\) : t\('messages:newThread\.sub'\)\}/, 'the short line where the button shares the card');
+  assert.match(css, /html:root \[data-bot-new-thread-pane\] \.messages-composer-input::placeholder \{ color: var\(--one-ink-3\); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; \}/, 'the box\'s question keeps to one line');
 });

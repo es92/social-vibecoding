@@ -35135,7 +35135,8 @@ html:root [data-bot-new-thread-pane] .messages-start:hover { background: color-m
 html:root [data-bot-new-thread-pane] .messages-start[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--one-field-line), 0 0 0 2px var(--accent); }
 html:root [data-bot-new-thread-pane] .messages-start-more { color: var(--one-ink-3); }
 /* About and With: the shared menu chips, over the box. */
-html:root [data-bot-new-thread-pane] .messages-project-row { gap: 8px; padding-bottom: 6px; }
+/* Side by side while there is room; in a narrow column With goes under About rather than out of the card. */
+html:root [data-bot-new-thread-pane] .messages-project-row { flex-wrap: wrap; gap: 8px; padding-bottom: 6px; }
 html:root [data-bot-new-thread-pane] .messages-project-chip.one-chip { min-width: 0; max-width: 100%; transition: none; }
 html:root [data-bot-new-thread-pane] .messages-project-chip.one-chip:has(> .messages-project-chip-tile) { padding-inline-start: 6px; }
 html:root [data-bot-new-thread-pane] .messages-project-chip.one-chip:hover { background: var(--one-surface); }
@@ -35152,7 +35153,9 @@ html:root [data-bot-new-thread-pane] .messages-composer-card:focus-within {
 }
 html:root [data-bot-new-thread-pane] .messages-composer-row { align-items: center; }
 html:root [data-bot-new-thread-pane] .messages-composer-input { font-size: 16px; }
-html:root [data-bot-new-thread-pane] .messages-composer-input::placeholder { color: var(--one-ink-3); }
+/* The box's question stays on its one line, cut at the box's edge (with an ellipsis where the browser draws one in a
+   textarea): in a 320px column it wrapped onto a second line under the box's foot. */
+html:root [data-bot-new-thread-pane] .messages-composer-input::placeholder { color: var(--one-ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 html:root [data-bot-new-thread-pane] .messages-composer-action { color: var(--one-ink-2); }
 /* Send: the sun disc once there is something to send (flat, no edge), a quiet grey disc until then. */
 html:root [data-bot-new-thread-pane] .messages-send {
@@ -35256,6 +35259,20 @@ html:root [data-bot-new-thread-pane] .messages-live-start:focus-visible { outlin
 html:root [data-bot-new-thread-pane] .messages-live-start:disabled { opacity: .45; cursor: not-allowed; }
 @media (hover: hover) {
   html:root [data-bot-new-thread-pane] .messages-live-start:hover:not(:disabled) { background: var(--one-sky-tint-hover); }
+}
+/* WAITING, THE COLUMN IS NEVER WIDER THAN THE CHAT (27 Nov 2026). A real preview keeps the widths its edges were
+   dragged to, and people drag it wide: the app is what they look at, and the thread beside it is left at its 320px
+   floor. Those same widths under a column that is only waiting gave New chat 320px beside 860px of empty outline.
+   While it waits (`data-ai-live-wait`, features/ai/index.tsx) the chat keeps at least 440px, the room its starts
+   need, the column takes the chat's width unless it was dragged narrower, and the list has the rest. Both edges
+   still drag. With the list put away the two are halves, the column never the wider. */
+body:has(#ai-screen[data-ai-preview="three"][data-ai-live-wait]:not(.hidden)) {
+  --ai-live-col: max(440px, min(var(--ai-col-chosen-w, 440px), calc((var(--ai-room) - 480px) / 2)));
+  --ai-preview-w: max(360px, min(var(--ai-preview-chosen-w, var(--ai-live-col)), var(--ai-live-col), calc(var(--ai-room) - 480px - var(--ai-live-col))));
+  --ai-col-w: var(--ai-live-col);
+}
+body:has(#ai-screen[data-ai-preview="halves"][data-ai-live-wait]:not(.hidden)) {
+  --ai-preview-w: max(320px, min(var(--ai-preview-chosen-w, calc(var(--ai-room) / 2)), calc(var(--ai-room) / 2)));
 }
 /* From 1500px the preview's column waits beside New chat instead (features/messages/live-start-pane.tsx), drawn as the
    column's other cards are (.detail-card: a head card, then a card): the project's tile and "Live preview" over where

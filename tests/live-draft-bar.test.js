@@ -354,6 +354,11 @@ test('from 1500px the preview\'s column waits beside New chat: Start for a picke
   assert.match(ai, /<LiveStartBeside\.Provider value=\{waitingNew\}>/);
   assert.match(ai, /\) : waitingHere \? \([\s\S]{0,260}<aside\s+ref=\{previewRef\}\s+id="ai-preview-pane"\s+className="ai-preview-pane"\s+data-ai-preview-pane=\{layout\}\s+data-ai-live-start=""/);
   assert.match(ai, /<LiveStartPane opening=\{openingHere && liveOpening \? \{ name: liveOpening\.name \} : null\} \/>/);
+  // Waiting, the column is never wider than the chat, whatever a real preview's edges were dragged to (27 Nov 2026).
+  assert.match(ai, /data-ai-live-wait=\{waitingHere \? '' : undefined\}/);
+  const css = read('public/css/app.css');
+  assert.match(css, /body:has\(#ai-screen\[data-ai-preview="three"\]\[data-ai-live-wait\]:not\(\.hidden\)\) \{\s+--ai-live-col: max\(440px, min\(var\(--ai-col-chosen-w, 440px\), calc\(\(var\(--ai-room\) - 480px\) \/ 2\)\)\);\s+--ai-preview-w: max\(360px, min\(var\(--ai-preview-chosen-w, var\(--ai-live-col\)\), var\(--ai-live-col\), calc\(var\(--ai-room\) - 480px - var\(--ai-live-col\)\)\)\);\s+--ai-col-w: var\(--ai-live-col\);\s+\}/);
+  assert.match(css, /body:has\(#ai-screen\[data-ai-preview="halves"\]\[data-ai-live-wait\]:not\(\.hidden\)\) \{\s+--ai-preview-w: max\(320px, min\(var\(--ai-preview-chosen-w, calc\(var\(--ai-room\) \/ 2\)\), calc\(var\(--ai-room\) \/ 2\)\)\);\s+\}/);
   // The draft arriving, or the person going elsewhere, ends the wait; so does two minutes.
   assert.match(ai, /if \(detailHere \|\| elsewhere\) \{ liveOpeningStore\.set\(null\); return undefined; \}/);
   assert.match(ai, /const LIVE_OPENING_MS = 120_000;/);

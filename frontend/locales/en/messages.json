@@ -4065,7 +4065,7 @@
   },
   "newThread.barSub": {
     "text": "Only you can see it",
-    "description": "On a phone, the small line under New chat in its title card while the Live preview button shares that card: the short form of \"With Homeroom bot, only you can see it\"."
+    "description": "The small line under New chat in its title card while the Live preview button shares that card: the short form of \"With Homeroom bot, only you can see it\"."
   },
   "newThread.close": {
     "text": "Close",
