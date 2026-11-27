@@ -123,6 +123,7 @@ import {
   FlagIcon,
   InfoCircleIcon,
   PhonePlusIcon,
+  PlayIcon,
   PlusWideIcon,
   TerminalIcon,
   UserGroupIcon,
@@ -150,6 +151,10 @@ import { AppContext } from './app-context-controller.js';
 import { recordAppUse } from './app-recency';
 import { hydrateNeedsSeen, unseenNeeds } from '../workshop/needs-seen';
 import { navStore } from '../nav/nav-store.js';
+import { botNewAddress, goBotAddress } from '../ai/door';
+import { platformSlug } from '../messages/channel-hub';
+import { carryLiveStartToNewChat } from '../messages/new-chat-carry';
+import { offersLive } from '../messages/new-thread';
 
 /**
  * The keyboard's ring on a row of this menu (#5927): drawn inside the row,
@@ -430,6 +435,42 @@ function MenuRow({
   );
 }
 
+/**
+ * Pure: whether the menu offers Start editor for the app in context: a
+ * signed-in person who may change it, where New chat would offer its live
+ * preview (offersLive: any project of its own, and Homeroom itself only to
+ * an admin). Never to a newcomer who has not reached Homeroom yet, whose
+ * menu leads with Go to Homeroom instead, nor where the menu's subject is a
+ * platform row the viewer is not served (`restricted`).
+ */
+export function offersEditor({
+  slug, selfHosted, signedIn, isAdmin, readOnly, restricted, newcomer, platform,
+}: {
+  slug: string | null | undefined;
+  selfHosted: boolean;
+  signedIn: boolean;
+  isAdmin: boolean;
+  readOnly: boolean;
+  restricted: boolean;
+  newcomer: boolean;
+  platform: string | null;
+}): boolean {
+  if (!slug || !signedIn || readOnly || restricted || newcomer) return false;
+  return offersLive(slug, { [slug]: { selfHosted } }, { platformSlug: platform, isAdmin });
+}
+
+/**
+ * Start editor, pressed: a new chat with Homeroom bot about the app, which
+ * starts its live preview at once (../messages/new-chat-carry.ts
+ * carryLiveStartToNewChat), so a draft of the app opens beside the chat.
+ * The request is handed over right before the address that opens the chat,
+ * since it waits only a moment.
+ */
+export function startEditor(slug: string): void {
+  carryLiveStartToNewChat();
+  goBotAddress(botNewAddress({ project: slug }));
+}
+
 /** One of Home.menuItemsFor's items for an app (features/home/home.js). */
 type MenuItem = { key: string; run: () => void };
 
@@ -443,7 +484,7 @@ export function AppsSwitcherSheet(): ReactNode {
   // exactly these for the rows that moved here.
   const {
     target, version, deploying,
-    slug, name, showTerminal, restricted, canReport, readOnly: writeBarred,
+    slug, name, showTerminal, restricted, canReport, selfHosted, readOnly: writeBarred,
   } = useStoreState(improveStore);
   // A PRIVATE MEMBER (../nav/nav-store.js): an invite link let them into this
   // app's group before they were let in off the waitlist. Their menu has
@@ -545,6 +586,22 @@ export function AppsSwitcherSheet(): ReactNode {
     try { return (menuItemsFor(appRow) || []).find((i) => i && i.key === 'install') || null; } catch { return null; }
   }, [appRow]);
   const addToHomeScreen = newcomer && !isNativeApp() ? installItem : null;
+  // START EDITOR (27 Nov 2026): after mount only, as the card above it is,
+  // since who is signed in is known after hydration. Read while the menu is
+  // open, so a closed menu asks nothing.
+  const viewer = mounted && open && typeof window !== 'undefined'
+    ? (window as unknown as { App?: { user?: { username?: string; isAdmin?: boolean } | null } }).App?.user || null
+    : null;
+  const editorOffered = mounted && open && offersEditor({
+    slug,
+    selfHosted: !!selfHosted,
+    signedIn: !!viewer?.username,
+    isAdmin: !!viewer?.isAdmin,
+    readOnly: !!readOnly,
+    restricted: !!restricted,
+    newcomer: newcomer || walkOwed,
+    platform: platformSlug(),
+  });
   const workshopRowRef = useRef<HTMLAnchorElement | null>(null);
   useIsomorphicLayoutEffect(() => {
     const hide = !!restricted || newcomer || walkOwed;
@@ -938,6 +995,51 @@ export function AppsSwitcherSheet(): ReactNode {
                   </button>
                 </>
               ) : null}
+            </div>
+          ) : null}
+          {/*
+              START EDITOR (27 Nov 2026): the app's live preview, one press
+              from the app itself. It opens a new chat with Homeroom bot
+              about this app and starts the preview at once (startEditor,
+              above), so a draft of the app runs beside the chat and what is
+              said there changes it. Until now that start was two screens
+              away: the project's Workshop, or New chat with the project
+              picked.
+
+              THE MENU'S OWN CARD, AND NOTHING NEW. It is drawn with the Go
+              to Homeroom card's recipe exactly (the 20px card, one inset
+              hairline, the 40px tile, 15 over 13), with the grey tile that
+              card's second row has, so the menu still has one filled button,
+              one card and its rows. The two cards are never up together: a
+              newcomer is not offered this one (offersEditor).
+
+              AFTER MOUNT, and inside #switcher-nav, for the reasons that
+              card gives: the prerender has no such row, and
+              `#improve-quick-actions + #switcher-nav` still holds.
+          */}
+          {editorOffered && slug ? (
+            <div
+              id="app-menu-editor-card"
+              className="mx-4 mt-1 mb-2 w-[calc(100%_-_2rem)] rounded-[20px] bg-white dark:bg-zinc-900 shadow-[inset_0_0_0_1px_var(--app-sheet-line)]"
+            >
+              <button
+                id="app-menu-row-editor"
+                type="button"
+                className={'flex w-full items-center gap-3 rounded-[20px] px-3.5 py-3 text-start hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors ' + FOCUS_RING}
+                onClick={() => {
+                  const app = slug;
+                  void AppContext.dismissForNav().then(() => startEditor(app));
+                }}
+              >
+                <span className="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-[11px] bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200" aria-hidden="true">
+                  <PlayIcon className="w-5 h-5" aria-hidden="true" />
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block truncate text-[15px] font-[650] text-zinc-900 dark:text-zinc-100">{t('agent:appContext.startEditor.title')}</span>
+                  <span className="block truncate text-[13px] text-zinc-500 dark:text-zinc-400">{t('agent:appContext.startEditor.sub')}</span>
+                </span>
+                <ChevronRightIcon className="w-4 h-4 shrink-0 text-zinc-300 dark:text-zinc-600" aria-hidden="true" />
+              </button>
             </div>
           ) : null}
           {/*

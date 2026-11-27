@@ -177,6 +177,23 @@ export function leadWith(words: string, lead?: string | null): string {
   return `${first}: ${typed}`;
 }
 
+/**
+ * Pure: what becomes of a live start a door asked for (an app's menu, Start
+ * editor), for the project `asked`:
+ *   drop  the new chat is no longer that request: another project is
+ *         picked, the person began typing, or their own Claude Code or
+ *         ChatGPT is to work on it. Nothing is sent for them.
+ *   wait  the project's name is not read yet (the message names the app),
+ *         the start is not offered yet, or a send or upload is under way.
+ *   send  now, as the head's Live preview button would.
+ */
+export function liveAskNext({ asked, project, typed, own, named, ready, holding }: {
+  asked: string; project: string; typed: boolean; own: boolean; named: boolean; ready: boolean; holding: boolean;
+}): 'drop' | 'wait' | 'send' {
+  if (!asked || asked !== project || typed || own) return 'drop';
+  return named && ready && !holding ? 'send' : 'wait';
+}
+
 // Which conversation a blank thread is open beside, or none.
 let blankIn: number | null = null;
 const listeners = new Set<() => void>();
@@ -198,6 +215,12 @@ export interface NewThreadPreset {
   words?: string | null;
   /** And a start to choose, by its key, as pressing it here would (`begin`). */
   start?: string | null;
+  /**
+   * 27 Nov 2026: start the live preview at once, as the head's Live preview
+   * button does (an app's menu, Start editor: ./new-chat-carry.ts
+   * carryLiveStartToNewChat). The one door that sends for the person.
+   */
+  send?: boolean;
 }
 
 // The last door's settings, and how many doors have named any: a thread
@@ -229,12 +252,25 @@ export function startNewThread(conversationId: number, fresh?: NewThreadPreset |
         placeholder: held.object ? held.placeholder : (fresh?.placeholder ?? null),
         words: held.words,
         start: held.start,
+        send: held.send,
       }
     : fresh || null;
   if (preset) presetTurn += 1;
   blankIn = conversationId;
   openTurn += 1;
   notify();
+}
+
+/**
+ * The project the last door asked a live preview of at once, and only once:
+ * the request goes with the asking, so a new chat drawn again later (the
+ * window resized, the tab left and come back to) sends nothing.
+ */
+function takeLiveAsk(): string {
+  if (!preset?.send) return '';
+  const asked = preset.project || '';
+  preset = { ...preset, send: false };
+  return asked;
 }
 
 /** The chat a new chat is open in right now, else null: the live answer, for a caller that cannot wait for a render. */
@@ -355,6 +391,9 @@ export function NewThreadPanel({ conversationId }: { conversationId: number }): 
   // offers the same way back to it.
   const showList = useShowListButton();
   const [project, setProject] = useState(() => preset?.project || '');
+  // The project a door asked a live preview of at once (Start editor), until
+  // it is sent or dropped: see START EDITOR, below.
+  const [autoLive, setAutoLive] = useState('');
   const [picking, setPicking] = useState(false);
   const [words, setWords] = useState('');
   const [busy, setBusy] = useState(false);
@@ -462,7 +501,10 @@ export function NewThreadPanel({ conversationId }: { conversationId: number }): 
     setPrompt(preset.placeholder || null);
     setMissed(false);
     if (takeWords(preset) || preset.object) toField();
+    setAutoLive(takeLiveAsk());
   }, [turn]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The first render's door may have asked for the live preview too.
+  useEffect(() => { const asked = takeLiveAsk(); if (asked) setAutoLive(asked); }, []);
   // The words a door carried go in once the starts are read, with the caret after them.
   useEffect(() => { if (takeWords(preset)) toField(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // A door's item arrives with the caret in the box, ready for the question.
@@ -661,6 +703,19 @@ export function NewThreadPanel({ conversationId }: { conversationId: number }): 
     liveStartActs = { start: () => acts.current.start(), pick: (slug) => acts.current.pick(slug) };
     return () => { liveStartActs = null; liveStartStore.set(null); };
   }, []);
+  // START EDITOR (27 Nov 2026): a door asked for the live preview at once (an
+  // app's menu, ../app-context/app-context-sheet.tsx). It is sent once the
+  // project's name is read, so the message names the app as its own button
+  // would. A new chat that has become something else (another project, words
+  // of the person's own) sends nothing: liveAskNext.
+  const named = !!(project && scope.info[project]?.name);
+  useEffect(() => {
+    if (!autoLive) return;
+    const next = liveAskNext({ asked: autoLive, project, typed: !!words.trim(), own: !!own, named, ready: liveReady, holding });
+    if (next === 'wait') return;
+    setAutoLive('');
+    if (next === 'send') startLive();
+  }, [autoLive, project, words, own, named, liveReady, holding]); // eslint-disable-line react-hooks/exhaustive-deps
   // In the head: the start itself where there is no column beside, or the way back to a column that was closed.
   const liveInHead = reopen ? !own && !setup : liveReady && !beside;
 

@@ -89,18 +89,18 @@ test('openBot opens the thread about a change it can name, and carries any other
   await store.openBot(change);
   assert.equal(started.length, 1, 'no number, no thread asked for');
   assert.equal(went[1], '#homeroom-bot/new?project=flat-4b-chores-e98ecd');
-  assert.deepEqual(carry.takeCarried(), { object: change, placeholder: 'What should change?', words: null, start: null });
+  assert.deepEqual(carry.takeCarried(), { object: change, placeholder: 'What should change?', words: null, start: null, send: false });
   assert.equal(carry.takeCarried(), null, 'once');
   fails = true;
   await store.openBot({ ...change, number: 31 });
   assert.equal(went[2], '#homeroom-bot/new?project=flat-4b-chores-e98ecd', 'a thread that could not be started falls back to the new chat');
-  assert.deepEqual(carry.takeCarried(), { object: change, placeholder: 'What should change?', words: null, start: null }, 'its number is the door\'s, never the item\'s');
+  assert.deepEqual(carry.takeCarried(), { object: change, placeholder: 'What should change?', words: null, start: null, send: false }, 'its number is the door\'s, never the item\'s');
 
   // A group decision has no thread about it: the same new chat, carrying it.
   const decision = { type: 'governance', proposalId: 8, appSlug: 'flat-4b-chores-e98ecd', title: 'Close #4' };
   await store.openBot(decision);
   assert.equal(went[3], '#homeroom-bot/new?project=flat-4b-chores-e98ecd');
-  assert.deepEqual(carry.takeCarried(), { object: decision, placeholder: 'What should change?', words: null, start: null });
+  assert.deepEqual(carry.takeCarried(), { object: decision, placeholder: 'What should change?', words: null, start: null, send: false });
 
   // A project alone: a new chat set to it, with nothing attached; nothing at all: a new chat.
   await store.openBot({ type: 'app', appSlug: 'plant-pal', title: 'Plant Pal' });
@@ -118,7 +118,7 @@ test('a carried item waits a moment for its new chat, and is taken once', () => 
   const carry = loadTsx('frontend/src/features/messages/new-chat-carry.ts');
   const item = { type: 'issue', appSlug: 'plant-pal', issueNumber: 4 };
   carry.carryToNewChat(item, 'What should change?', 1000);
-  assert.deepEqual(carry.takeCarried(1000 + carry.CARRY_MS - 1), { object: item, placeholder: 'What should change?', words: null, start: null });
+  assert.deepEqual(carry.takeCarried(1000 + carry.CARRY_MS - 1), { object: item, placeholder: 'What should change?', words: null, start: null, send: false });
   assert.equal(carry.takeCarried(1000), null, 'once');
   carry.carryToNewChat(item, null, 1000);
   assert.equal(carry.takeCarried(1000 + carry.CARRY_MS), null, 'a door whose address opened no chat does not hand its item to a later one');
@@ -129,9 +129,9 @@ test('a carried item waits a moment for its new chat, and is taken once', () => 
   // chose (../frontend/src/features/dev-board/workshop/front-page.tsx), the
   // same way and for the same moment, and no item.
   carry.carryWordsToNewChat('Make the start button bigger', null, 1000);
-  assert.deepEqual(carry.takeCarried(1000), { object: null, placeholder: null, words: 'Make the start button bigger', start: null });
+  assert.deepEqual(carry.takeCarried(1000), { object: null, placeholder: null, words: 'Make the start button bigger', start: null, send: false });
   carry.carryWordsToNewChat('', 'fix', 1000);
-  assert.deepEqual(carry.takeCarried(1000), { object: null, placeholder: null, words: null, start: 'fix' }, 'a start alone');
+  assert.deepEqual(carry.takeCarried(1000), { object: null, placeholder: null, words: null, start: 'fix', send: false }, 'a start alone');
   carry.carryWordsToNewChat('   ', null, 1000);
   assert.equal(carry.takeCarried(1000), null, 'blank words and no start carry nothing');
   carry.carryWordsToNewChat('x'.repeat(9000), 'live', 1000);
@@ -143,7 +143,7 @@ test('a carried item waits a moment for its new chat, and is taken once', () => 
 test('the new chat takes the carried item: its chip, its prompt, the caret, and only the reference is sent', () => {
   const panel = read('frontend/src/features/messages/new-thread.tsx');
   assert.match(panel, /const held = takeCarried\(\);/);
-  assert.match(panel, /preset = held\n\s+\? \{\n\s+project: fresh\?\.project \?\? null,\n\s+builder: fresh\?\.builder \|\| 'homeroom',\n\s+object: held\.object \|\| \(held\.words \|\| held\.start \? fresh\?\.object \|\| null : null\),\n\s+placeholder: held\.object \? held\.placeholder : \(fresh\?\.placeholder \?\? null\),\n\s+words: held\.words,\n\s+start: held\.start,\n\s+\}\n\s+: fresh \|\| null;/,
+  assert.match(panel, /preset = held\n\s+\? \{\n\s+project: fresh\?\.project \?\? null,\n\s+builder: fresh\?\.builder \|\| 'homeroom',\n\s+object: held\.object \|\| \(held\.words \|\| held\.start \? fresh\?\.object \|\| null : null\),\n\s+placeholder: held\.object \? held\.placeholder : \(fresh\?\.placeholder \?\? null\),\n\s+words: held\.words,\n\s+start: held\.start,\n\s+send: held\.send,\n\s+\}\n\s+: fresh \|\| null;/,
     'what a door carried is what the chat is about');
   // Words and a start (a project's Workshop box) go in the box as pressing that start would, ready to send.
   assert.match(panel, /const chosen = from\.start \? starts\.find\(\(start\) => start\.key === from\.start\) \|\| null : null;\n\s+const said = String\(from\.words \|\| ''\);\n\s+setWords\(\(chosen \? withStart\(said, chosen, starts\) : said\)\.slice\(0, 8000\)\);/);
