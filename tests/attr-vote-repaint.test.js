@@ -237,6 +237,30 @@ test('an unset imported Underway attribute anchors to its session card', () => {
   assert.equal(anchor.getBoundingClientRect().left, 30);
 });
 
+test("an unset attribute on a request anchors to its board row, which carries only data-issue-row", () => {
+  // The board draws folded rows, and a folded row keeps `data-issue-row` but
+  // not `data-ref-issue` (fold.tsx ITEM_HOOKS). The anchor looked for the
+  // second alone, so "Assign", "Set priority" and "Set category" in a request
+  // row's menu opened nothing on the board while a change's row worked.
+  const { AppView, sandbox } = makeSandbox();
+  const row = fakeEl({ getBoundingClientRect: () => ({ bottom: 120, left: 44 }) });
+  const selectors = [];
+  sandbox.document = fakeDoc({}, (selector) => {
+    selectors.push(selector);
+    return selector.includes('data-issue-row="4417"') ? row : null;
+  });
+
+  const anchor = AppView._attrAnchorFor('priority', 'issue', 4417);
+  assert.equal(selectors.length, 2);
+  // The chip first; then the request itself, by either hook.
+  assert.match(selectors[0], /data-attr-chip.*data-attr-target-type="issue".*data-attr-target-ref="4417"/);
+  assert.match(selectors[1], /\[data-ref-issue="4417"\], \[data-issue-row="4417"\]/);
+  assert.equal(anchor.dataset.attrField, 'priority');
+  assert.equal(anchor.dataset.attrTargetType, 'issue');
+  assert.equal(anchor.dataset.attrTargetRef, '4417');
+  assert.equal(anchor.getBoundingClientRect().left, 44);
+});
+
 test('an imported Underway attribute vote updates the session cache before repaint', () => {
   const { AppView } = makeSandbox();
   const mine = { id: 88, source: 'imported', assignee: null };

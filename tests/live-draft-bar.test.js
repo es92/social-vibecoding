@@ -111,33 +111,49 @@ test('a draft\'s preview opens look-only and waits for a start, so it never land
     'the reload frame\'s open (draftPreviewStep \'open\') goes the same way');
 });
 
-test('a draft\'s header opens the change it names (request 7119)', () => {
+test('a draft\'s header opens its proposal, and only once it has one (request 7119)', () => {
   const { draftChangeHref } = loadTsx(BAR);
-  assert.equal(draftChangeHref(draft()), '#app/gym/dev/proposals/5', 'the draft\'s own change');
-  assert.equal(draftChangeHref(draft({
+  // An open draft has its own preview change (`sessionId`), but nothing to
+  // open until it is proposed: with or without saved edits.
+  assert.equal(draftChangeHref(draft()), null, 'no proposal yet');
+  assert.equal(draftChangeHref(draft({ edits: 2 })), null, 'edits are not a proposal');
+  const proposed = (over = {}) => draft({
     state: 'proposed', editable: true,
     proposal: { sessionId: 8, prNumber: 142, open: true, pending: 1, headSha: null },
     builtOn: { sessionId: 7, prNumber: 141, open: true, merged: false, linked: false },
-  })), '#app/gym/dev/proposals/5', 'never the proposal it was started on or is up for a vote with');
-  assert.equal(draftChangeHref(draft({ sessionId: null })), null);
-  assert.equal(draftChangeHref(draft({ app: { slug: '', name: 'Gym Tracker' } })), null);
+    ...over,
+  });
+  assert.equal(draftChangeHref(proposed()), '#app/gym/dev/proposals/8', 'its proposal\'s page, never the draft\'s own change or the one it was started on');
+  // A draft started on the person's own proposal is on it from the start.
+  assert.equal(draftChangeHref(proposed({
+    proposal: { sessionId: 7, prNumber: 141, open: true, pending: 0, headSha: null },
+    builtOn: { sessionId: 7, prNumber: 141, open: true, merged: false, linked: true },
+  })), '#app/gym/dev/proposals/7');
+  assert.equal(draftChangeHref(proposed({ app: { slug: '', name: 'Gym Tracker' } })), null);
+  assert.equal(draftChangeHref(proposed({
+    proposal: { sessionId: 8, prNumber: 142, open: false, pending: 0, headSha: null },
+  })), '#app/gym/dev/proposals/8', 'its proposal\'s page even once it has ended');
   assert.equal(draftChangeHref(null), null);
 
   const acts = { busy: null, error: null, act: async () => {}, discard: async () => {}, discardItem: null };
-  const header = renderComponent(BAR, 'LiveDraftControls', { draft: draft({ edits: 2 }), acts });
+  // An open draft: no way through, and Propose still drawn once there are edits.
+  for (const edits of [0, 2]) {
+    const open = renderComponent(BAR, 'LiveDraftControls', { draft: draft({ edits }), acts });
+    assert.doesNotMatch(open, /data-live-draft-change=""/, `no change to open: ${edits} edits`);
+    if (edits) assert.match(open, /data-live-draft-propose=""/);
+  }
+  for (const live of ['live', 'starting', 'failed']) {
+    const open = renderComponent(BAR, 'LiveDraftControls', { draft: draft({ edits: 0, live }), acts });
+    assert.doesNotMatch(open, /data-live-draft-change=""/, `no change to open: ${live}`);
+  }
+  // Proposed: Open change comes before the header's one filled action.
+  const header = renderComponent(BAR, 'LiveDraftControls', { draft: proposed(), acts });
   assert.match(header, /data-live-draft-change=""/);
   assert.equal(message('messages:liveDraft.openChange'), 'Open change');
   assert.match(header, new RegExp(message('messages:liveDraft.openChange')));
-  assert.match(header, /data-live-draft-propose=""/);
-  assert.ok(header.indexOf('data-live-draft-change') < header.indexOf('data-live-draft-propose'),
+  assert.match(header, /data-live-draft-update=""/);
+  assert.ok(header.indexOf('data-live-draft-change') < header.indexOf('data-live-draft-update'),
     'the way through comes before the header\'s one filled action');
-  // There is still a change to open with nothing to propose, and while the
-  // preview starts or could not start.
-  for (const live of ['live', 'starting', 'failed']) {
-    const idle = renderComponent(BAR, 'LiveDraftControls', { draft: draft({ edits: 0, live }), acts });
-    assert.match(idle, /data-live-draft-change=""/, `still drawn: ${live}`);
-    assert.doesNotMatch(idle, /data-live-draft-propose=""/, `nothing to propose: ${live}`);
-  }
   assert.equal(renderComponent(BAR, 'LiveDraftControls', { draft: null, acts }), '');
 
   // An outlined button, and the preview goes before the page does.

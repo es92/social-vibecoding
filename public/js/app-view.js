@@ -23654,7 +23654,11 @@ const AppView = {
     );
     if (chip) return chip;
     const card = document.querySelector(targetType === 'issue'
-      ? `[data-ref-issue="${targetRef}"]`
+      // A request's own page and card carry `data-ref-issue`; the board's
+      // folded row keeps only `data-issue-row` (fold.tsx ITEM_HOOKS), and
+      // looking for the first alone left a request row's "Assign" and
+      // "Set priority" opening nothing there.
+      ? `[data-ref-issue="${targetRef}"], [data-issue-row="${targetRef}"]`
       // #4455: on a change's own page, its root post.
       : `[data-proposal-row="${targetRef}"], [data-shared-session-row="${targetRef}"], [data-change-root="${targetRef}"]`);
     if (!card) return null;

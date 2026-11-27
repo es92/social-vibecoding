@@ -300,6 +300,8 @@ const STAGING_SEEDS = Object.freeze([
   stagingSeed('seedStagingStorageNotices', async (pool, config) => { await seedStagingStorageNotices(pool); }),
   // 20 Nov 2026 (live-draft review): a thread with a live draft up for a vote, for G and J's shots.
   stagingSeed('seedStagingLiveDraftThread', async (pool, config) => { await seedStagingLiveDraftThread(pool); }),
+  // 27 Nov 2026 (request 7262): a thread whose draft is not proposed yet, for the preview header's shots.
+  stagingSeed('seedStagingOpenLiveDraft', async (pool, config) => { await seedStagingOpenLiveDraft(pool); }),
   // #6901's shots: while the server is full, Admin → Limits says how many
   // people were turned away, and the bell has a refusal notice. A fresh
   // staging copy has no run of refusals at all, and staging notifies nobody,
@@ -4240,6 +4242,90 @@ async function seedStagingLiveDraftThread(pool) {
     );
   } catch (err) {
     log.warn('db', 'Staging live draft thread seeding failed', { message: err.message });
+  }
+}
+
+// 27 Nov 2026 (request 7262): the before & after shots show a preview header
+// of a draft still being worked on, before it is proposed: where it stands and
+// Propose, and no Open change until there is a change to open. One is opened
+// by asking Homeroom bot, which staging has no model for, so its rows are
+// stored: a second thread of the shots' member fixture on the same fake
+// project, its working change a paused fixture with no preview and no pull
+// request, and its draft open with two edits. Idempotent through the root
+// message's key and the draft's own row; strictly a no-op outside staging.
+async function seedStagingOpenLiveDraft(pool) {
+  if (process.env.USERNODE_ENV !== 'staging') return;
+  try {
+    const people = await pool.query(
+      "SELECT id, username FROM users WHERE username IN ('usernode-capture', 'homeroom_bot')",
+    );
+    const member = people.rows.find((row) => row.username === 'usernode-capture');
+    const bot = people.rows.find((row) => row.username === 'homeroom_bot');
+    const app = (await pool.query("SELECT id, slug, name FROM apps WHERE slug = 'staging-demo-recipe-box' LIMIT 1")).rows[0];
+    if (!member || !bot || !app || member.id === bot.id) return;
+    const low = Math.min(member.id, bot.id);
+    const high = Math.max(member.id, bot.id);
+    const conversationId = (await pool.query(
+      'SELECT conversation_id FROM conversation_direct_pairs WHERE user_low_id = $1 AND user_high_id = $2',
+      [low, high],
+    )).rows[0]?.conversation_id;
+    if (!conversationId) return;
+    const key = 'staging-demo-live-draft-open-thread';
+    let rootId = (await pool.query(
+      'SELECT id FROM conversation_messages WHERE conversation_id = $1 AND sender_id = $2 AND idempotency_key = $3',
+      [conversationId, bot.id, key],
+    )).rows[0]?.id;
+    if (!rootId) {
+      rootId = (await pool.query(
+        `INSERT INTO conversation_messages (conversation_id, sender_id, content, metadata, idempotency_key, created_at)
+         VALUES ($1, $2, $3, $4::jsonb, $5, NOW() - INTERVAL '22 minutes') RETURNING id`,
+        [conversationId, bot.id, `New thread, about ${app.name}.`,
+          JSON.stringify({ homeroomBot: { kind: 'opened_thread', appSlug: app.slug, appName: app.name } }), key],
+      )).rows[0].id;
+      await pool.query(
+        `INSERT INTO conversation_messages (conversation_id, sender_id, content, thread_root_id, created_at)
+         VALUES ($1, $2, 'Staging demo: give each recipe a price in the list.', $4, NOW() - INTERVAL '21 minutes'),
+                ($1, $3, 'Staging demo: done in the app''s preview: each recipe row now ends with its price in the same grey as its cooking time.', $4, NOW() - INTERVAL '18 minutes'),
+                ($1, $2, 'Staging demo: and sort them by price.', $4, NOW() - INTERVAL '3 minutes'),
+                ($1, $3, 'Staging demo: done in the app''s preview: the list is sorted by price. Nothing here is proposed yet: Propose in the preview''s header puts these changes up for a vote.', $4, NOW() - INTERVAL '2 minutes')`,
+        [conversationId, member.id, bot.id, rootId],
+      );
+    }
+    const thread = (await pool.query(
+      `INSERT INTO private_threads (user_id, conversation_id, root_message_id, app_id, kind, state, title, title_source,
+                                    created_at, updated_at)
+       VALUES ($1, $2, $3, $4, 'ask', 'open', 'Staging demo: a price on each recipe', 'person',
+               NOW() - INTERVAL '22 minutes', NOW() - INTERVAL '2 minutes')
+       ON CONFLICT (root_message_id) DO UPDATE SET updated_at = private_threads.updated_at
+       RETURNING id`,
+      [member.id, conversationId, rootId, app.id],
+    )).rows[0];
+    const had = await pool.query('SELECT id FROM live_drafts WHERE root_message_id = $1 AND user_id = $2', [rootId, member.id]);
+    if (had.rows.length) {
+      await pool.query("UPDATE live_drafts SET updated_at = NOW(), live_state = 'live' WHERE id = $1", [had.rows[0].id]);
+      return;
+    }
+    const sha = (c) => c.repeat(40);
+    const change = (await pool.query(
+      `INSERT INTO chat_sessions (app_id, user_id, status, is_headless, linked_issues, session_title, branch_name, last_activity_at)
+       VALUES ($1, $2, 'paused', FALSE, '{}', $3, 'staging-fixture/live-draft-open', NOW()) RETURNING id`,
+      [app.id, member.id, `Live draft of ${app.name}`],
+    )).rows[0];
+    const draft = (await pool.query(
+      `INSERT INTO live_drafts (app_id, user_id, private_thread_id, root_message_id, session_id, state, base_sha, head_sha,
+                                edits, live_state, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, 'open', $6, $7, 2, 'live', NOW() - INTERVAL '22 minutes', NOW())
+       RETURNING id`,
+      [app.id, member.id, thread.id, rootId, change.id, sha('d'), sha('f')],
+    )).rows[0];
+    await pool.query(
+      `INSERT INTO live_draft_edits (draft_id, commit_sha, summary, paths, created_at)
+       VALUES ($1, $2, 'Staging demo: each recipe row ends with its price', ARRAY['public/index.html'], NOW() - INTERVAL '18 minutes'),
+              ($1, $3, 'Staging demo: the list sorted by price', ARRAY['public/index.html'], NOW() - INTERVAL '2 minutes')`,
+      [draft.id, sha('e'), sha('f')],
+    );
+  } catch (err) {
+    log.warn('db', 'Staging open live draft seeding failed', { message: err.message });
   }
 }
 
@@ -19188,6 +19274,8 @@ module.exports = {
   backfillFenceWrappedSpecs,
   // 20 Nov 2026 (live-draft review): its own suite runs it (tests/live-draft-seed-postgres.test.js).
   seedStagingLiveDraftThread,
+  // 27 Nov 2026 (request 7262): its shots' thread, before the draft is proposed.
+  seedStagingOpenLiveDraft,
   migrateAppDbsToPerRole,
   markChangesWithoutWorkState,
   seedStagingTranslations,

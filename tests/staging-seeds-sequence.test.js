@@ -63,7 +63,7 @@ const BOOT_ORDER = [
   'seedStagingBotWrongProject', 'seedStagingBotOutdatedReason', 'seedStagingClosedPrivateThread',
   'seedStagingShortPrivateThread', 'seedStagingBotReportReply', 'seedStagingBotFailureNotes',
   'seedStagingMainChatLastVisit', 'seedStagingFoldedLiveNotifications', 'seedStagingStorageNotices',
-  'seedStagingLiveDraftThread', 'seedStagingLimitRefusals', 'seedStagingDesignThread',
+  'seedStagingLiveDraftThread', 'seedStagingOpenLiveDraft', 'seedStagingLimitRefusals', 'seedStagingDesignThread',
   'seedStagingCapturedPageThread', 'seedStagingArtifactsThread', 'seedStagingBotPlanWaiting',
   'seedStagingBotPlanSettled', 'seedStagingBotFollowUp', 'seedStagingBotOverlap',
   'seedStagingBotOverlapBuilt', 'seedStagingBotTellMeWhen', 'seedStagingBotReplyWaiting',

@@ -124,14 +124,17 @@ export function draftAction(draft: LiveDraft): 'propose' | 'update' | null {
 }
 
 /**
- * Pure (request 7119): the change page a draft belongs to, the one its preview
- * header names ("Change #145"), or null when it cannot be named. Never the
- * proposal it was started on (`builtOn.sessionId`) nor the one it is up for a
- * vote with (`proposal.sessionId`): those are other changes.
+ * Pure (request 7119, 27 Nov 2026): the proposal's page a draft opens, once it
+ * has one, or null until then. A draft's own preview change (`sessionId`) is
+ * not it: every open draft has one, and there is nothing to vote on yet.
+ * Neither is the proposal it was started on (`builtOn.sessionId`), unless that
+ * is its proposal (the linked case, where `proposal.sessionId` names it too).
  */
 export function draftChangeHref(draft: LiveDraft | null | undefined): string | null {
-  if (!draft?.sessionId || !draft.app?.slug) return null;
-  return `#app/${encodeURIComponent(draft.app.slug)}/dev/proposals/${draft.sessionId}`;
+  const slug = draft?.app?.slug;
+  const sessionId = Number(draft?.proposal?.sessionId);
+  if (!slug || !(sessionId > 0)) return null;
+  return `#app/${encodeURIComponent(slug)}/dev/proposals/${sessionId}`;
 }
 
 async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -437,9 +440,10 @@ export function useLiveDraftActs(draft: LiveDraft | null): LiveDraftActs {
 /**
  * G: a live draft's own controls in its preview's header, beside its ×: one
  * short line saying where the draft stands, Open change (request 7119: the
- * way through to the change the line names), and Propose (Update proposal
- * once it is up for a vote with changes not in it yet). Discard draft is not
- * here: it is the title menu's last entry (useLiveDraftActs). Drawn by
+ * way through to its proposal, drawn only once the draft is proposed), and
+ * Propose (Update proposal once it is up for a vote with changes not in it
+ * yet). Discard draft is not here: it is the title menu's last entry
+ * (useLiveDraftActs). Drawn by
  * ../staging/staging-overlay.tsx only while the preview shown is this
  * draft's, with the actions it holds for the header.
  */

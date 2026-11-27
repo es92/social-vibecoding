@@ -499,6 +499,14 @@
     "text": "Your Home, your communities and Homeroom bot",
     "description": "Second line of the \"Go to Homeroom\" row in the app menu (the sheet opened from the app's name in the header): what is there. Home is the Home screen; Homeroom bot is Homeroom's assistant, a name."
   },
+  "appContext.startEditor.title": {
+    "text": "Start editor",
+    "description": "Title of a card at the top of the app menu (the sheet opened from the Homeroom mark while an app is open), shown to someone who can change the app. Pressing it opens a new chat with Homeroom bot about this app and starts a live preview: a draft of the app runs beside the chat and changes as they talk."
+  },
+  "appContext.startEditor.sub": {
+    "text": "Change it live with Homeroom bot",
+    "description": "Second line of the \"Start editor\" card in the app menu: what pressing it does. \"It\" is the app the menu is about, named at the top of the menu. Homeroom bot is Homeroom's assistant, a name."
+  },
   "appContext.addAppToHomeScreen": {
     "text": "Add this app to your home screen",
     "description": "Row in the app menu (the sheet opened from the app's name in the header) shown to a newcomer on a phone: opens the page that puts the app they are in (not Homeroom) on the phone's home screen as its own icon."

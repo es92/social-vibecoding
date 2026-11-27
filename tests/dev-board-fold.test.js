@@ -1857,7 +1857,12 @@ test('the declared checks that read a board card’s anatomy run with the cards 
   // and the Communities tab lit into the app address's. Two are new: the
   // Earlier post's own reactions and a visitor's read-only Discussion on a
   // public project's signed-out page. 702 leaves 178 slots.
-  checkCap.assertPinned(DAPP.tests.length, 702);
+  // 702 → 703: +1 (Start editor, 27 Nov 2026). The mark's menu over an app
+  // leads its list with the Start editor card. No check opened that menu on
+  // an app of its own (the three that open it are on Homeroom's, where the
+  // card is an admin's alone), so there was none to fold it into. 703 leaves
+  // 177 slots.
+  checkCap.assertPinned(DAPP.tests.length, 703);
   // Every selector fits the runner's cap (app-manifest.js
   // MAX_TEST_SELECTOR_LEN): a longer one is cut mid-token and fails on every
   // build with "was not found".
