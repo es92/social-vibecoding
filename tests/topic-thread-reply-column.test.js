@@ -39,7 +39,9 @@ test('the selectors match what the thread shell renders as direct children', () 
   // the cap selects on; the read-only notice that replaces it names it.
   assert.match(SHELL, /<StatusLine scope="thread" \/>/);
   assert.match(SHELL, /const SAFE_BAR = 'platform-safe-bar';/);
-  assert.match(SHELL, /return \(\n\s*<ChatComposerBar>\n\s*<ComposerSlots scope="thread" \/>/);
+  // One message box (27 Nov 2026): the bar is the box's own (Messages',
+  // through ChatComposerBar).
+  assert.match(SHELL, /return <ChatComposer scope="thread" slug=\{slug\} thread=\{thread\} placeholder=\{placeholder\} scroller=\{scroller\} \/>;/);
   assert.match(read('frontend/@/components/ui/chat.tsx'), /'chat-composer-bar platform-safe-bar'/);
   assert.match(read('frontend/src/features/group-chat/composer.tsx'), /typing: 'gc-thread-typing'/);
 });

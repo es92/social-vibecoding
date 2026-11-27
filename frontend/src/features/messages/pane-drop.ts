@@ -16,6 +16,7 @@
 
 import { useSyncExternalStore } from 'react';
 
+import { useFileDrag } from '../attachments/file-drag';
 import type { ComposerScope } from './store';
 
 type DropFiles = (files: File[]) => void;
@@ -69,4 +70,16 @@ export function useComposerDropReady(scope: ComposerScope): boolean {
     () => composerDropReady(scope),
     () => false,
   );
+}
+
+/**
+ * #6254: the whole thread pane takes a dropped file, not only the box at its
+ * foot. The composer for this pane's scope owns the upload, so the pane asks
+ * whether one is drawn — an awaiting or cannot-send thread shows no outline
+ * and drops nothing — and hands the files over. Messages' panes and a
+ * project chat's (group-chat/general-chat.tsx, thread-shell.tsx) alike.
+ */
+export function usePaneDrop(scope: ComposerScope) {
+  const ready = useComposerDropReady(scope);
+  return useFileDrag({ disabled: !ready, onFiles: (files) => { dropOnComposer(scope, files); } });
 }

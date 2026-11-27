@@ -69,7 +69,7 @@ import { CheckIcon, ChevronDownIcon, ChevronRightIcon, EllipsisHorizontalIcon, X
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/feed';
 import { Skeleton, SkeletonGroup } from '@/components/ui/skeleton';
-import { ActionButton, StatusPill, VoteButton } from '../card/dev-card';
+import { ActionButton, ChangeTag, VoteButton } from '../card/dev-card';
 import type { Standing } from '../../../lib/work-state';
 import type { ActionSpec, DevCardModel } from '../card/model';
 import { ChangeFoot, ChangeGates, PreviousShotsLine, ShotsCard , headPill, phaseOf } from './change-head';
@@ -374,7 +374,7 @@ export function ChangeLine({ item, view, propose = NO_PROPOSE, letter = null, fo
     <div className="min-w-0" data-thread-change-line={item.id}>
       <div className="flex min-w-0 items-center gap-2">
         <div className={`${KICKER} min-w-0 flex-1 truncate`}>{kicker}</div>
-        {status && pill && !footed ? <span className="shrink-0" data-thread-change-status={status.key}><StatusPill s={pill} inline /></span> : null}
+        {status && pill && !footed ? <span className="shrink-0" data-thread-change-status={status.key}><ChangeTag s={pill} /></span> : null}
         {behind ? (
           <button
             type="button"
@@ -922,7 +922,7 @@ export function FoldedChange({ item, i, view, plan, request, open, onToggle, onC
             {item.title || t('project:topic.thread.item.changeUnnumbered')}
           </span>
         </button>
-        {status && pill ? <span className="shrink-0" data-thread-change-status={status.key}><StatusPill s={pill} inline /></span> : null}
+        {status && pill ? <span className="shrink-0" data-thread-change-status={status.key}><ChangeTag s={pill} /></span> : null}
         <ChangeMenu item={item} view={view} propose={propose} />
       </div>
       {open ? <div className="ps-[22px]"><ChangeBody item={item} view={view} plan={plan} ballot request={request} /></div> : null}

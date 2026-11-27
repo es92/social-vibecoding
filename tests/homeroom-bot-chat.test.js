@@ -105,7 +105,11 @@ test('B9: the card, and no chip for the room', () => {
     /if \(spec\.makeRequest\) items\.push\(\{ key: 'ask-bot', label: t\('messages:row\.menu\.makeRequest'\)/);
   assert.equal(message('messages:row.menu.makeRequest'), 'Make this a request');
   const gc = read('public/js/group-chat.js');
-  assert.match(gc, /const insert = `@\$\{username === MentionAutocomplete\.BOT \? MentionAutocomplete\.BOT_NAME : username\} `;/);
+  // One message box (27 Nov 2026): the bot's row in a project chat's @ list
+  // is ./chat-sources.ts's, and a pick puts in its name.
+  const sources = read('frontend/src/features/group-chat/chat-sources.ts');
+  assert.match(sources, /export const BOT_NAME = 'Homeroom bot';/);
+  assert.match(sources, /username: BOT_HANDLE, insert: BOT_NAME,/);
   assert.match(gc, /@\(\[A-Za-z0-9_\]\{1,32\}\(\?:\(\?<=homeroom\) bot\\b\)\?\)/, '"@Homeroom bot" is one mention');
   assert.match(read('public/js/app.js'), /case 'bot_request_card':\s*\/\/[^\n]*\n[^\n]*\n\s*window\.GroupChat\?\.applyBotRequestCard\?\.\(data\);/);
 });

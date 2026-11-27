@@ -175,11 +175,12 @@ test('the switcher says which community you are on, who each is for, and what it
   const rows = [...all.matchAll(/data-switcher-community="([^"]+)"/g)].map((m) => m[1]);
   assert.deepEqual(rows, ['garden', 'club', 'notes', 'all'], 'Recent in the list\'s order, then All communities');
   assert.match(all, /data-switcher-community="all" aria-current="true"/, 'with none chosen, All communities is the one you are on');
-  assert.match(all, /All communities<\/span><span class="community-switcher-sub">3 communities<\/span>/);
+  // Each row is the shared ListRow: its name over its second line.
+  assert.match(all, /All communities<\/div><div class="ui-lrow-s [^"]*">3 communities<\/div>/);
   assert.match(all, /data-switcher-waiting="">2 to vote</, 'what they all wait on you for');
-  assert.match(all, />Public · 23 members<\/span>/);
-  assert.match(all, />Private · 1 member<\/span>/);
-  assert.match(all, />Just you<\/span>/);
+  assert.match(all, />Public · 23 members<\/div>/);
+  assert.match(all, />Private · 1 member<\/div>/);
+  assert.match(all, />Just you<\/div>/);
   assert.equal((all.match(/data-switcher-waiting/g) || []).length, 2, 'a zero says nothing');
   assert.ok(all.indexOf('data-switcher-join') > all.indexOf('data-switcher-community="all"'), 'Join, then Start, last');
   assert.ok(all.indexOf('data-switcher-start') > all.indexOf('data-switcher-join'));

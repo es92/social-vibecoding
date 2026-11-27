@@ -223,16 +223,15 @@ test('no themed zinc ink pair inside the always-dark chrome', () => {
 // surface plus a real border.
 
 test('the Activity feed reply box is not filled with the page ground', () => {
+  // One message box (27 Nov 2026): the box is Messages' card, the white (in
+  // dark, the raised) surface with its own edge, whose colours are declared
+  // where the comments box stands (`.dev-feed-reply`), so it never inherits
+  // the page ground.
   const feed = SOURCES.find((f) => f.path.endsWith('dev-board/card/feed-thread.tsx')).text;
-  assert.match(feed, /<Textarea[\s\S]*?box="activityReply"/,
-    'the Activity field selects its named surface recipe');
-  const ui = SOURCES.find((f) => f.path.endsWith('components/ui/input.tsx')).text;
-  const input = ui.slice(ui.indexOf('activityReply:'), ui.indexOf('// The DEV chat', ui.indexOf('activityReply:')));
-  assert.doesNotMatch(input, /\bbg-zinc-100\b/,
-    'zinc-100 IS the light page ground (#eaeaea) and this box sits on it');
-  assert.match(input, /\bbg-white\b/, 'the field takes the card surface in light mode');
-  assert.match(input, /border border-zinc-300 dark:border-zinc-700/,
-    '…and a real edge, so it reads as something to type into');
+  assert.match(feed, /<div className="dev-feed-reply" onClick=\{\(e\) => e\.stopPropagation\(\)\}>\s*<MessageBox place=\{place\} \/>/);
+  const css = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'public/css/app.css'), 'utf8');
+  assert.match(css, /\.dev-feed-reply,\n\/\* #6431/, 'Messages\' surface tokens are declared on the comments box');
+  assert.match(css, /\.dark \.dev-feed-reply,/);
 });
 
 // ── 2c. A paired ink handed to classList, which takes TOKENS ────────────

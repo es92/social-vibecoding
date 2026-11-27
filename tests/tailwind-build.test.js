@@ -56,9 +56,13 @@ const indexHtml = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8
 
 // Vendored third-party libs, in the load order index.html uses.
 const VENDOR_FILES = [
-  '/vendor/qrcode-1.0.0.min.js',
   '/vendor/marked-15.0.12.min.js',
   '/vendor/purify-3.4.17.min.js',
+];
+// Vendored, but loaded by the screen that needs it, not by a tag in the
+// document (request #7165; tests/shell-script-order.test.js ON_DEMAND_SCRIPTS).
+const ON_DEMAND_VENDOR_FILES = [
+  '/vendor/qrcode-1.0.0.min.js',
 ];
 
 // The pinned Tailwind browser runtime this platform serves to CHILD APPS
@@ -331,11 +335,17 @@ test('every vendored library is referenced and present on disk', () => {
     assert.ok(fs.existsSync(file), `${rel} is referenced but ${file} doesn't exist — run \`npm run vendor:assets\``);
     assert.ok(fs.statSync(file).size > 1000, `${rel} looks truncated`);
   }
+  for (const rel of ON_DEMAND_VENDOR_FILES) {
+    assert.ok(!indexHtml.includes(`src="${rel}"`), `index.html should not load ${rel} at boot`);
+    const file = path.join(ROOT, 'public', rel.replace(/^\//, ''));
+    assert.ok(fs.existsSync(file), `${file} doesn't exist — run \`npm run vendor:assets\``);
+    assert.ok(fs.statSync(file).size > 1000, `${rel} looks truncated`);
+  }
   // Provenance for the SRI hashes the same-origin tags can no longer carry.
   const readme = path.join(ROOT, 'public', 'vendor', 'README.md');
   assert.ok(fs.existsSync(readme), 'public/vendor/README.md (provenance) is missing');
   const provenance = fs.readFileSync(readme, 'utf8');
-  for (const rel of VENDOR_FILES) {
+  for (const rel of [...VENDOR_FILES, ...ON_DEMAND_VENDOR_FILES]) {
     assert.ok(provenance.includes(path.basename(rel)), `README.md should record provenance for ${rel}`);
   }
 });
@@ -349,7 +359,7 @@ test('every vendored library is referenced and present on disk', () => {
 // generator was edited after it had already been run).
 test('each vendored library matches the sha384 recorded in its provenance row', () => {
   const provenance = fs.readFileSync(path.join(ROOT, 'public', 'vendor', 'README.md'), 'utf8');
-  for (const rel of VENDOR_FILES) {
+  for (const rel of [...VENDOR_FILES, ...ON_DEMAND_VENDOR_FILES]) {
     const name = path.basename(rel);
     // Row shape: | `file` | `pkg` | version | `src path` | `sha384` | size |
     const row = provenance.split('\n').find((l) => l.startsWith(`| \`${name}\``));

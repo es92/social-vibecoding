@@ -34,7 +34,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { ChevronDownIcon, PlayIcon } from '@/components/ui/icons';
+import { ChevronDownIcon, PlayIcon, XIcon } from '@/components/ui/icons';
 import { useMessages } from '../../lib/i18n/react';
 import { useStoreState } from '../../lib/use-store-state';
 import { navStore } from '../nav/nav-store.js';
@@ -83,7 +83,11 @@ function Ghost(): ReactNode {
   );
 }
 
-export function LiveStartPane({ opening = null }: { opening?: { name: string } | null }): ReactNode {
+export function LiveStartPane({ opening = null, onClose }: {
+  opening?: { name: string } | null;
+  /** The column's close, as a real preview's head has (../ai/live-column.ts keeps the choice). */
+  onClose?: () => void;
+}): ReactNode {
   const t = useMessages('messages');
   const chat = useStoreState(liveStartStore);
   const scope = useStoreState(communityScopeStore);
@@ -115,6 +119,14 @@ export function LiveStartPane({ opening = null }: { opening?: { name: string } |
           <h2 className="live-start-name">{t('messages:newThread.live.pane.title')}</h2>
           <p className="live-start-sub" data-live-start-line="">{line}</p>
         </div>
+        {onClose ? (
+          <span className="detail-card-exits">
+            <Button type="button" variant="unstyled" size="icon" ink="none" className="detail-card-disc" data-live-start-close=""
+              aria-label={t('messages:newThread.live.pane.close')} title={t('messages:newThread.live.pane.close')} onClick={onClose}>
+              <XIcon className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          </span>
+        ) : null}
       </header>
       <div className="detail-card-body live-start-body">
         <Ghost />

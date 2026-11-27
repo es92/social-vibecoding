@@ -108,7 +108,6 @@ function cardPadding(declaration) {
 }
 
 const MESSAGES = phoneBlock('#3735: ONE COMPACT LINE ON A PHONE');
-const GC = phoneBlock('#3735: the same compact line on a phone as the Messages composer');
 
 // ── 1. The geometry ────────────────────────────────────────────────────
 
@@ -160,20 +159,13 @@ test('the "+", the field and the send disc are one row', () => {
   assert.ok(add > 0 && add < field && field < send, 'in that order, inside the one flex row');
 });
 
-test('the group chat\'s card is the same 44px line on a phone', () => {
-  const [top, right, bottom] = cardPadding(decls(GC, '.gc-composer-card'));
-  const field = decls(GC, '.gc-composer-card .gc-composer-input');
-  // The field's leading and inline padding come from the Textarea's
-  // `composerCard` box (leading-[22px], px-1); the phone block sets the
-  // block padding, which outranks py-2 by specificity, not by file order.
-  assert.match(read('frontend/@/components/ui/input.tsx'), /composerCard:\s*\n\s*'[^']*leading-\[22px\]/);
-  assert.equal(px(field['padding-top']) + 22 + px(field['padding-bottom']), px(field['min-height']));
-  const send = decls(GC, '.gc-send');
-  const glyph = /\n\s*width: (\d+px);\s*\n\s*height: (\d+px);/.exec(rule('.gc-composer-glyph'));
-  const row = Math.max(px(field['min-height']), px(send.height), px(glyph[2]));
-  assert.equal(top + row + bottom, PHONE_LINE);
-  assert.equal(right + px(send.width) / 2, PHONE_LINE / 2);
-  assert.match(GC_COMPOSER, /<form id=\{ids\.form\} className="gc-composer-card flex items-end gap-1\.5" data-gc-files=\{files\}>/);
+// One message box (27 Nov 2026): a project chat's box is Messages' own
+// (features/group-chat/composer.tsx renders MessageBox), so its phone line
+// is the one above, and the group chat's own card (`.gc-composer-card`,
+// `.gc-send`, `.gc-composer-glyph`) and its phone block are gone.
+test('the group chat\'s box is Messages\' card, so its phone line is the one above', () => {
+  assert.match(GC_COMPOSER, /return <MessageBox place=\{place\} scroller=\{scroller\} \/>;/);
+  assert.doesNotMatch(CSS, /\.gc-composer-card|\.gc-send\b|\.gc-composer-glyph/);
 });
 
 // ── 2. Tap targets ─────────────────────────────────────────────────────
@@ -182,7 +174,6 @@ test('the smaller buttons are still 44px tap targets, and their overhang stays o
   const ROW_GAP = 6; // gap-1.5
   for (const [block, buttons] of [
     [MESSAGES, ['.messages-composer-action', '.messages-send']],
-    [GC, ['.gc-composer-glyph', '.gc-send']],
   ]) {
     const pseudo = new RegExp(`${buttons.map((b) => `\\${b}::after`).join(',\\s*\\n\\s*')} \\{ content: ''; position: absolute; inset: (-\\d+px); \\}`);
     const m = pseudo.exec(block);
@@ -243,7 +234,7 @@ test('an empty composer renders the count\'s line without the near-limit mark', 
   const count = /<div class="messages-composer-count[^"]*"[^>]*>/.exec(html);
   assert.ok(count, 'the count\'s line is still rendered (a declared check selects it), only not laid out');
   assert.doesNotMatch(count[0], /data-near-limit/);
-  assert.match(html, /<div class="messages-composer-card">/);
+  assert.match(html, /<div class="messages-composer-card">/, 'a conversation\'s card carries no place id');
   // Nor the keys' hint or the send button's tooltip: an empty box is one
   // row, and the first render knows nothing of the device (lib/enter-sends.ts).
   assert.doesNotMatch(html, /data-enter-hint/);
@@ -266,11 +257,8 @@ test('desktop keeps the card\'s padding and row, and is the app channel\'s heigh
   assert.match(rule('.messages-composer-input'), /min-height: 40px;/);
   assert.match(rule('.messages-composer-input'), /padding: 9px 4px;/);
   assert.match(rule('.messages-send'), /width: 40px;\s*\n\s*height: 40px;/);
-  assert.match(rule('.gc-composer-card'), /padding-block: 8px 8px; padding-inline: 12px 8px;/);
-  assert.match(rule('.gc-composer-card .gc-composer-input'), /min-height: 40px;/);
-  assert.match(rule('.gc-send'), /width: 40px;\s*\n\s*height: 40px;/);
   // #4202: with the count's line gone, padding + row + padding is the whole
-  // card, and the same sum for both composers.
+  // card: every box is this one now.
   const height = (card, field) => {
     const text = rule(card);
     const [top, , bottom] = cardPadding({
@@ -280,11 +268,10 @@ test('desktop keeps the card\'s padding and row, and is the app channel\'s heigh
     return top + px(/min-height: (\d+px);/.exec(rule(field))[1]) + bottom;
   };
   assert.equal(height('.messages-composer-card', '.messages-composer-input'), 56);
-  assert.equal(height('.gc-composer-card', '.gc-composer-card .gc-composer-input'), 56);
 });
 
 test('the bar\'s tab-bar, home-indicator and keyboard clearances are not the phone block\'s', () => {
-  for (const block of [MESSAGES, GC]) {
+  for (const block of [MESSAGES]) {
     assert.doesNotMatch(block, /platform-safe|platform-kb|platform-tabs-h|un-kb|padding-bottom: calc/);
     assert.doesNotMatch(block, /\n\s*\.messages-composer \{|\n\s*\.messages-composer,|\.chat-composer-bar/, 'the bar round the card keeps its padding');
   }

@@ -1180,6 +1180,21 @@ function chatRoutes(config) {
       const ws = require('../services/ws');
       const want = typeof req.body?.on === 'boolean' ? req.body.on : null;
       if (want !== null) {
+        // #7225: this path answers before the handler runs, so it makes the
+        // handler's own check first: the message is a live one of THIS
+        // project, by somebody the caller has not blocked. Without it, any
+        // project's collaborator could read who reacted to any message id.
+        const { rows: found } = await pool.query(
+          `SELECT 1 FROM chat_messages m
+            WHERE m.id = $1 AND m.app_id = $2
+              AND m.deleted_at IS NULL
+              AND NOT EXISTS (
+                SELECT 1 FROM user_blocks blocked
+                 WHERE blocked.blocker_id = $3 AND blocked.blocked_user_id = m.user_id
+              )`,
+          [messageId, app.id, req.user.id]
+        );
+        if (!found.length) return res.status(404).json({ error: 'Message not found' });
         const { rows } = await pool.query(
           `SELECT 1 FROM message_reactions WHERE message_id = $1 AND user_id = $2 AND emoji = $3`,
           [messageId, req.user.id, emoji]

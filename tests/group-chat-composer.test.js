@@ -1,34 +1,19 @@
-// The group chat composer, after #1191 made both of them one component.
+// The group chat's two boxes — a channel's pane's and a thread's page's.
 //
-// ── Why this file is new ──────────────────────────────────────────────
+// ── One message box (27 Nov 2026) ─────────────────────────────────────
 //
-// There were TWO composers — the general chat's, built by an `innerHTML`
-// template in public/js/app-view.js's `renderGroupChatTab`, and the topic
-// thread's, in features/group-chat/thread-shell.tsx — and they had to look
-// identical. Nothing checked that they did. The three rows above the form
-// (the staged reply, the attach error, the pending uploads) really were one
-// renderer, but only because each began with a
-// `thread ? 'gc-thread-…' : 'gc-…'` ternary; the form itself was written out
-// twice, and one copy was on the primitive-adoption allow-list purely because
-// the other could not follow it.
+// After #1191 the two were one component (a form, a reply strip, an error
+// line and an uploads strip, with the listeners, drafts and menus in
+// public/js/group-chat.js). They are Messages' box now
+// (features/messages/composer.tsx MessageBox), with the chat as its place
+// (features/group-chat/composer.tsx ChatComposer). What this file pins:
 //
-// They are one component with a `scope` now, so the pair is structural rather
-// than maintained. What this file pins is what that costs nothing to keep
-// right and everything to lose:
-//
-//   1. Every id both modules read back — `setupAttachments` finds the
-//      paperclip and the file input, `mountThread` and `renderGroupChatTab`
-//      bind the form and the textarea, and a scope that stopped emitting one
-//      would break silently.
-//   2. The class strings, byte for byte against what the hand-written
-//      composer shipped. Routing through <Button> / <Textarea> meant widening
-//      the cva tables, and a widening in the wrong ORDER moves the rendered
-//      attribute.
-//   3. `hidden` follows the DATA now — the module publishes one thing where
-//      it used to write text and toggle a class.
-//   4. A filename reaches the DOM as text. `_escAttr` existed because
-//      `escapeHtml` leaves `"` alone and a filename is fully user-controlled;
-//      it is gone, and this is the property it was protecting.
+//   1. Each scope renders the box under the ids the module, the request
+//      page's plan card and the declared checks read back.
+//   2. The staged reply: the module publishes it per scope, and the box's
+//      chip words it as the chat always did.
+//   3. A send goes over the chat's socket, to the thread the box is for.
+//   4. The status line, which stays the chat's.
 //
 // Run with: node --test tests/group-chat-composer.test.js
 
@@ -49,28 +34,20 @@ const gcJs = read('public/js/group-chat.js');
 const appView = read('public/js/app-view.js');
 const stripped = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
 
-const EMPTY = { quote: null, attachError: null, attachments: [], status: '' };
-const slots = (scope, slot) => renderComponent(COMPOSER, 'ComposerSlotsView', {
+const box = (scope, extra = {}) => renderComponent(COMPOSER, 'ChatComposer', {
   scope,
-  slot: { ...EMPTY, ...slot },
-});
-const form = (scope, fill = true) => renderComponent(COMPOSER, 'ComposerForm', {
-  scope,
-  fill,
+  slug: 'demo',
+  ...(scope === 'thread' ? { thread: { type: 'issue', ref: 7 } } : {}),
   placeholder: 'Type a message...',
-  maxLength: 8000,
+  ...extra,
 });
 
 // ── The pair ──────────────────────────────────────────────────────────
 
-test('both scopes render the same control under their own ids', () => {
-  const general = slots('general', {}) + form('general');
-  const thread = slots('thread', {}) + form('thread');
-  // The ids each module reads back, in the two spellings the ternary had.
+test('both scopes render Messages\' box under their own ids', () => {
+  const general = box('general');
+  const thread = box('thread');
   for (const [g, t] of [
-    ['gc-reply-preview', 'gc-thread-reply-preview'],
-    ['gc-attach-error', 'gc-thread-attach-error'],
-    ['gc-attachments', 'gc-thread-attachments'],
     ['gc-form', 'gc-thread-form'],
     ['gc-attach-btn', 'gc-thread-attach-btn'],
     ['gc-file-input', 'gc-thread-file-input'],
@@ -80,62 +57,52 @@ test('both scopes render the same control under their own ids', () => {
     assert.match(thread, new RegExp(`id="${t}"`), `thread has #${t}`);
     assert.ok(!general.includes(`id="${t}"`), `general does not carry #${t}`);
   }
-  // …and apart from the ids they are the same string.
-  assert.equal(general.replace(/id="gc-/g, 'id="X-'), thread.replace(/id="gc-thread-/g, 'id="X-'));
+  // The card is Messages' card, the field Messages' field.
+  assert.match(thread, /^<div class="messages-composer messages-composer-thread chat-composer-bar platform-safe-bar"><div class="messages-composer-card" id="gc-thread-form">/);
+  assert.match(general, /^<div class="messages-composer chat-composer-bar platform-safe-bar"><div class="messages-composer-card" id="gc-form">/);
+  assert.match(thread, /<textarea id="gc-thread-input"[^>]*placeholder="Type a message\.\.\."[^>]*class="messages-composer-input">/);
+  // A topic's channel is a channel: it formats as Messages' channels do.
+  assert.match(general, /class="messages-format-bar"/);
+  assert.doesNotMatch(thread, /messages-format-bar/);
+  // The old form, strips and error line are gone, with their ids.
+  for (const gone of ['gc-reply-preview', 'gc-attach-error', 'gc-attachments', 'gc-composer-card', 'gc-send']) {
+    assert.ok(!general.includes(gone) && !thread.includes(gone), `${gone} is gone`);
+  }
 });
 
-test('the modules still read those ids back', () => {
+test('the module reads back only what it focuses, and wires nothing', () => {
   const code = stripped(gcJs);
-  assert.match(code, /getElementById\(t \? 'gc-thread-attach-btn' : 'gc-attach-btn'\)/);
-  assert.match(code, /getElementById\(t \? 'gc-thread-file-input' : 'gc-file-input'\)/);
-  assert.match(code, /getElementById\(t \? 'gc-thread-input' : 'gc-input'\)/);
-  assert.match(code, /container\.querySelector\('#gc-thread-form'\)/);
-  assert.match(code, /getElementById\(t \? 'gc-thread-form' : 'gc-form'\)/);
-  assert.match(stripped(appView), /getElementById\('gc-form'\)/);
-  assert.match(stripped(appView), /getElementById\('gc-input'\)/);
+  // setQuote puts the caret in the box the quote was staged in.
+  assert.match(code, /document\.getElementById\('gc-thread-input'\)/);
+  assert.match(code, /document\.getElementById\('gc-input'\)/);
+  // No listeners, drafts or uploads of its own any more.
+  assert.doesNotMatch(code, /setupAttachments|getDraft|setDraft|_addFiles|addEventListener\('submit'/);
+  assert.doesNotMatch(stripped(appView), /getElementById\('gc-form'\)|getElementById\('gc-input'\)/);
 });
 
-test('the class strings did not move when they went through the primitives', () => {
-  // Byte for byte against what the hand-written composers shipped. Widening a
-  // cva table in the wrong order is a silent restyle, so the check is the
-  // whole attribute, not a substring.
-  const html = form('general');
-  const textarea = html.match(/<textarea[^>]*class="([^"]*)"/);
-  assert.ok(textarea, 'found the field');
-  // The full-height composer is the CARD now (the widget-language reskin of
-  // the Discussion and topic threads): a borderless field at reading size
-  // and the round accent send disc, the same card Messages draws.
-  assert.equal(
-    textarea[1],
-    'gc-composer-input flex-1 min-w-0 resize-none overflow-y-auto border-0 bg-transparent'
-      + ' px-1 py-2 text-[17px] leading-[22px] text-zinc-900 dark:text-zinc-100'
-      + ' placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none',
+test('a send goes over the chat\'s socket, with the box\'s files, to the thread the box is for', () => {
+  const src = read(COMPOSER);
+  assert.match(src, /const posts = scope === 'thread' \? thread : null;/);
+  assert.match(src, /send: \(input\) => \{ controller\(\)\?\.send\?\.\(input\.content, posts, input\.attachmentIds\); \},/);
+  assert.match(src, /upload: \(file\) => uploadChatFile\(slug, file\),/);
+  assert.match(src, /typing: \(on\) => \{ if \(on\) controller\(\)\?\.sendTyping\?\.\(posts\); \},/);
+  const send = stripped(gcJs).match(/\n {2}send\(content, thread, attachmentIds\) \{([\s\S]*?)\n {2}\},/);
+  assert.ok(send, 'GroupChat.send takes the box\'s files');
+  assert.match(send[1], /if \(ids\.length\) payload\.attachmentIds = ids;/);
+});
+
+// ── The staged reply ──────────────────────────────────────────────────
+
+test('the staged reply is the box\'s chip, worded as the chat words it', () => {
+  const { replyChip } = require('./lib/render-tsx').loadTsx(COMPOSER);
+  const t = (id, values) => message(id, values);
+  assert.deepEqual(
+    (({ title, snippet }) => ({ title, snippet }))(replyChip(t, { label: '@alice', snippet: 'the original line' })),
+    { title: '↩ Replying to @alice', snippet: 'the original line' },
   );
-  assert.match(html, /<form id="gc-form" class="gc-composer-card flex items-end gap-1\.5">/);
-  const send = html.match(/<button type="submit" class="([^"]*)"/);
-  assert.ok(send, 'found the Send button');
-  assert.equal(send[1], 'gc-send shrink-0');
-
-  // The boxed thread layout is the same string one size down.
-  const tight = form('thread', false);
-  assert.match(tight, /px-3 py-1\.5 text-sm text-zinc-900/);
-  assert.match(tight, /<button type="submit" class="rounded-lg bg-violet-600 hover:bg-violet-500 px-3 py-1\.5 text-sm font-medium text-white transition-colors shrink-0"/);
-});
-
-// ── The three rows ────────────────────────────────────────────────────
-
-test('the staged reply draws its label and snippet, and hides when there is none', () => {
-  assert.match(slots('general', {}), /<div id="gc-reply-preview" class="hidden"><\/div>/);
-
-  const html = slots('general', { quote: { label: '@alice', snippet: 'the original line' } });
-  assert.match(html, /<div id="gc-reply-preview" class=""/);
-  assert.match(html, /<span class="gc-reply-preview-label">↩ Replying to @alice<\/span>/);
-  assert.match(html, /<span class="gc-reply-preview-snippet">the original line<\/span>/);
-  assert.match(html, /aria-label="Cancel reply"/);
-  // `#gc-reply-cancel` was the general composer's, and stays only there — the
-  // thread's ✕ never had an id and nothing looks for one.
-  assert.match(html, /id="gc-reply-cancel"/);
-  assert.ok(!slots('thread', { quote: { label: '@a', snippet: 'b' } }).includes('gc-reply-cancel'));
+  assert.equal(replyChip(t, { label: '', unnamed: 'event', snippet: 'x' }).title, '↩ Replying to a platform message');
+  assert.equal(replyChip(t, { label: '', unnamed: 'message', snippet: 'x' }).title, '↩ Replying to a message');
+  assert.match(read(COMPOSER), /reply: slot\.quote \? replyChip\(t, slot\.quote\) : null,\s*cancelReply: \(\) => controller\(\)\?\.clearQuote\?\.\(\),/);
 });
 
 test('the module publishes the staged reply to both scopes, and no longer paints', () => {
@@ -157,65 +124,8 @@ test('the module publishes the staged reply to both scopes, and no longer paints
   // An authorless row has a sentence of its own: the module says which, and
   // the strip reads it from the catalog.
   assert.match(fn[1], /unnamed: q\.source === 'pr' \? null\s*: q\.authorMissing && q\.author \? q\.authorMissing\s*: q\.author \? null : \(q\.source === 'event' \? 'event' : 'message'\)/);
-  assert.match(slots('general', { quote: { label: '', unnamed: 'event', snippet: 'x' } }), />↩ Replying to a platform message<\/span>/);
-  assert.match(slots('general', { quote: { label: '', unnamed: 'message', snippet: 'x' } }), />↩ Replying to a message<\/span>/);
   assert.equal(message('chat:group.composer.replyingToPlatform'), '↩ Replying to a platform message');
   assert.equal(message('chat:group.composer.replyingToMessage'), '↩ Replying to a message');
-});
-
-test('the attach error line hides itself when there is nothing to say', () => {
-  assert.match(slots('general', {}), /<div id="gc-attach-error" class="dc-attach-error hidden"><\/div>/);
-  const html = slots('general', { attachError: 'Up to 5 files per message.' });
-  assert.match(html, /<div id="gc-attach-error" class="dc-attach-error">Up to 5 files per message\.<\/div>/);
-  // One publish, not a textContent write plus a class toggle.
-  const fn = stripped(gcJs).match(/_setAttachError\(msg, thread\) \{([\s\S]*?)\n {2}\},/);
-  assert.ok(fn, '_setAttachError() found');
-  assert.match(fn[1], /attachError: msg \|\| null/);
-  assert.doesNotMatch(fn[1], /classList|textContent/);
-});
-
-test('the pending-upload strip earns its active class from having rows', () => {
-  assert.match(slots('general', {}), /<div id="gc-attachments" class="dc-attach-strip"><\/div>/);
-
-  const html = slots('general', {
-    attachments: [
-      { key: 'p1', name: 'notes.md', kind: 'markdown', badge: 'MD', size: '2 KB', thumbUrl: null, uploading: false },
-      { key: 'p2', name: 'shot.png', kind: 'image', badge: null, size: '10 KB', thumbUrl: 'blob:x', uploading: false },
-      { key: 'p3', name: 'big.bin', kind: 'binary', badge: 'BIN', size: '3.0 MB', thumbUrl: null, uploading: true },
-    ],
-  });
-  assert.match(html, /id="gc-attachments" class="dc-attach-strip dc-attach-strip-active"/);
-  // A file card: icon, name, badge, remove (#6862).
-  assert.match(html, /<div class="dc-attach-item dc-attach-file" title="notes.md"><span class="dc-attach-file-icon"[^>]*><svg[\s\S]*?<span class="dc-attach-file-text"><span class="dc-attach-name">notes.md<\/span><span class="dc-attach-kind">MD<\/span><\/span>/);
-  // An image with a local preview: its picture, linked to the app's viewer.
-  assert.match(html, /<a class="dc-attach-thumb-link" href="blob:x" data-image-open="" title="shot.png" aria-label="Preview shot.png"><img class="dc-attach-thumb" src="blob:x" alt="shot.png"\/><\/a>/);
-  // In flight: the ellipsis, and NO remove control — cancelling mid-PUT would
-  // leave a half-written row behind.
-  assert.match(html, /<span class="dc-attach-uploading">…<\/span>/);
-  assert.equal((html.match(/dc-attach-remove/g) || []).length, 2);
-  assert.match(html, /aria-label="Remove notes.md"/);
-});
-
-test('a filename reaches the DOM as text, in every slot it appears in', () => {
-  // `_escAttr` is gone. It existed because escapeHtml (the div trick) mirrors
-  // TEXT-node escaping and leaves `"` alone, which a crafted filename could
-  // break out of inside a double-quoted attribute — `title`, `alt` and
-  // `aria-label` all carry one here.
-  const hostile = 'x" onmouseover="alert(1)"><img src=x>.png';
-  const html = slots('general', {
-    attachments: [
-      { key: 'p1', name: hostile, kind: 'image', badge: null, size: '1 B', thumbUrl: 'blob:y', uploading: false },
-      { key: 'p2', name: hostile, kind: 'text', badge: null, size: '1 B', thumbUrl: null, uploading: false },
-    ],
-  });
-  assert.ok(!html.includes('<img src=x>'), 'the tag never lands as markup');
-  assert.ok(!/" onmouseover="/.test(html), 'the quote cannot close an attribute');
-  assert.match(html, /&quot; onmouseover=/);
-  assert.doesNotMatch(stripped(gcJs), /_escAttr/, 'and the escape it needed is gone with it');
-
-  // The staged reply's two lines are text children for the same reason.
-  const quoted = slots('general', { quote: { label: '<b>alice</b>', snippet: '<script>x</script>' } });
-  assert.ok(!quoted.includes('<b>') && !quoted.includes('<script'));
 });
 
 test('the status line is one slot with two owners, and both publish', () => {
@@ -244,18 +154,6 @@ test('the status line is one slot with two owners, and both publish', () => {
   assert.match(fn[1], /_publishComposer\('general'/);
   assert.match(code, /_publishComposer\('thread', \{ status: PlatformI18n\.t\('chat:group\.typing\.one', \{ name: username \}\) \}\)/);
   assert.equal(message('chat:group.typing.one', { name: 'bob' }), 'bob is typing...');
-});
-
-test('removing an upload goes back through the module, by index', () => {
-  // The live entry holds a File and an object URL, so it never leaves
-  // group-chat.js; the view model carries a position instead.
-  assert.match(read(COMPOSER), /_removeAttachmentAt\?\.\(index, scope\)/);
-  const fn = stripped(gcJs).match(/_removeAttachmentAt\(index, scope\) \{([\s\S]*?)\n {2}\},/);
-  assert.ok(fn, '_removeAttachmentAt() found');
-  assert.match(fn[1], /_pendingFor\(thread\)\[index\]/);
-  assert.match(fn[1], /scope === 'thread' \? GroupChat\.activeThread : null/);
-  // …and the object URL is still revoked where the entry is dropped.
-  assert.match(stripped(gcJs), /revokeObjectURL\(entry\.objectUrl\)/);
 });
 
 test('the general chat pane is mounted, not assigned', () => {

@@ -331,7 +331,9 @@ test('opening Needs you while the community list reads the counts asks for them 
   // A window before the load, so the scope publishes its loader beside the
   // page's controller: the two then share one lib/shared-read.ts, as in the
   // shell's bundle.
-  global.window = {};
+  // The page's module graph reaches the message box (the comments under a
+  // change), whose modules listen on the window as they load.
+  global.window = { addEventListener() {}, removeEventListener() {} };
   try {
     const { workshopController, workshopStore } = loadTsx('frontend/src/features/workshop/index.tsx');
     const scope = global.window.UsernodeReact.communityScope;
@@ -385,7 +387,9 @@ test('opening Needs you while the community list reads the counts asks for them 
 test('a first entry whose shared counts read fails still draws the feed (#6591)', async () => {
   const priorWindow = global.window;
   const priorFetch = global.fetch;
-  global.window = {};
+  // The page's module graph reaches the message box (the comments under a
+  // change), whose modules listen on the window as they load.
+  global.window = { addEventListener() {}, removeEventListener() {} };
   try {
     const { workshopController, workshopStore } = loadTsx('frontend/src/features/workshop/index.tsx');
     const asked = [];

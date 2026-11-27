@@ -486,16 +486,18 @@ export function RecentSearches({ items, setQuery, variant }: {
       {desktop ? (
         <div className="ui-card">
           {items.map((q) => (
-            <button
+            <ListRow
               key={q}
-              type="button"
+              as="button"
+              inset="text"
               data-settings-recent-item=""
-              className={HIT_ROW}
+              className={NAV_HIT}
+              titleClassName="font-normal"
+              title={q}
+              chevron={false}
               aria-label={t('settings:nav.filter.recent.again', { query: q })}
               onClick={() => replay(q)}
-            >
-              {q}
-            </button>
+            />
           ))}
         </div>
       ) : (
@@ -529,16 +531,16 @@ const GROUP_SPACED = 'mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-800';
 // thing that made it read as the old vocabulary.
 const NAV_HEADING = 'ui-cap px-3 pb-1';
 const MENU_ROW = 'settings-menu-row min-h-[44px] py-2 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors';
-// The sidebar's filter hits: the row's own class string, unhighlighted, with
-// room for the matched parts under the label.
-const HIT_ROW = 'ui-row ui-row-sm settings-nav-item block w-full text-start rounded-lg px-3 py-2 text-sm font-medium transition-colors text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800';
-const HIT_PARTS = 'ui-row-s block text-xs font-normal text-zinc-500 dark:text-zinc-400';
+// The sidebar's filter hits and recent searches: the shared row, at the
+// sidebar's own inset and with its hover ground. Its lines are the row's,
+// the matched parts the second one, as on a phone.
+const NAV_HIT = 'settings-nav-item rounded-lg px-3 py-2 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800';
 // The Sign out hit: a hit row in the button's own red, an action and not a page.
-const SIGN_OUT_HIT_ROW = 'ui-row ui-row-sm settings-nav-item block w-full text-start rounded-lg px-3 py-2 text-sm font-medium transition-colors text-red-700 dark:text-red-400 hover:bg-red-500/10';
+const NAV_SIGN_OUT = 'settings-nav-item rounded-lg px-3 py-2 transition-colors hover:bg-red-500/10';
 const SIGN_OUT_TITLE = 'font-normal text-red-700 dark:text-red-400';
 // #5995: a row's count, in muted words; a settled state gets no colour.
-const NAV_STATUS = 'ui-row-meta shrink-0 text-xs font-normal text-zinc-500 dark:text-zinc-400';
-const MENU_STATUS = 'ui-row-meta shrink-0 text-[0.8125rem] text-zinc-500 dark:text-zinc-400';
+const NAV_STATUS = 'shrink-0 text-xs font-normal text-zinc-500 dark:text-zinc-400';
+const MENU_STATUS = 'shrink-0 text-[0.8125rem] text-zinc-500 dark:text-zinc-400';
 
 /**
  * A phone menu row's second line: its count first ("9 connected"), then the
@@ -566,36 +568,33 @@ function RowTrailing({ extras, statusClassName }: { extras: RowExtras; statusCla
 }
 
 /**
- * One sidebar row. Navigation, not a tab set (QA 2026-09-24 Q20): a tab
- * needs a tablist parent, and these rows sit in a <nav> between group
- * headings, which no tablist may hold. They are the section links of that
- * <nav>, so the current one says so with aria-current.
+ * One sidebar row: the shared row, as a button. Navigation, not a tab set
+ * (QA 2026-09-24 Q20): a tab needs a tablist parent, and these rows sit in a
+ * <nav> between group headings, which no tablist may hold. They are the
+ * section links of that <nav>, so the current one says so with aria-current.
+ *
+ * No chevron (the page opens beside the list, not after it) and no hairline
+ * of the row's own: the sidebar draws one between its pinnable rows
+ * (app.css, `[data-settings-row] + [data-settings-row]`), and a row there
+ * is never its wrapper's last child, so the row's would draw on every one.
  */
 function NavRow({ item }: { item: NavItem }) {
   // #5997: the glyph takes the row's own colour (currentColor), so the
   // current page's glyph is in the "where you are" ink with its name.
   const Glyph = glyphFor(item.icon);
   return (
-    <button
-      type="button"
+    <ListRow
+      as="button"
+      inset="none"
       aria-current={item.active ? 'page' : undefined}
       data-settings-nav={item.key}
-      className={`ui-row ui-row-sm ${item.className}`}
+      className={item.className}
+      leading={Glyph ? <Glyph className="h-4 w-4 shrink-0" aria-hidden="true" /> : undefined}
+      title={item.label}
+      trailing={<RowTrailing extras={item} statusClassName={NAV_STATUS} />}
+      chevron={false}
       onClick={() => navClick(item.key)}
-    >
-      {Glyph ? (
-        <>
-          <Glyph className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="ui-row-t min-w-0 flex-1 truncate">{item.label}</span>
-          <RowTrailing extras={item} statusClassName={NAV_STATUS} />
-        </>
-      ) : item.tag || item.status ? (
-        <span className="flex min-w-0 flex-1 items-center gap-2">
-          <span className="ui-row-t min-w-0 flex-1 truncate">{item.label}</span>
-          <RowTrailing extras={item} statusClassName={NAV_STATUS} />
-        </span>
-      ) : item.label}
-    </button>
+    />
   );
 }
 
@@ -787,23 +786,30 @@ export function SettingsNavDesktop() {
       {filtering ? (
         <div className="ui-card" data-settings-filter-results="">
           {hits.map((hit) => (
-            <button
+            <ListRow
               key={hit.item.key}
-              type="button"
+              as="button"
+              inset="text"
               data-settings-nav={hit.item.key}
-              className={HIT_ROW}
+              className={NAV_HIT}
+              titleClassName="font-normal"
+              title={<Highlighted text={hit.item.label} query={query} />}
+              subtitle={hit.parts.length ? <PartLabels parts={hit.parts} query={query} /> : undefined}
+              chevron={false}
               onClick={() => choose(hit, setQuery, query)}
-            >
-              <span className="ui-row-t block"><Highlighted text={hit.item.label} query={query} /></span>
-              {hit.parts.length ? (
-                <span className={HIT_PARTS}><PartLabels parts={hit.parts} query={query} /></span>
-              ) : null}
-            </button>
+            />
           ))}
           {signOutHit ? (
-            <button type="button" data-settings-sign-out="" className={SIGN_OUT_HIT_ROW} onClick={() => signOut(setQuery)}>
-              {t('settings:nav.filter.signOut')}
-            </button>
+            <ListRow
+              as="button"
+              inset="text"
+              data-settings-sign-out=""
+              className={NAV_SIGN_OUT}
+              titleClassName={SIGN_OUT_TITLE}
+              title={t('settings:nav.filter.signOut')}
+              chevron={false}
+              onClick={() => signOut(setQuery)}
+            />
           ) : null}
           {hits.length || signOutHit ? null : (
             <NoMatch query={query} setQuery={setQuery} groups={groups} className="px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400" />

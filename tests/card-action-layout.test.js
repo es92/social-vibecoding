@@ -830,22 +830,18 @@ test('#4530: answering the bot stages a Reply to its note, or starts the box wit
   assert.deepEqual(opened, [['issue', 5]], 'from the board it opens the request first');
 
   // With no note to reply to, the box starts with the bot's handle, which
-  // counts as speaking to it; words already in the box stay.
-  const input = {
-    value: '', focused: 0, events: [],
-    dispatchEvent(e) { this.events.push(e.type); }, focus() { this.focused += 1; },
-  };
-  sandbox.document.getElementById = (id) => (id === 'gc-thread-input' ? input : null);
-  sandbox.Event = class { constructor(type) { this.type = type; } };
+  // counts as speaking to it; words already in the box stay. One message box
+  // (27 Nov 2026): the thread's box is Messages' own, so the words go in
+  // through it (groupChat.putInChatComposer), which saves its draft and
+  // focuses it, and leaves words already typed alone.
+  const put = [];
+  sandbox.window = sandbox.window || {};
+  sandbox.window.UsernodeReact = { groupChat: { putInChatComposer: (which, text, opts) => { put.push([which, text, opts]); return true; } } };
   sandbox.GroupChat = { replyDraft: null, replyToMessage() { throw new Error('no note to reply to'); } };
   await AppView.answerBotOnRequest(5, 0, 1);
-  assert.equal(input.value, '@homeroom_bot ');
-  assert.deepEqual(input.events, ['input'], 'the composer saves it as its own draft');
-  assert.equal(input.focused, 1);
-  input.value = 'the blue one';
-  await AppView.answerBotOnRequest(5, 0, 1);
-  assert.equal(input.value, 'the blue one');
-  assert.equal(input.focused, 2);
+  assert.equal(JSON.stringify(put), JSON.stringify([['thread', '@homeroom_bot ', { onlyIfEmpty: true }]]));
+  await AppView.answerBotOnRequest(5, 0, 1, 'Go ahead');
+  assert.equal(JSON.stringify(put[1]), JSON.stringify(['thread', '@homeroom_bot Go ahead', { onlyIfEmpty: true }]));
 });
 
 test('#4530: a refused ask says why and reads the request list again', async () => {

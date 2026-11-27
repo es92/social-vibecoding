@@ -4,16 +4,15 @@
  *
  * ── What the caller keeps ─────────────────────────────────────────────
  *
- * It is drawn by the group chat's composer (`#gc-attachments` /
- * `#gc-thread-attachments`) and by Messages' own box, in the `dc-attach-*`
- * styles. Two things stay with the caller, and neither reaches the markup:
+ * It is drawn by every message box (Messages' own, which every chat draws
+ * since 27 Nov 2026, and the blank thread with Homeroom bot), in the
+ * `dc-attach-*` styles, inside the box's own strip element. Two things stay
+ * with the caller, and neither reaches the markup:
  *
- *   * WHICH badge a kind gets. The group chat has `markdown` and `html`; it
- *     computes the label in its own module and hands it over as a string,
+ *   * WHICH badge a kind gets: the caller hands the label over as a string,
  *     so the card does not know the kinds.
- *   * HOW a row is removed. The module holds its own pending list — with the
- *     File and the object URL that must be revoked — so the row reports an
- *     INDEX and the module does the rest.
+ *   * HOW a row is removed. The box holds its own list, so the row reports
+ *     an INDEX and the box does the rest.
  *
  * ── An upload in flight offers no remove control ──────────────────────
  *
@@ -120,7 +119,7 @@ function Row({
   );
 }
 
-/** The rows alone; `<PendingStrip>` below wraps them in the strip's element. */
+/** The rows alone; the box wraps them in its strip's element. */
 export function PendingStripRows({ items, onRemove }: PendingStripProps) {
   return (
     <>
@@ -128,18 +127,5 @@ export function PendingStripRows({ items, onRemove }: PendingStripProps) {
         <Row key={item.key} item={item} index={i} onRemove={onRemove} />
       ))}
     </>
-  );
-}
-
-export function PendingStrip({ id, ...rest }: PendingStripProps & { id: string }) {
-  // `dc-attach-strip-active` is what gives the strip its height and border; an
-  // empty strip keeps the node (the module finds it by id) and no class.
-  return (
-    <div
-      id={id}
-      className={rest.items.length ? 'dc-attach-strip dc-attach-strip-active' : 'dc-attach-strip'}
-    >
-      <PendingStripRows {...rest} />
-    </div>
   );
 }

@@ -89,14 +89,18 @@ function load({ appView }) {
     GroupChat.appSlug = slug;
     GroupChat.ws = socket(slug);
   };
-  GroupChat._react = () => ({ mountThreadShell() {}, unmountTranscript() {} });
+  // One message box (27 Nov 2026): the thread's box is Messages' own, handed
+  // the project and the thread by the shell's props; its send is
+  // GroupChat.send with that thread (features/group-chat/composer.tsx).
+  const shell = { props: null };
+  GroupChat._react = () => ({ mountThreadShell(host, props) { shell.props = props; }, unmountTranscript() {} });
   GroupChat.renderThread = () => {};
   GroupChat.loadThreadHistory = () => {};
   GroupChat._renderQuotePreview = () => {};
   GroupChat._renderAttachStrip = () => {};
   GroupChat._autoGrowTextarea = () => {};
   GroupChat.sendTyping = () => {};
-  return { GroupChat, nodes, container, sent, connected, socket };
+  return { GroupChat, nodes, container, sent, connected, socket, shell };
 }
 
 // The Messages screen (or a project's Discussion tab) had mounted the module
@@ -114,21 +118,24 @@ function openChangePage(GroupChat, container, app) {
   });
 }
 
-function typeAndSend(nodes, text) {
-  nodes['gc-thread-input'].value = text;
-  nodes['gc-thread-form'].dispatchEvent(new Event('submit', { cancelable: true }));
+// What the box does with a press of Send: the place's send, with the thread
+// the shell was mounted for.
+function typeAndSend(GroupChat, shell, text) {
+  GroupChat.send(text, shell.props.thread, []);
 }
 
 const TIC_TAC = { slug: 'tic-tac', name: 'Tic Tac', readOnly: false };
 
 test('a reply on a change page posts to that change\'s app after Homeroom\'s read-only discussion was open', () => {
-  const { GroupChat, nodes, container, sent, connected, socket } = load({
+  const { GroupChat, container, sent, connected, socket, shell } = load({
     appView: { appData: { slug: 'tic-tac', name: 'Tic Tac' }, readOnly: false },
   });
   mountedBefore(GroupChat, socket, { slug: 'usernode-2d5619', name: 'Homeroom', readOnly: true });
   openChangePage(GroupChat, container, TIC_TAC);
   assert.deepEqual(connected, ['tic-tac'], 'the socket moves to the change\'s app');
-  typeAndSend(nodes, 'Can you fix what is failing in the checks you ran?');
+  assert.equal(shell.props.slug, 'tic-tac', 'the box is the change\'s app\'s');
+  assert.equal(JSON.stringify(shell.props.thread), JSON.stringify({ type: 'session', ref: 812 }));
+  typeAndSend(GroupChat, shell, 'Can you fix what is failing in the checks you ran?');
   assert.equal(sent['usernode-2d5619'], undefined, 'nothing is written on the earlier app\'s socket');
   assert.equal(sent['tic-tac']?.length, 1, 'the reply is sent, once');
   assert.deepEqual(sent['tic-tac'][0].thread, { type: 'session', ref: 812 });
@@ -138,13 +145,13 @@ test('a reply on a change page posts to that change\'s app after Homeroom\'s rea
 });
 
 test('a reply on a change page never goes out on another app\'s socket', () => {
-  const { GroupChat, nodes, container, sent, connected, socket } = load({
+  const { GroupChat, container, sent, connected, socket, shell } = load({
     appView: { appData: { slug: 'tic-tac', name: 'Tic Tac' }, readOnly: false },
   });
   mountedBefore(GroupChat, socket, { slug: 'garden-log', name: 'Garden log', readOnly: false });
   openChangePage(GroupChat, container, TIC_TAC);
   assert.deepEqual(connected, ['tic-tac']);
-  typeAndSend(nodes, '@Homeroom bot can you help fix the failing test?');
+  typeAndSend(GroupChat, shell, '@Homeroom bot can you help fix the failing test?');
   assert.equal(sent['garden-log'], undefined, 'garden-log has no change 812 and would refuse it');
   assert.equal(sent['tic-tac']?.length, 1);
 });
@@ -153,24 +160,24 @@ test('a project whose main channel is read-only still takes replies on its chang
   // Homeroom's own discussion is archived, but its proposals' and requests'
   // threads stay open (services/ws.js): the pane's read-only flag is not the
   // thread's.
-  const { GroupChat, nodes, container, sent, connected, socket } = load({
+  const { GroupChat, container, sent, connected, socket, shell } = load({
     appView: { appData: { slug: 'usernode-2d5619', name: 'Homeroom' }, readOnly: false },
   });
   mountedBefore(GroupChat, socket, { slug: 'usernode-2d5619', name: 'Homeroom', readOnly: true });
   openChangePage(GroupChat, container, { slug: 'usernode-2d5619', name: 'Homeroom', readOnly: false });
   assert.deepEqual(connected, [], 'the same app\'s socket is kept');
-  typeAndSend(nodes, 'Looks good to me');
+  typeAndSend(GroupChat, shell, 'Looks good to me');
   assert.equal(sent['usernode-2d5619']?.length, 1);
 });
 
 test('a reply thread opened beside a channel keeps the channel\'s app (Messages, a project\'s Discussion)', () => {
-  const { GroupChat, nodes, container, sent, connected, socket } = load({
+  const { GroupChat, container, sent, connected, socket, shell } = load({
     appView: { appData: null, readOnly: false },
   });
   mountedBefore(GroupChat, socket, { slug: 'garden-log', name: 'Garden log', readOnly: false });
   GroupChat.mountThread({ type: 'message', ref: 4001, container, fullHeight: true, placeholder: 'Reply…' });
   assert.deepEqual(connected, []);
-  typeAndSend(nodes, 'agreed');
+  typeAndSend(GroupChat, shell, 'agreed');
   assert.deepEqual(sent['garden-log']?.[0]?.thread, { type: 'message', ref: 4001 });
   assert.equal(GroupChat._app.slug, 'garden-log');
 });

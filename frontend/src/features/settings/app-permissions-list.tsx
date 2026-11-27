@@ -14,6 +14,7 @@
  */
 
 import { Button } from '@/components/ui/button';
+import { GroupedList, ListRow } from '@/components/ui/grouped-list';
 
 import { closeLiveApp, isLiveApp } from '../app-frame/live-apps';
 import { useMessages } from '../../lib/i18n/react';
@@ -41,8 +42,8 @@ function controller(): any {
   return (typeof window !== 'undefined' ? (window as any).Settings : null) || null;
 }
 
-/** Matches ROW_CLASS in ./grants-list.tsx — one row language on this screen. */
-const ROW_CLASS = 'ui-mini rounded-lg bg-white dark:bg-zinc-900 px-3 py-2 text-xs';
+/** A row's action at the end, at the 12px these controls are drawn for. */
+const TRAILING = 'flex shrink-0 items-center gap-2 text-xs';
 
 /**
  * #6512: what the riskier capabilities actually let an app do, in a line
@@ -79,31 +80,33 @@ function CapabilityRow({ app, item }: { app: PermissionAppView; item: Permission
   // hands the camera to the app's frame and tells nobody.
   const when = agoStamp(item.at);
   return (
-    <div className="flex items-center gap-2 py-1">
-      <div className="min-w-0 flex-1">
-        <span
-          className={item.revoked
-            ? 'block truncate text-zinc-400 line-through dark:text-zinc-500'
-            : 'block truncate text-zinc-700 dark:text-zinc-300'}
-        >
-          {item.label}
-        </span>
-        {when.text ? (
-          <time data-role="permission-at" dateTime={item.at ?? undefined} title={when.title} className="mt-0.5 block text-zinc-500 dark:text-zinc-400">
-            {item.revoked
-              ? t('settings:appPermissions.revokedAt', { when: when.text })
-              : t('settings:appPermissions.allowedAt', { when: when.text })}
-          </time>
-        ) : null}
-        {/* 12px like the label above it (ROW_CLASS is text-xs): the "15 over 13"
-            rule is ListRow's, and a 13px note would outsize its own label. */}
-        {note ? (
-          <span data-role="capability-note" className="mt-0.5 block text-zinc-500 dark:text-zinc-400">
-            {note}
-          </span>
-        ) : null}
-      </div>
-      {item.revoked ? (
+    <ListRow
+      inset="text"
+      title={item.label}
+      // An item under its app's row: the list's lighter weight (the app's
+      // name is the bold one), struck through and greyed once revoked.
+      titleClassName={item.revoked
+        ? 'font-normal text-zinc-400 line-through dark:text-zinc-500'
+        : 'font-normal'}
+      subtitle={when.text || note ? (
+        <>
+          {when.text ? (
+            <time data-role="permission-at" dateTime={item.at ?? undefined} title={when.title} className="block">
+              {item.revoked
+                ? t('settings:appPermissions.revokedAt', { when: when.text })
+                : t('settings:appPermissions.allowedAt', { when: when.text })}
+            </time>
+          ) : null}
+          {note ? (
+            <span data-role="capability-note" className="mt-0.5 block">
+              {note}
+            </span>
+          ) : null}
+        </>
+      ) : undefined}
+      subtitleClassName="whitespace-normal"
+      chevron={false}
+      trailing={<span className={TRAILING}>{item.revoked ? (
         // The way back, for the same reason grants-list.tsx grew one (#1957):
         // re-approving otherwise depends on the app asking again, and an app
         // that never asks again never opens the prompt. Same control as that
@@ -132,7 +135,7 @@ function CapabilityRow({ app, item }: { app: PermissionAppView; item: Permission
           // reader hears says which permission and which app.
           aria-label={t('settings:appPermissions.revokeLabel', { permission: item.label, app: app.appName })}
           data-role="revoke"
-          className="rounded bg-red-50 hover:bg-red-100 dark:bg-red-950 dark:hover:bg-red-900 px-2 py-0.5 font-medium text-red-700 dark:text-red-400 transition-colors touch-target-32"
+          className="shrink-0 rounded bg-red-50 hover:bg-red-100 dark:bg-red-950 dark:hover:bg-red-900 px-2 py-0.5 text-xs font-medium text-red-700 dark:text-red-400 transition-colors touch-target-32"
           onClick={() => {
             // #6512: an app open in this tab keeps what its frame was given
             // until the frame goes, so the revoke closes it too. A question,
@@ -151,8 +154,8 @@ function CapabilityRow({ app, item }: { app: PermissionAppView; item: Permission
         >
           {t('settings:appPermissions.revoke')}
         </button>
-      )}
-    </div>
+      )}</span>}
+    />
   );
 }
 
@@ -166,14 +169,17 @@ function AppHead({ app }: { app: PermissionAppView }) {
   const t = useMessages('settings');
   const active = app.items.filter((item) => !item.revoked).map((item) => item.capability);
   return (
-    <div className="mb-1 flex items-center gap-2">
-      <div className="min-w-0 flex-1 truncate font-medium text-zinc-900 dark:text-zinc-100">{app.appName}</div>
-      {active.length >= 2 ? (
+    <ListRow
+      inset="text"
+      title={app.appName}
+      tooltip={app.appName}
+      chevron={false}
+      trailing={active.length >= 2 ? (
         <button
           type="button"
           aria-label={t('settings:appPermissions.revokeAllLabel', { app: app.appName })}
           data-role="revoke-all"
-          className="shrink-0 rounded bg-red-50 hover:bg-red-100 dark:bg-red-950 dark:hover:bg-red-900 px-2 py-0.5 font-medium text-red-700 dark:text-red-400 transition-colors touch-target-32"
+          className="shrink-0 rounded bg-red-50 hover:bg-red-100 dark:bg-red-950 dark:hover:bg-red-900 px-2 py-0.5 text-xs font-medium text-red-700 dark:text-red-400 transition-colors touch-target-32"
           onClick={() => {
             const target = {
               slug: app.appSlug,
@@ -186,8 +192,8 @@ function AppHead({ app }: { app: PermissionAppView }) {
         >
           {t('settings:appPermissions.revokeAll')}
         </button>
-      ) : null}
-    </div>
+      ) : undefined}
+    />
   );
 }
 
@@ -206,12 +212,13 @@ export function AppPermissionsListView(state: AppPermissionsState) {
   return (
     <>
       {state.apps.map((app) => (
-        <div key={app.appId} className={ROW_CLASS}>
+        // One grouped list an app: its name, then a row a permission.
+        <GroupedList key={app.appId} className="mx-0">
           <AppHead app={app} />
           {app.items.map((item) => (
             <CapabilityRow key={item.capability} app={app} item={item} />
           ))}
-        </div>
+        </GroupedList>
       ))}
     </>
   );

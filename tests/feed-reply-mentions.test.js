@@ -1,20 +1,16 @@
 // #2145 — the Activity feed's reply box sends from the keyboard and suggests
 // people on `@`.
 //
-// ── What is pinned, and why it is pinned this way ─────────────────────
+// ── One message box, one @ menu (27 Nov 2026) ─────────────────────────
 //
-// The feed's composer (features/dev-board/card/feed-thread.tsx) was the one
-// reply box on the platform with no keyboard send at all: the dev chat, Close
-// issue and Send feedback take ⌘/Ctrl+Enter, the chat composers take Enter,
-// and this one took only its arrow. It also had no `@` list, while the chat
-// composer a card's topic page opens has had one since #87.
-//
-// The list is the chat's in every part that can be shared — the endpoint,
-// the token grammar the server's MENTION_RE also uses, the rows — and React's
-// in every part that cannot (see mention-typeahead.tsx's header). The suite
-// has no DOM, so the behaviour lives in exported pure functions and is driven
-// here directly; the wiring around them is pinned as source, in the style of
-// tests/activity-reply-composer.test.js.
+// The feed's reply box, a topic's channel and a request's, a change's or a
+// decision's thread were three boxes with two `@` lists of their own (the
+// classic script's MentionAutocomplete and the feed's mention-typeahead.tsx).
+// Every one of them is Messages' box now (features/messages/composer.tsx
+// MessageBox), whose `@` list is the only one, and a project's chat answers
+// it from features/group-chat/chat-sources.ts: the same endpoint, the same
+// two-minute list per app, Homeroom bot first, and a prefix lookup when the
+// whole list is full. That module is what this suite drives.
 //
 // Run with: node --test tests/feed-reply-mentions.test.js
 
@@ -25,281 +21,117 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const { loadTsx, renderToHtml, createElement } = require('./lib/render-tsx');
+const { loadTsx } = require('./lib/render-tsx');
 
 const read = (rel) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+const ROOT = path.join(__dirname, '..');
 const FEED = read('frontend/src/features/dev-board/card/feed-thread.tsx');
-const TYPEAHEAD = read('frontend/src/features/dev-board/card/mention-typeahead.tsx');
+const BOX = read('frontend/src/features/messages/composer.tsx');
+const GC = read('frontend/src/features/group-chat/composer.tsx');
 const GC_JS = read('public/js/group-chat.js');
 const APP_VIEW = read('public/js/app-view.js');
-const NOTIFICATIONS = read('src/services/notifications.js');
 const WS = read('src/services/ws.js');
-const CSS = read('public/css/app.css');
-
-let feedApi = null;
-const feed = () => feedApi || (feedApi = loadTsx('frontend/src/features/dev-board/card/feed-thread.tsx'));
-let taApi = null;
-const ta = () => taApi || (taApi = loadTsx('frontend/src/features/dev-board/card/mention-typeahead.tsx'));
+const SOURCES = 'frontend/src/features/group-chat/chat-sources.ts';
 
 const composer = () => FEED.slice(
   FEED.indexOf('export function FeedReplyComposer'),
   FEED.indexOf('\nexport function FeedThread'),
 );
 
+/** A fresh copy of the sources module with `fetch` answering from `answer`. */
+function sources(answer) {
+  const calls = [];
+  const saved = global.fetch;
+  global.fetch = async (url) => {
+    calls.push(url);
+    const out = await answer(url);
+    return { ok: out.status === undefined || out.status < 400, status: out.status || 200, json: async () => out.body || {} };
+  };
+  const mod = loadTsx(SOURCES);
+  return { mod, calls, restore: () => { global.fetch = saved; } };
+}
+
 // ── The send keys ───────────────────────────────────────────────────
 
-test('the box sends by the rule every message box keeps, and only a non-empty draft', () => {
-  const src = composer();
-  // The list's keys come first: an open menu owns Enter.
-  assert.match(src, /if \(mention\.onKeyDown\(e\)\) return;/);
-  // Then the send keys (lib/enter-sends.ts) — preventDefault unconditionally
-  // (#920: the keystroke must never leave a stray newline as its only visible
-  // effect), and submit only through the same gate the arrow is disabled by.
-  assert.match(src,
-    /if \(!enterSends\(e\.nativeEvent\)\) return;[\s\S]{0,400}?e\.preventDefault\(\);\s*if \(!posting && draft\.trim\(\)\) void onSubmit\(\);/);
-  assert.match(src, /disabled=\{posting \|\| !draft\.trim\(\)\}/, 'the arrow keeps the same gate');
-  // An IME confirmation is never a send.
-  assert.match(src, /if \(e\.nativeEvent\.isComposing\) return;/);
-  assert.doesNotMatch(FEED, /isSendChord/, 'no chord-only rule of its own');
-});
-
-test('the two chat composers and the inline editor take the same rule', () => {
-  const thread = /if \(GroupChat\._enterSends\(e\)\) \{\s*e\.preventDefault\(\);\s*submitThread\(\);/;
-  const general = /if \(GroupChat\._enterSends\(e\)\) \{\s*e\.preventDefault\(\);\s*submitGeneral\(\);/;
-  assert.match(GC_JS, thread, 'the topic thread composer');
-  assert.match(APP_VIEW, general, 'the general chat composer');
+test('every box sends by the rule every message box keeps', () => {
+  // The box's own keys: an open list first, then lib/enter-sends.ts.
+  assert.match(BOX, /if \(onEmojiKeyDown\(event\)\) return; if \(suggestionKeys\(event\)\) return; if \(enterSends\(event\.nativeEvent\)\) \{ event\.preventDefault\(\); submit\(\); \}/);
+  // The feed's and the chat's boxes are that box, with no keys of their own.
+  assert.match(composer(), /<MessageBox place=\{place\} \/>/);
+  assert.match(GC, /<MessageBox place=\{place\} scroller=\{scroller\} \/>/);
+  assert.doesNotMatch(composer(), /enterSends|onKeyDown/);
+  assert.doesNotMatch(GC, /enterSends|onKeyDown/);
+  // The old boxes' wiring is gone: nothing binds Enter to a chat field now.
+  assert.doesNotMatch(GC_JS, /submitThread|setupAttachments|MentionAutocomplete|RefAutocomplete|EmojiAutocomplete/);
+  assert.doesNotMatch(APP_VIEW, /submitGeneral|MentionAutocomplete|RefAutocomplete|EmojiAutocomplete/);
+  // The inline editor keeps the same rule for saving an edit.
   assert.match(GC_JS,
     /if \(GroupChat\._enterSends\(e\)\) \{\s*e\.preventDefault\(\);\s*GroupChat\._saveEdit/,
     'the inline editor saves on the same keys');
 });
 
+test('the comments, a channel and a thread all ask the one source', () => {
+  assert.match(composer(), /people: chatPeople\(slug\),/);
+  assert.match(GC, /people: chatPeople\(slug\),/);
+  for (const gone of [
+    'frontend/src/features/dev-board/card/mention-typeahead.tsx',
+    'frontend/src/features/dev-board/card/ref-typeahead.tsx',
+    'frontend/src/features/group-chat/autocomplete.tsx',
+    'frontend/src/features/group-chat/autocomplete-store.ts',
+  ]) assert.equal(fs.existsSync(path.join(ROOT, gone)), false, `${gone} went with the old boxes`);
+});
+
 // ── The `@` list ────────────────────────────────────────────────────
 
-test('typing @ev finds the people whose names start with it', () => {
-  const { detectMentionToken, filterMentionCandidates, MENTION_MAX_RESULTS } = ta();
-  assert.deepEqual(detectMentionToken('hello @ev', 9), { start: 6, query: 'ev' });
-  assert.deepEqual(detectMentionToken('ping @', 6), { start: 5, query: '' },
-    'a bare @ opens the whole list');
-  assert.deepEqual(detectMentionToken('@ev later', 3), { start: 0, query: 'ev' },
-    'text after the caret is not part of the token');
-  assert.equal(detectMentionToken('@ev later', 9), null, 'the caret has left the token');
-  assert.equal(detectMentionToken('mail@ev', 7), null,
-    'no boundary before the @ — the server would not read it as a mention either');
-  assert.equal(detectMentionToken(`@${'a'.repeat(33)}`, 34), null, 'past the 32-char cap');
-  assert.equal(detectMentionToken('@ev', 5), null, 'a caret outside the text');
-
-  const people = ['alice', 'Evan', 'evelyn', 'bob', 'steve'];
-  assert.deepEqual(filterMentionCandidates(people, 'ev'), ['Evan', 'evelyn'],
-    'a prefix match, case-insensitive, in the canonical casing the server knows');
-  assert.deepEqual(filterMentionCandidates(people, 'EVE'), ['evelyn']);
-  assert.deepEqual(filterMentionCandidates(people, ''), people, 'nothing typed yet lists everyone');
-  assert.deepEqual(filterMentionCandidates(people, 'zed'), [], 'no match, so the list closes');
-  const many = Array.from({ length: 80 }, (_, i) => `user${i}`);
-  assert.equal(filterMentionCandidates(many, 'user').length, MENTION_MAX_RESULTS, 'capped');
-});
-
-test('picking a suggestion inserts @evan and puts the caret after it', () => {
-  const { spliceMention } = ta();
-  assert.deepEqual(spliceMention('hello @ev there', 6, 9, 'evan'),
-    { value: 'hello @evan  there', caret: 12 },
-    'the token is replaced by the name and a trailing space; what followed the caret stays');
-  assert.deepEqual(spliceMention('@ev', 0, 3, 'evan'), { value: '@evan ', caret: 6 });
-  assert.deepEqual(spliceMention('cc @', 3, 4, 'alice'), { value: 'cc @alice ', caret: 10 });
-});
-
-test('the grammar is the server’s and the chat’s, character for character', () => {
-  // A suggestion that inserts a string MENTION_RE will not parse is worse
-  // than no suggestion: nobody gets notified. All three derive one class.
-  const { MENTION_CHARS, MENTION_MAX_LEN } = ta();
-  assert.equal(MENTION_CHARS, 'A-Za-z0-9_');
-  assert.equal(MENTION_MAX_LEN, 32);
-  assert.match(NOTIFICATIONS, /const MENTION_RE = \/\(\^\|\[\^\\w\]\)@\(\[A-Za-z0-9_\]\{1,32\}\)\/g;/);
-  assert.match(GC_JS, /MENTION_CHARS: 'A-Za-z0-9_',/);
-  assert.match(GC_JS, /MAX_LEN: 32,/);
-});
-
-test('the list is the group chat’s endpoint, fetched once per app and shared', async () => {
-  const api = ta();
-  const calls = [];
-  const realFetch = globalThis.fetch;
-  const respond = (body, ok = true, status = ok ? 200 : 404) => async (url) => {
-    calls.push(url);
-    return { ok, status, json: async () => body };
-  };
-  try {
-    api.resetMentionCache();
-    globalThis.fetch = respond({ users: [{ username: 'alice' }, { username: 'evan' }, { nope: 1 }] });
-    assert.equal(api.mentionSuggestionsPath('usernode-2d5619'), '/api/apps/usernode-2d5619/mention-suggestions');
-    assert.equal(api.mentionSuggestionsPath('a b'), '/api/apps/a%20b/mention-suggestions');
-
-    // Two composers ask at once: one request, both get the answer.
-    const [a, b] = await Promise.all([
-      api.loadMentionCandidates('usernode-2d5619'),
-      api.loadMentionCandidates('usernode-2d5619'),
-    ]);
-    assert.deepEqual(a, ['alice', 'evan']);
-    assert.equal(b, a);
-    assert.deepEqual(calls, ['/api/apps/usernode-2d5619/mention-suggestions']);
-    // …and a third, later, reads the cache.
-    assert.deepEqual(api.cachedMentionCandidates('usernode-2d5619'), ['alice', 'evan']);
-    assert.deepEqual(await api.loadMentionCandidates('usernode-2d5619'), ['alice', 'evan']);
-    assert.equal(calls.length, 1);
-    assert.equal(api.cachedMentionCandidates('usernode-2d5619', Date.now() + api.MENTION_CACHE_TTL_MS + 1), null,
-      'the list goes stale after the chat menu’s two minutes');
-
-    // A refusal is an empty list, kept: it will not change within the TTL.
-    api.resetMentionCache();
-    globalThis.fetch = respond({ error: 'App not found' }, false);
-    assert.deepEqual(await api.loadMentionCandidates('private-app'), []);
-    assert.deepEqual(api.cachedMentionCandidates('private-app'), []);
-
-    // Rate-limited is an empty list, NOT kept: the limit passes within the minute.
-    api.resetMentionCache();
-    globalThis.fetch = respond({ error: 'Too many directory lookups. Please slow down.' }, false, 429);
-    assert.deepEqual(await api.loadMentionCandidates('usernode-2d5619'), []);
-    assert.equal(api.cachedMentionCandidates('usernode-2d5619'), null);
-
-    // A failed fetch is an empty list, NOT kept: the next `@` retries.
-    api.resetMentionCache();
-    globalThis.fetch = async () => { throw new Error('offline'); };
-    assert.deepEqual(await api.loadMentionCandidates('usernode-2d5619'), []);
-    assert.equal(api.cachedMentionCandidates('usernode-2d5619'), null);
-  } finally {
-    globalThis.fetch = realFetch;
-    api.resetMentionCache();
-  }
-});
-
-test('a full list that cannot fill a prefix is widened by a prefix lookup; a 429 is not kept', async () => {
-  const api = ta();
-  const full = Array.from({ length: api.MENTION_FULL_LIST }, (_, i) => `member_${i}`);
-  assert.equal(api.needsPrefixLookup(full, 'qu'), true, 'nobody in the capped list starts with qu');
-  assert.equal(api.needsPrefixLookup(full, ''), false, 'a bare @ shows the list as it is');
-  assert.equal(api.needsPrefixLookup(full, 'member'), false, 'a prefix the list fills is not asked');
-  assert.equal(api.needsPrefixLookup(['alice'], 'qu'), false, 'a list below the cap is complete');
-  assert.deepEqual(api.mergeMentionNames(['alice', 'bob'], ['bob', 'quiet']), ['alice', 'bob', 'quiet']);
-  // The lookup goes through lib/prefix-lookup.ts (stale answers dropped,
-  // failures not remembered) against the same endpoint with ?q=.
-  assert.match(TYPEAHEAD, /prefixLookup\(async \(query: string\) => \{\s*const res = await fetch\(`\$\{mentionSuggestionsPath\(slug\)\}\?q=\$\{encodeURIComponent\(query\)\}`\);\s*if \(!res\.ok\) throw/);
-
-  const realFetch = globalThis.fetch;
-  try {
-    api.resetMentionCache();
-    globalThis.fetch = async () => ({ ok: false, status: 429, json: async () => ({}) });
-    assert.deepEqual(await api.loadMentionCandidates('busy'), []);
-    assert.equal(api.cachedMentionCandidates('busy'), null, 'a rate-limited answer is asked again, not kept as nobody');
-  } finally {
-    globalThis.fetch = realFetch;
-    api.resetMentionCache();
-  }
-});
-
-test('Escape closes; the arrows move; Enter and Tab take the highlighted row', () => {
-  const { menuKeyFor } = ta();
-  assert.equal(menuKeyFor('Escape'), 'close');
-  assert.equal(menuKeyFor('ArrowDown'), 'down');
-  assert.equal(menuKeyFor('ArrowUp'), 'up');
-  assert.equal(menuKeyFor('Enter'), 'accept');
-  assert.equal(menuKeyFor('Tab'), 'accept');
-  for (const key of ['a', 'Backspace', ' ', 'ArrowLeft', 'Shift']) {
-    assert.equal(menuKeyFor(key), null, `${key} is the textarea’s`);
-  }
-  // Only an OPEN list consumes them, and it consumes them fully — the form
-  // must not also submit, and the row's own key handling must not also run.
-  const hook = TYPEAHEAD.slice(TYPEAHEAD.indexOf('const onKeyDown = useCallback'));
-  assert.match(hook, /if \(!items\.length\) return false;/);
-  assert.match(hook, /e\.preventDefault\(\);\s*e\.stopPropagation\(\);/);
-  assert.match(hook, /if \(key === 'close'\) close\(\);/);
-  // Leaving the field closes it; an IME composition never opens it.
-  assert.match(composer(), /onBlur=\{\(\) => \{ mention\.close\(\); refs\.close\(\); \}\}/);
-  assert.match(TYPEAHEAD, /if \(!el \|\| composing\.current\) return;/);
-});
-
-test('the list renders the chat menu’s rows, and nothing at all when closed', () => {
-  const { FeedMentionMenu } = ta();
-  const html = (props) => renderToHtml(createElement(FeedMentionMenu, {
-    below: false, menuRef: { current: null }, onPick() {}, ...props,
+test('typing @ev finds the project\'s people whose names start with it, bot first when it matches', async () => {
+  const { mod, calls, restore } = sources(() => ({
+    body: { users: [{ username: 'evan' }, { username: 'Eve' }, { username: 'zoe' }, { username: 'homeroom_bot' }], bot: { username: 'homeroom_bot' } },
   }));
-  // Closed draws nothing: a row's markup is exactly what it was until
-  // somebody types `@`, which is what keeps the declared #1584 check and
-  // the like-for-like rule true.
-  assert.equal(html({ items: [], active: -1 }), '');
-
-  const open = html({ items: ['alice', 'evan'], active: 1 });
-  assert.match(open,
-    /<div class="gc-mention-menu dev-feed-mention-menu" role="listbox" aria-label="Mention someone" data-feed-mention-menu="">/);
-  assert.equal((open.match(/class="gc-mention-option(?: |")/g) || []).length, 2, 'one row per name');
-  assert.match(open,
-    /<div class="gc-mention-option gc-mention-option-active" role="option" data-username="evan" data-index="1"><span class="gc-mention-option-at">@<\/span>evan<\/div>/,
-    'the highlighted row is the one at `active`, in the chat menu’s exact markup');
-  assert.match(open, /data-username="alice" data-index="0"/);
-  assert.doesNotMatch(open, /gc-mention-option-you/, 'nobody signed in, nobody is "you"');
-
-  const flipped = html({ items: ['alice'], active: 0, below: true });
-  assert.match(flipped, /class="gc-mention-menu dev-feed-mention-menu dev-feed-mention-menu-below"/);
-
-  // The "you" tag is decided against App.user, where the viewer is known.
-  globalThis.window = { App: { user: { username: 'Evan' } } };
   try {
-    const mine = html({ items: ['alice', 'evan'], active: 0 });
-    assert.equal((mine.match(/gc-mention-option-you/g) || []).length, 1);
-    assert.match(mine, /data-username="evan"[^>]*>[\s\S]*?gc-mention-option-you/);
-  } finally {
-    delete globalThis.window;
-  }
+    const people = mod.chatPeople('slug-a');
+    assert.equal(people.kind, 'lookup');
+    assert.equal(people.key, 'app:slug-a', 'one lookup per project');
+    const ev = await people.ask('ev');
+    assert.deepEqual(ev.map((p) => p.username), ['evan', 'Eve'], 'prefix, any case, the server\'s order kept');
+    const bare = await people.ask('');
+    assert.equal(bare[0].username, 'homeroom_bot', 'a bare @ offers Homeroom bot first');
+    assert.equal(bare[0].insert, 'Homeroom bot', 'and picks it as its name, which the server reads as it');
+    assert.equal(bare.filter((p) => p.username === 'homeroom_bot').length, 1, 'once');
+    assert.deepEqual((await people.ask('home')).map((p) => p.username), ['homeroom_bot']);
+    assert.deepEqual(calls, ['/api/apps/slug-a/mention-suggestions'], 'one fetch for every prefix within the TTL');
+  } finally { restore(); }
 });
 
-test('the composer wires the list, and its own markup is unchanged until it opens', () => {
-  const src = composer();
-  assert.match(src, /useMentionTypeahead\(\{ slug, inputRef, value: draft, onChange: onDraftChange \}\)/,
-    'the list edits the draft through the same onChange the keyboard does');
-  // #2497 added the `#` list beside this one, so the field's handlers now fan
-  // out to both: `syncMenus` asks each, and at most one of them opens (a
-  // token under the caret is `@`-shaped or `#`-shaped, never both).
-  assert.match(src, /const syncMenus = \(\) => \{ mention\.sync\(\); refs\.sync\(\); \};/);
-  assert.match(src, /onChange=\{\(e\) => \{ onDraftChange\(e\.target\.value\); syncMenus\(\); \}\}/);
-  assert.match(src, /onSelect=\{syncMenus\}/, 'a caret move can land on or leave a token');
-  assert.match(src, /onFocus=\{\(\) => \{ mention\.warm\(\); refs\.warm\(\); \}\}/,
-    'both lists are loading by the first `@` or `#`');
-  assert.match(src, /onBlur=\{\(\) => \{ mention\.close\(\); refs\.close\(\); \}\}/);
-  assert.match(src, /className="relative flex items-end gap-2 pt-0\.5"/,
-    'the form is the box the list is placed against');
-  assert.match(src, /<FeedMentionMenu[\s\S]*?onPick=\{mention\.accept\}/);
-  assert.match(FEED, /<FeedReplyComposer\s+slug=\{slug\}/, 'the thread hands the composer its app');
-  // The fetch lives in the typeahead, not here: the reply still POSTs to the
-  // thread exactly as before.
-  assert.doesNotMatch(FEED, /mention-suggestions/);
-
-  const html = renderToHtml(createElement(feed().FeedReplyComposer, {
-    slug: 'usernode-2d5619', draft: 'cc @ev', posting: false, onDraftChange() {}, onSubmit() {},
-  }));
-  assert.doesNotMatch(html, /data-feed-mention-menu/, 'no list in the initial render');
-  assert.match(html, /<form class="relative flex items-end gap-2 pt-0.5">/);
-  assert.match(html, /<textarea[^>]*aria-label="Reply to this item"[^>]*>cc @ev<\/textarea>/);
+test('a full list that cannot fill a prefix is widened by a prefix lookup', async () => {
+  const many = Array.from({ length: 500 }, (_, i) => ({ username: `member${i}` }));
+  const { mod, calls, restore } = sources((url) => (url.includes('?q=')
+    ? { body: { users: [{ username: 'quiet-quinn' }] } }
+    : { body: { users: many } }));
+  try {
+    const found = await mod.chatPeople('big').ask('qui');
+    assert.deepEqual(found.map((p) => p.username), ['quiet-quinn']);
+    assert.ok(calls.includes('/api/apps/big/mention-suggestions?q=qui'));
+  } finally { restore(); }
 });
 
-test('the list sits above the field inside the composer, clear of the send disc', () => {
-  const base = CSS.indexOf('.gc-mention-menu {');
-  const feedRule = CSS.indexOf('.gc-mention-menu.dev-feed-mention-menu {');
-  assert.ok(base > 0 && feedRule > base, 'the feed’s placement follows the chat menu’s box, and overrides it');
-  assert.match(CSS,
-    /\.gc-mention-menu\.dev-feed-mention-menu \{\s*position: absolute;\s*inset-inline-start: 0;\s*inset-inline-end: 44px;\s*bottom: calc\(100% \+ 4px\);\s*\}/,
-    '44px = the 36px disc plus the form’s 8px gap');
-  assert.match(CSS,
-    /\.gc-mention-menu\.dev-feed-mention-menu-below \{\s*top: calc\(100% \+ 4px\);\s*bottom: auto;\s*\}/,
-    'the flip for a field with no room above it');
+test('a refused list is kept empty; a 429 is not kept, so the next @ asks again', async () => {
+  let status = 429;
+  const { mod, calls, restore } = sources(() => ({ status, body: {} }));
+  try {
+    assert.deepEqual(await mod.chatPeople('busy').ask(''), []);
+    status = 200;
+    await mod.chatPeople('busy').ask('');
+    assert.equal(calls.length, 2, 'the 429 was not remembered');
+  } finally { restore(); }
 });
 
 test('a picked mention notifies as mentions already do — no new kind, no new route', () => {
-  // The composer POSTs to the thread as before; the server fans out mention
-  // notifications after every chat insert, threaded or not, so `@evan` in a
-  // feed reply reaches evan through the pipeline #87 built.
+  // The comments box POSTs to the thread as before; the server fans out
+  // mention notifications after every chat insert, threaded or not.
   const submit = FEED.slice(FEED.indexOf('const submit = useCallback'), FEED.indexOf('const hidden'));
-  // #6730 adds the per-press client key to this same POST; the route and
-  // its mention fanout are unchanged.
   assert.match(submit, /body: JSON\.stringify\(\{ content, thread_type: type, thread_ref: refId, client_key: clientKey \}\)/);
   const insert = WS.indexOf('INSERT INTO chat_messages');
   const fanout = WS.indexOf('notifications.createMentionNotifications(pool, {', insert);
   assert.ok(insert > 0 && fanout > insert, 'mentions fan out after the insert, for thread posts too');
-  assert.doesNotMatch(TYPEAHEAD, /method: 'POST'/, 'the typeahead only reads');
+  assert.doesNotMatch(read(SOURCES), /method: 'POST'[\s\S]*mention/, 'the people lookup only reads');
 });

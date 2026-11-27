@@ -26,7 +26,9 @@ test('the composer card rings itself while anything inside it has focus', () => 
 });
 
 test('the card is the element that wraps the textarea', () => {
-  assert.match(COMPOSER, /<div className="messages-composer-card">[\s\S]*?className="messages-composer-input"/);
+  // One message box (27 Nov 2026): the card carries the place's id (a
+  // project chat's `gc-thread-form`), still around the field.
+  assert.match(COMPOSER, /<div className="messages-composer-card" id=\{ids\.card\}[^>]*>[\s\S]*?className="messages-composer-input"/);
 });
 
 test('the field itself still draws no ring of its own', () => {

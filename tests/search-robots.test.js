@@ -161,6 +161,21 @@ test('a public project’s page, its og:url and its sitemap entry are one addres
   assert.ok(tags.includes(`<link rel="canonical" href="${address}">`));
   assert.ok(tags.includes(`<meta property="og:url" content="${address}">`));
   assert.ok(sitemapXml(origin, [app]).includes(`<loc>${address}</loc>`));
+  // The hidden record names it too, and all three follow the configured
+  // origin when the request came with another Host; pictures stay put.
+  const record = (html) => JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1].replace(/\\u003c/g, '<'));
+  assert.equal(record(tags).url, address);
+  const asked = preview.previewTags(app, 'https://forged.example', { canonical: origin });
+  assert.ok(asked.includes(`<link rel="canonical" href="${address}">`));
+  assert.ok(asked.includes(`<meta property="og:url" content="${address}">`));
+  assert.equal(record(asked).url, address);
+  assert.equal(record(asked).isPartOf.url, `${origin}/`);
+  assert.equal((asked.match(/forged\.example\/app\//g) || []).length, 0, 'no second address for the page');
+  assert.match(asked, /og:image" content="https:\/\/forged\.example\//);
+  // Not an origin: ignored, never written into the page.
+  const odd = preview.previewTags(app, origin, { canonical: 'https://evil.example/"><x' });
+  assert.ok(odd.includes(`<link rel="canonical" href="${address}">`));
+  assert.doesNotMatch(odd, /evil\.example/);
 });
 
 // The starter app's canonical, run as the generated server runs it: the two

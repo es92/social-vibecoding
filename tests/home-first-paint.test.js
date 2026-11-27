@@ -97,6 +97,23 @@ test('Pinned projects\' placeholder lies on the grid\'s rows, at today\'s tile s
   assert.match(rest, /@media \(max-width: 639\.98px\) \{[^@]*html:root #app-list:not\(\[data-view\]\) \{ min-height: calc\(2 \* var\(--home-cell-h\) \+ 1\.875rem\); \}/);
 });
 
+// Three more placeholders are the size of what lands (27 Nov 2026): Challenges' held label row is the linked label's
+// 54px, the inbox placeholder leads with the heading's own box, and a Featured cover's words are a real cover's height.
+// Each was shorter, so what was under it dropped when the real part arrived (16px, 40px, and 4px a row of covers).
+test('Challenges\', the inbox\'s and Featured\'s placeholders hold what lands under them', () => {
+  assert.match(CSS, /html:root #home-screen #home-challenges-section\.home-section-pending > \.home-area-label \{ min-height: 3\.375rem; \}/);
+  assert.match(CSS, /html:root #home-screen #home-apps-section > \.home-area-label \{ min-height: 3\.375rem; \}/, 'the height a label row with its link has');
+  // The placeholder's leading line is named in the heading's own rules, on a phone and from 768px.
+  const lead = 'html:root #messages-screen .messages-list-pane .messages-list-scroll > .animate-pulse::before';
+  const head = 'html:root #messages-screen .messages-list-pane .messages-section-head';
+  assert.ok(CSS.includes(`${lead} { content: "\\00A0"; display: block; }`), 'an empty line, a block');
+  assert.ok(CSS.includes(`${head},\n${lead} {\n  padding: 15px 6px 8px;`), 'the heading\'s box on a phone');
+  assert.ok(CSS.includes(`  ${head},\n  ${lead} { padding: 16px 6px 8px; }`), 'and from 768px');
+  const cover = 'html:root :is(#home-screen, #communities-screen) [data-home-join-featured] .cm-card-skel .cm-card-skel-body';
+  assert.ok(CSS.includes(`${cover} { height: 63px; }`));
+  assert.ok(CSS.includes(`@media (min-width: 768px) {\n  ${cover} { height: 62px; }\n}`));
+});
+
 test('the head and the module keep the same record: key, size and property names', () => {
   const reserve = loadTsx(RESERVE);
   assert.equal(reserve.RESERVE_KEY, 'usernode.first-paint.v1');

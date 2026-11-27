@@ -28,17 +28,20 @@
  *
  * ── Ownership ─────────────────────────────────────────────────────────
  *
- * Drawn inside ./general-chat.tsx's composer bar, a subtree no module writes
+ * Drawn inside the channel's box's bar (./general-chat.tsx hands it to
+ * ./composer.tsx as what goes over the card), a subtree no module writes
  * into, and it renders from ./transcript-store.ts, which group-chat.js
- * publishes. The textarea stays the module's: a tap writes its value the way
- * restoring a draft does and fires `input`, so the module's own listener
- * saves the draft and grows the field.
+ * publishes. The box is Messages' own (../messages/composer.tsx), so a tap
+ * puts the words in through it (`putInComposer`), which saves the draft
+ * and grows the field as anything typed does.
  */
 
 import { useState } from 'react';
 
 import { useMessages } from '../../lib/i18n/react';
 import { useStoreState } from '../../lib/use-store-state';
+import { putInComposer } from '../messages/composer';
+import { shownChatScope } from './composer';
 import { transcriptStore, type TranscriptView } from './transcript-store';
 
 // `label` and `text` are message ids (frontend/locales/en/chat.json), read
@@ -64,14 +67,10 @@ export function startersDue(view: TranscriptView | undefined | null): boolean {
   return theirs;
 }
 
-/** Put a chip's words in the general composer, focused, caret at the end. */
-export function startReply(text: string, doc: Document | null = typeof document === 'undefined' ? null : document): void {
-  const input = doc?.getElementById('gc-input') as HTMLTextAreaElement | null | undefined;
-  if (!input) return;
-  input.value = text;
-  input.dispatchEvent(new Event('input', { bubbles: true }));
-  input.focus();
-  try { input.setSelectionRange(text.length, text.length); } catch { /* not a text field */ }
+/** Put a chip's words in the channel's box, focused, caret at the end. */
+export function startReply(text: string): void {
+  const scope = shownChatScope('general');
+  if (scope != null) putInComposer(scope, text);
 }
 
 const CHIP = 'shrink-0 rounded-full border border-violet-200 bg-white px-3 py-1.5 text-sm text-violet-700 hover:bg-violet-50 dark:border-violet-800 dark:bg-zinc-900 dark:text-violet-300 dark:hover:bg-violet-950/40';

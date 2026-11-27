@@ -207,7 +207,10 @@ test('#24: a long step gives way with an ellipsis', () => {
   // The square votes figure was the Overview card's, the brand look's alone
   // (removed 26 Nov 2026).
   const css = read('public/css/app.css');
-  assert.match(css, /\.dev-ws-hrow-meta > \.dev-ws-hrow-tag:not\(:has\(> svg\)\) \{\s*flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;/);
+  // The tag is the one tag (@/components/ui/state-tag), whose part ellipsises
+  // its own words; the row only lets it give way.
+  assert.match(css, /html:root \.dev-ws-hrow-meta > \.dev-ws-hrow-tag\.one-tag \{ flex: 0 1 auto; min-width: 0; \}/);
+  assert.match(css, /html:root \.one-tag \{[^}]*overflow: hidden; text-overflow: ellipsis; \}/);
 });
 
 test('N13: a change with no picture shows the project\'s tile on its colour', () => {

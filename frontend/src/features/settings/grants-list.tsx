@@ -13,12 +13,14 @@
  * one already does its own optimistic-revert and status reporting, so the
  * component hands it the value and forgets.
  *
- * Markup is like-for-like with the string it replaces — same classes, same
- * `data-role` attributes — except for the two the reskin changed on purpose,
- * noted at their call sites.
+ * Each app is the shared row (ListRow) in one grouped list: its name over
+ * what it spent today, and under them (the row's children) the day's spend
+ * bar, the cap and the actions. The `data-role` attributes are the ones the
+ * string this once replaced carried.
  */
 
 import { Button } from '@/components/ui/button';
+import { GroupedList, ListRow } from '@/components/ui/grouped-list';
 import { Input } from '@/components/ui/input';
 
 import { useMessages } from '../../lib/i18n/react';
@@ -46,16 +48,11 @@ function controller(): any {
   return (typeof window !== 'undefined' ? (window as any).Settings : null) || null;
 }
 
-/*
- * A floating white card, where the string this replaces was
- * `bg-zinc-100 … border border-zinc-300`. Both halves of that changed for one
- * reason: this section renders straight onto the settings PAGE GROUND, and in
- * this palette zinc-100 IS that ground (#eaeaea) — the fill was doing nothing
- * and the border was the only thing drawing the row. The language separates by
- * figure/ground, so the row is the surface and needs no border, which is also
- * what every other card on this screen does.
+/**
+ * What sits under an app's name: the spend bar, the note and the line of
+ * controls, at the 12px the controls were drawn for.
  */
-const ROW_CLASS = 'ui-mini rounded-lg bg-white dark:bg-zinc-900 px-3 py-2 text-xs';
+const BELOW = 'text-xs';
 
 /*
  * #1957: the way back. A revoked row used to be the badge and nothing else —
@@ -73,30 +70,32 @@ const ROW_CLASS = 'ui-mini rounded-lg bg-white dark:bg-zinc-900 px-3 py-2 text-x
 function RevokedRow({ grant }: { grant: GrantView }) {
   const t = useMessages('settings');
   return (
-    <div className={ROW_CLASS}>
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-medium text-zinc-500 dark:text-zinc-500 truncate">{grant.appName}</span>
-        <span className="shrink-0 rounded px-1.5 py-0.5 bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400">
-          {t('settings:grants.revoked')}
+    <ListRow
+      title={grant.appName}
+      tooltip={grant.appName}
+      titleClassName="text-zinc-500 dark:text-zinc-500"
+      subtitle={t('settings:grants.reenableNote', { cap: grant.cap })}
+      subtitleClassName="whitespace-normal"
+      trailing={(
+        <span className="flex shrink-0 items-center gap-2 text-xs">
+          <span className="shrink-0 rounded px-1.5 py-0.5 bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400">
+            {t('settings:grants.revoked')}
+          </span>
+          <Button
+            type="button"
+            aria-label={t('settings:grants.reenableLabel', { app: grant.appName })}
+            data-role="re-enable"
+            layout="shrink"
+            variant="compact"
+            size="xs"
+            onClick={() => { void controller()?._onGrantReenable?.(grant); }}
+          >
+            {t('settings:grants.reenable')}
+          </Button>
         </span>
-      </div>
-      <div className="flex items-center justify-between gap-2 mt-2 flex-wrap">
-        <span className="text-zinc-500 dark:text-zinc-500">
-          {t('settings:grants.reenableNote', { cap: grant.cap })}
-        </span>
-        <Button
-          type="button"
-          aria-label={t('settings:grants.reenableLabel', { app: grant.appName })}
-          data-role="re-enable"
-          layout="shrink"
-          variant="compact"
-          size="xs"
-          onClick={() => { void controller()?._onGrantReenable?.(grant); }}
-        >
-          {t('settings:grants.reenable')}
-        </Button>
-      </div>
-    </div>
+      )}
+      chevron={false}
+    />
   );
 }
 
@@ -125,13 +124,14 @@ function GrantRow({ grant }: { grant: GrantView }) {
   const t = useMessages('settings');
   const use = capUse(grant);
   return (
-    <div className={ROW_CLASS}>
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-medium text-zinc-700 dark:text-zinc-300 truncate">{grant.appName}</span>
-        <span className="font-mono text-zinc-600 dark:text-zinc-400 shrink-0">
-          {t('settings:grants.spentToday', { spent: grant.spent, cap: grant.cap })}
-        </span>
-      </div>
+    <ListRow
+      title={grant.appName}
+      tooltip={grant.appName}
+      subtitle={t('settings:grants.spentToday', { spent: grant.spent, cap: grant.cap })}
+      subtitleClassName="font-mono"
+      chevron={false}
+    >
+      <div className={BELOW}>
       {use ? (
         <div
           data-role="spend-bar"
@@ -208,7 +208,8 @@ function GrantRow({ grant }: { grant: GrantView }) {
           {t('settings:grants.revoke')}
         </button>
       </div>
-    </div>
+      </div>
+    </ListRow>
   );
 }
 
@@ -233,9 +234,11 @@ export function GrantsListView({ phase, grants }: GrantsState) {
           {t('settings:grants.totalToday', { spent: (totalCents / 100).toFixed(2) })}
         </p>
       ) : null}
-      {grants.map((g) => (
-        g.revoked ? <RevokedRow key={g.appId} grant={g} /> : <GrantRow key={g.appId} grant={g} />
-      ))}
+      <GroupedList className="mx-0">
+        {grants.map((g) => (
+          g.revoked ? <RevokedRow key={g.appId} grant={g} /> : <GrantRow key={g.appId} grant={g} />
+        ))}
+      </GroupedList>
     </>
   );
 }

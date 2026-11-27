@@ -32,6 +32,7 @@ import './settings.js';
 // which the façade answers by loading this chunk.
 import { settingsNavStore } from './settings-nav-store.js';
 import { usernodeSectionStore, type UsernodeSectionState } from './sections/usernode-store';
+import { loadQRCode } from '../../lib/qr-code';
 
 settingsNavStore.setFlush(flushSync);
 
@@ -69,6 +70,8 @@ if (typeof window !== 'undefined') {
   if (host.Settings) {
     host.Settings._store = settingsNavStore;
     host.Settings._footerHome = lazyFooterHome();
+    // The wallet link's QR code: loaded when it is first drawn (lib/qr-code.ts).
+    host.Settings._loadQRCode = loadQRCode;
   }
   const bridge = (host.UsernodeReact ||= {});
   bridge.settings = host.Settings;

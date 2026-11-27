@@ -81,8 +81,8 @@ test('the shell asks for the list form, by one spelling', () => {
   assert.match(view, /const activeQs = AppView\._withDemo\('results=failing&include_imported=1'\);/);
   assert.match(view, /shared-sessions\$\{AppView\._withDemo\('results=failing'\)\}/);
   assert.match(view, /sessions\$\{AppView\._withDemo\('status=archived'\)\}/);
-  assert.match(read('public/js/group-chat.js'), /\/promoted\?results=failing/);
-  assert.match(read('frontend/src/features/dev-board/card/ref-typeahead.tsx'), /\/promoted\?results=failing/);
+  // One message box (27 Nov 2026): every box's `#` list reads one copy.
+  assert.match(read('frontend/src/features/group-chat/chat-sources.ts'), /\/promoted\?results=failing/);
 });
 
 function loadAppView() {

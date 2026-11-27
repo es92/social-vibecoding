@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { XIcon } from '@/components/ui/icons';
 
 import { useMessages } from '../../lib/i18n/react';
+import { loadQRCode } from '../../lib/qr-code';
 import { useSheet } from '../../lib/sheet';
 import type { StoreLink } from './ask-state';
 
@@ -72,10 +73,15 @@ export function GetAppContent({ links, onClose, doneRef }: {
   // effect (as the wallet's receive code is).
   useEffect(() => {
     const el = code.current;
-    const QR = (window as unknown as { QRCode?: new (el: HTMLElement, opts: Record<string, unknown>) => unknown }).QRCode;
-    if (!el || !QR) return;
-    el.textContent = '';
-    new QR(el, { text: getAppUrl(window.location.origin), width: 176, height: 176 });
+    if (!el) return;
+    // Loaded when the sheet opens, not at boot (lib/qr-code.ts).
+    let live = true;
+    loadQRCode().then((QR) => {
+      if (!live) return;
+      el.textContent = '';
+      new QR(el, { text: getAppUrl(window.location.origin), width: 176, height: 176 });
+    }).catch(() => { /* no code: the store links are under it */ });
+    return () => { live = false; };
   }, []);
   return (
     <>

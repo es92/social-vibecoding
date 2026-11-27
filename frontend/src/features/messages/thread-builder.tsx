@@ -39,7 +39,8 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Reac
 import { createPortal } from 'react-dom';
 
 import { Button } from '@/components/ui/button';
-import { ChatIcon, CheckIcon, ChevronDownIcon, TerminalIcon } from '@/components/ui/icons';
+import { ListRow } from '@/components/ui/grouped-list';
+import { ChatIcon, ChevronDownIcon, TerminalIcon } from '@/components/ui/icons';
 import { CLAUDE_CODE_WEB_URL } from '../../lib/claude-code-link';
 import { RichMessage, useMessages } from '../../lib/i18n/react';
 import { useMenu } from '../../lib/menu';
@@ -49,6 +50,7 @@ import { ConnectorUrl } from '../settings/connector-url';
 import * as api from './api';
 import { BOT_AVATAR } from './format';
 import { useWide } from './project-picker';
+import { SWITCHER_ROW, SwitcherTick } from '../workshop/community-switcher';
 
 export type Builder = 'homeroom' | 'claude-code' | 'chatgpt';
 export type OwnBuilder = Exclude<Builder, 'homeroom'>;
@@ -201,32 +203,33 @@ function PickerBody({ builder, links, menu, onPick }: {
               ? t('messages:newThread.builder.ownConnected', { product: BUILDER_PRODUCT[own] })
               : t('messages:newThread.builder.own', { product: BUILDER_PRODUCT[own] });
           return (
-            <button
+            <ListRow
               key={key}
-              type="button"
-              className="community-switcher-row"
+              as="button"
+              inset="none"
+              className={SWITCHER_ROW}
               data-bot-builder-option={key}
               aria-current={current ? 'true' : undefined}
               style={current ? { background: 'var(--bg-secondary)' } : undefined}
               onClick={() => onPick(key)}
-            >
-              {own ? (
+              leading={own ? (
                 <span className="community-switcher-tile community-switcher-tile-add" aria-hidden="true"><BuilderGlyph builder={own} /></span>
               ) : (
                 <span className="community-switcher-tile" aria-hidden="true"><img src={BOT_AVATAR} alt="" /></span>
               )}
-              <span className="community-switcher-text">
-                <span className="community-switcher-name">{own ? BUILDER_NAME[own] : t('messages:newThread.builder.homeroom.name')}</span>
-                <span className="community-switcher-sub">{sub}</span>
-              </span>
-              {/* The switcher's own accent pill ("3 to vote"): the one thing on the row that asks for something. */}
-              {own && known && !connected ? (
-                <span className="community-switcher-waiting" data-bot-builder-needs-setup="">{t('messages:newThread.builder.setUp')}</span>
-              ) : null}
-              <span className="community-switcher-tick" style={{ visibility: current ? 'visible' : 'hidden' }} aria-hidden="true">
-                <CheckIcon className="w-5 h-5" strokeWidth="2.5" />
-              </span>
-            </button>
+              title={own ? BUILDER_NAME[own] : t('messages:newThread.builder.homeroom.name')}
+              subtitle={sub}
+              trailing={(
+                <>
+                  {/* The switcher's own accent pill ("3 to vote"): the one thing on the row that asks for something. */}
+                  {own && known && !connected ? (
+                    <span className="community-switcher-waiting" data-bot-builder-needs-setup="">{t('messages:newThread.builder.setUp')}</span>
+                  ) : null}
+                  <SwitcherTick on={current} />
+                </>
+              )}
+              chevron={false}
+            />
           );
         })}
       </div>

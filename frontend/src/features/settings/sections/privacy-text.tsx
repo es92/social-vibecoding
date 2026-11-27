@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ChangeEventHandler, type ReactNode } from 'react';
 
+import { ListRow } from '@/components/ui/grouped-list';
 import { Switch } from '@/components/ui/switch';
 
 import { useMessages } from '../../../lib/i18n/react';
@@ -34,35 +35,44 @@ export interface PrivacySwitchProps {
  * colour is not the only sign of its state. The word is hidden from screen
  * readers: role="switch" already makes them say on or off.
  *
+ * The shared row (ListRow) as a <label>: the name, the small text under it,
+ * and the switch at the row's end, as every switch row in Settings is drawn.
  * The whole row is the label, so pressing the description toggles the switch
- * as well (#5926). It is spans because a label holds no paragraphs. aria-label
- * keeps the switch's name to the label's words: the description, inside the
- * <label>, would otherwise be read as its name and again as its description.
- * pt-1 sets the first line level with the taller switch.
+ * as well (#5926); the row's lines are spans there, because a label holds no
+ * paragraphs. aria-label keeps the switch's name to the label's words: the
+ * description, inside the <label>, would otherwise be read as its name and
+ * again as its description.
  */
 export function PrivacySwitch({ id, label, checked, disabled, onChange, describedBy, description }: PrivacySwitchProps) {
   const t = useMessages('settings');
   return (
-    <label className="ui-row ui-row-sw flex items-start gap-2 cursor-pointer select-none">
-      <Switch
-        id={id}
-        role="switch"
-        checked={checked}
-        disabled={disabled}
-        aria-label={label}
-        aria-describedby={describedBy}
-        onChange={onChange}
-      />
-      <span className="ui-row-tx min-w-0 pt-1">
-        <span className="ui-row-t block text-sm text-zinc-800 dark:text-zinc-200">
+    <ListRow
+      as="label"
+      title={(
+        <>
           {label}
-          <span aria-hidden="true" className="ms-2 text-[0.8125rem] text-zinc-500 dark:text-zinc-400">
+          <span aria-hidden="true" className="ms-2 text-[0.8125rem] font-normal text-zinc-500 dark:text-zinc-400">
             {t(checked ? 'settings:privacy.state.on' : 'settings:privacy.state.off')}
           </span>
-        </span>
-        {description ? <span id={describedBy} className={`ui-row-s block ${HELP} mt-1 space-y-1`}>{description}</span> : null}
-      </span>
-    </label>
+        </>
+      )}
+      // Both lines wrap: a name cut short would cut off its On or Off.
+      titleClassName="whitespace-normal"
+      subtitle={description ? <span id={describedBy}>{description}</span> : undefined}
+      subtitleClassName="whitespace-normal"
+      trailing={(
+        <Switch
+          id={id}
+          role="switch"
+          checked={checked}
+          disabled={disabled}
+          aria-label={label}
+          aria-describedby={describedBy}
+          onChange={onChange}
+        />
+      )}
+      chevron={false}
+    />
   );
 }
 

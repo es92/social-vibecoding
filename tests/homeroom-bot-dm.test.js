@@ -713,7 +713,9 @@ test('the DM screen draws the bot\'s question and badge, and the reply bar names
   const composer = read('frontend/src/features/messages/composer.tsx');
   // #6019: this chat is private. A typed reply comes back as a draft with
   // Post it (homeroom-bot-mayor.js offerPost), and the reply bar says so.
-  assert.match(composer, /\{t\('messages:bot\.draft\.reply'\)\}/);
+  // One message box (27 Nov 2026): the reply chip's notes are worded by
+  // MessageComposer and drawn by the box.
+  assert.match(composer, /\[t\('messages:bot\.draft\.reply'\)\]/);
   assert.equal(message('messages:bot.draft.reply'), 'Your reply stays in this chat until you tap Post it.');
   const css = read('public/css/app.css');
   for (const cls of ['.messages-bot-badge', '.messages-bot-answers button', '.messages-bot-note', '.messages-bot-default']) {

@@ -4,6 +4,11 @@
 // capped at 560px — under a 22px-radius composer card, and a reply to a
 // platform message (#2390) read "Replying to message". It now follows the
 // Messages screen's reply draft, and its label names what it replies to.
+//
+// One message box (27 Nov 2026): the chat's box is Messages' own, so the
+// strip IS the Messages reply draft (`.messages-reply-draft`), drawn by the
+// box from the chip the chat words (features/group-chat/composer.tsx
+// replyChip); the chat's own strip and its rules are gone.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { englishPlatformI18n } = require('./lib/platform-i18n');
@@ -21,19 +26,11 @@ const rule = (sel) => {
 };
 
 test('the strip is the Messages reply draft: full width, accent tint, open rounded edge', () => {
-  const strip = rule('.gc-reply-preview-inner');
-  assert.match(strip, /border-inline-start: 3px solid var\(--accent\);/);
-  assert.match(strip, /border-start-start-radius: 0; border-start-end-radius: 12px; border-end-end-radius: 12px; border-end-start-radius: 0;/);
-  assert.match(strip, /background: var\(--accent-tint\);/);
-  assert.doesNotMatch(strip, /max-width/, 'spans the composer, not capped at 560px');
   assert.match(css, /\.messages-reply-draft \{[^}]*border-start-start-radius: 0; border-start-end-radius: 12px; border-end-end-radius: 12px; border-end-start-radius: 0;[^}]*background: var\(--accent-tint\);/,
     'the Messages screen draws its draft the same way');
-});
-
-test('its text is at the composer reading size, and its dismiss is a legible glyph', () => {
-  assert.match(css, /\n\.gc-reply-preview-label \{ font-size: 13px; font-weight: 700; \}/);
-  assert.match(css, /\n\.gc-reply-preview-snippet \{ font-size: 15px; \}/);
-  assert.match(rule('.gc-reply-preview-x'), /font-size: 20px;/);
+  assert.doesNotMatch(css, /\.gc-reply-preview/, 'the chat\'s own strip is gone');
+  const box = fs.readFileSync(path.join(root, 'frontend/src/features/messages/composer.tsx'), 'utf8');
+  assert.match(box, /\{reply \? <div className="messages-reply-draft"><div className="min-w-0"><span className="font-semibold">\{reply\.title\}<\/span><p className="truncate">\{reply\.snippet\}<\/p>/);
 });
 
 test('the sent quote keeps its compact in-transcript form', () => {
@@ -78,13 +75,11 @@ function labelFor(replyDraft) {
   return published[0].quote;
 }
 
-// What the strip says for a staged reply: the composer's own render of it.
+// What the strip says for a staged reply: the chip the box draws.
+const { replyChip } = require('./lib/render-tsx').loadTsx('frontend/src/features/group-chat/composer.tsx');
 function lineFor(replyDraft) {
-  const html = renderComponent('frontend/src/features/group-chat/composer.tsx', 'ComposerSlotsView', {
-    scope: 'general',
-    slot: { quote: labelFor(replyDraft), attachError: null, attachments: [], status: '' },
-  });
-  return (/<span class="gc-reply-preview-label">([^<]*)<\/span>/.exec(html) || [])[1];
+  const i18n = englishPlatformI18n();
+  return replyChip((id, values) => i18n.t(id, values), labelFor(replyDraft)).title;
 }
 
 test('the label names what the reply is to', () => {

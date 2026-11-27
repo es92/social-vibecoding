@@ -42,8 +42,8 @@ export function OpenRouterSection() {
           `hidden` settings.js toggles on it. */}
       <div className="ui-card ui-onecard">
       <div id="settings-openrouter-included" className="ui-card ui-pad hidden rounded-lg border border-violet-200 dark:border-violet-900 bg-violet-50 dark:bg-violet-950/30 px-3 py-3 mb-3">
-        <div className="ui-row-t text-sm font-medium text-zinc-900 dark:text-zinc-100">{t('settings:openrouter.included.title')}</div>
-        <div id="settings-openrouter-included-status" className="ui-row-s mt-1 text-xs text-zinc-600 dark:text-zinc-400"></div>
+        <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{t('settings:openrouter.included.title')}</div>
+        <div id="settings-openrouter-included-status" className="mt-1 text-xs text-zinc-600 dark:text-zinc-400"></div>
       </div>
       <div id="settings-openrouter-key-display" className="ui-card ui-pad hidden rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm font-mono text-zinc-700 dark:text-zinc-300 mb-2">
         sk-or-&hellip;<span id="settings-openrouter-key-last4"></span>

@@ -70,7 +70,8 @@ import { WORK_CHANGED_EVENT } from '../messages/bot-shared';
 import { AppIconContent, appIconKind } from '../apps/app-card-view';
 import { callAppView } from '../dev-board/card/fold';
 import type { NeedsFeedItem } from '../workshop/needs-reel';
-import { filterByVoteType, voteTallies, VoteTypeChips, type VoteFilter, type VoteType } from '../workshop/vote-filter';
+import { voteTypeOf } from '../dev-board/card/change';
+import { filterByVoteType, voteTallies, VoteTypeChips, type VoteFilter } from '../workshop/vote-filter';
 import { CompareSlider } from './compare';
 import { Illustration } from './illustrations';
 import { readInks, useInks } from './ink';
@@ -143,13 +144,6 @@ const cam = (p: Placement) => `translate(${p.tx}px, ${p.ty}px) scale(${p.scale})
 const clipOf = (p: SheetPlate, w: number, h: number) =>
   `inset(${p.y}px ${w - p.x - p.w}px ${h - p.y - p.h}px ${p.x}px round ${p.r}px)`;
 const OPEN_CLIP = 'inset(0px 0px 0px 0px round 32px)';
-
-/**
- * #6199: a review item's kind, for the vote-type chip. Advisory when the
- * feed marks it so; a plain change, a group decision, a ballot and the bot's
- * question all decide.
- */
-const reviewVoteType = (it: ReviewItem): VoteType => (it.advisory || it.uncounted ? 'advisory' : 'deciding');
 
 /* ── Drawn pictures ──────────────────────────────────────────────────── */
 
@@ -656,7 +650,7 @@ export function ReviewFlow({ items, error, capped, onDone, doneLabel, onAnswered
     // (the empty line, the list of pages, the end) the page opens on the
     // first change that arrived.
     if (!grows) return;
-    const took = takeRead({ list, index, done, votes, skipped }, shaped, (all) => filterByVoteType(all, filter, reviewVoteType));
+    const took = takeRead({ list, index, done, votes, skipped }, shaped, (all) => filterByVoteType(all, filter, voteTypeOf));
     if (took.list === list) return;
     setList(took.list);
     if (took.open == null) return;
@@ -678,10 +672,10 @@ export function ReviewFlow({ items, error, capped, onDone, doneLabel, onAnswered
     setList(list.map((it) => fresh.get(it.key) || it));
   }, [dark, items]);
 
-  const run = list ? filterByVoteType(list, filter, reviewVoteType) : [];
+  const run = list ? filterByVoteType(list, filter, voteTypeOf) : [];
   // The chips count the whole run, whatever kind is picked: they say how
   // much of each kind the feed holds.
-  const tallies = useMemo(() => voteTallies(list || [], reviewVoteType), [list]);
+  const tallies = useMemo(() => voteTallies(list || [], voteTypeOf), [list]);
   const passed = useMemo(() => ({ ...skipped, ...votes }), [skipped, votes]);
   const item = run[index] && run[index].kind !== 'governance' ? run[index] : null;
   const leaving = from ? run[from.index] : null;
@@ -904,7 +898,7 @@ export function ReviewFlow({ items, error, capped, onDone, doneLabel, onAnswered
     stop();
     setFilter(key);
     setDone(false);
-    const nextRun = list ? filterByVoteType(list, key, reviewVoteType) : [];
+    const nextRun = list ? filterByVoteType(list, key, voteTypeOf) : [];
     const first = nextRun.findIndex((it) => it.kind !== 'governance' && !passed[it.key]);
     setIndex(first >= 0 ? first : Math.max(0, nextRun.findIndex((it) => it.kind !== 'governance')));
     setBehind([]);

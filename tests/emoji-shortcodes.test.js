@@ -177,21 +177,15 @@ test('inserting replaces the `:query` token and places the caret after it', () =
     { value: 'go 🎉', caret: 'go 🎉'.length });
 });
 
-test('both composers use this module, and neither re-derives the rules', () => {
+test('the one message box uses this module, and nothing re-derives the rules', () => {
+  // One message box (27 Nov 2026): the group chat's box is Messages' own, so
+  // its `:th` menu is this one; the classic script's copy is gone.
   const composer = read('frontend/src/features/messages/composer.tsx');
   assert.match(composer, /from '\.\.\/message-actions\/emoji-shortcodes'/);
+  assert.match(read('frontend/src/features/group-chat/composer.tsx'), /<MessageBox place=\{place\}/);
   const mount = read('frontend/src/features/group-chat/mount.ts');
-  assert.match(mount, /from '\.\.\/message-actions\/emoji-shortcodes'/);
-  for (const name of ['emojiShortcodeToken', 'matchEmojiShortcodes', 'completedEmojiShortcode',
-    'mountEmojiMenu', 'publishEmojiMenu']) {
-    assert.match(mount, new RegExp(`\\n    ${name},\\n`), `groupChat.${name} is published`);
-  }
-  const gcJs = read('public/js/group-chat.js');
-  const start = gcJs.indexOf('const EmojiAutocomplete = {');
-  const body = gcJs.slice(start, gcJs.indexOf('\n};', start));
-  assert.match(body, /api\.emojiShortcodeToken\(/);
-  assert.match(body, /matchEmojiShortcodes\(/);
-  assert.match(body, /api\.completedEmojiShortcode\(/);
+  assert.doesNotMatch(mount, /emojiShortcodeToken|matchEmojiShortcodes|completedEmojiShortcode|mountEmojiMenu|publishEmojiMenu/);
+  assert.doesNotMatch(read('public/js/group-chat.js'), /EmojiAutocomplete|emojiShortcodeToken/);
 });
 
 test('the Messages composer: its own listbox, and its keys run before the send chord', () => {

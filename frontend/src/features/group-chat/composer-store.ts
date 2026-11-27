@@ -1,32 +1,23 @@
 /**
- * The group chat composer's three module-fed rows and its status line, for
- * BOTH composers, as view models.
+ * What public/js/group-chat.js publishes about its two boxes, as view
+ * models: the staged reply's chip and the status line over the box.
  *
- * ── Two scopes, one shape, and that is the point ──────────────────────
+ * ── Two scopes, one shape ─────────────────────────────────────────────
  *
- * The composer exists twice: `general` at the bottom of the chat sub-view,
- * and `thread` inside a topic's thread panel. They are the same control —
- * same reply chip, same attachment strip, same error line, same CSS — drawn
- * by one renderer each side of a `thread ? 'gc-thread-…' : 'gc-…'` ternary in
- * public/js/group-chat.js. Keeping them as two slots of one store keeps that
- * ternary a single decision instead of two components free to drift.
- *
- * Only one of the two is ever in the DOM. The slots exist so the module can
- * publish without first asking which, exactly as it used to write into
- * whichever id was present.
+ * The chat has two boxes: `general`, at the foot of a channel's pane, and
+ * `thread`, at the foot of a request's, a change's or a decision's page.
+ * They are the same box (Messages' own, ./composer.tsx), so the module
+ * publishes into a slot per scope without asking which is on screen.
  *
  * ── What stays in group-chat.js ───────────────────────────────────────
  *
- * All of it except the markup: the upload lifecycle and its limits, the
- * object URLs and their revocation, the draft, the typing ping, the offline
- * queue that the status line reports on, and which message a staged reply
- * points at. `_removeAttachmentAt` takes an INDEX because that is what a
- * serialisable view model can carry — the live entry (with its File and its
- * object URL) never leaves the module.
+ * Which message a staged reply points at (GroupChat.replyDraft, taken by
+ * GroupChat.send), and the typing ticker and offline queue the status line
+ * reports on. The box's words, its draft, its files and its menus are the
+ * box's (../messages/composer.tsx MessageBox).
  */
 
 import { createStore } from '../../lib/plain-store.js';
-import type { PendingAttachmentView } from '../attachments/pending-strip';
 
 /** The staged reply chip: "↩ Replying to @alice" over a one-line snippet. */
 export interface QuoteChipView {
@@ -44,14 +35,8 @@ export interface QuoteChipView {
   snippet: string;
 }
 
-// `PendingAttachmentView` is ../attachments/pending-strip.tsx's: the strip
-// owns the shape it draws — see that file's header for the two things its
-// caller keeps.
-
 export interface ComposerSlot {
   quote: QuoteChipView | null;
-  attachError: string | null;
-  attachments: PendingAttachmentView[];
   /**
    * The one-line slot under the messages: who is typing, or — when the
    * socket is down, which wins because it is the actionable one — how many
@@ -64,21 +49,12 @@ export interface ComposerSlot {
    * is saying something there. `mine`: the viewer wrote the reply.
    */
   bot?: { state: 'will_read' | 'reading' | 'quiet'; mine: boolean } | null;
-  /**
-   * #4065: a file is being dragged over this composer or its messages, so the
-   * card shows its drop zone. Published by the module's drag tracker
-   * (`GroupChat._wireDropZone`), which never sets it on a read-only thread.
-   * Optional so a slot built before it existed still reads as not dragging.
-   */
-  dragging?: boolean;
 }
 
 export type ComposerScope = 'general' | 'thread';
 
 export const EMPTY_SLOT: ComposerSlot = {
   quote: null,
-  attachError: null,
-  attachments: [],
   status: '',
 };
 

@@ -360,13 +360,16 @@ test('a project channel, a thread, both inline editors and a board card\'s reply
   assert.match(read('frontend/src/main.tsx'), /import '\.\/lib\/enter-sends';/);
   const gc = read('public/js/group-chat.js');
   assert.match(gc, /_enterSends\(e\) \{\s*const rule = window\.UsernodeEnterSends;\s*return !!\(rule && rule\.enterSends\(e\)\);/);
-  assert.match(gc, /if \(GroupChat\._enterSends\(e\)\) \{\s*e\.preventDefault\(\);\s*submitThread\(\);/, 'a thread\'s box');
   assert.match(gc, /if \(GroupChat\._enterSends\(e\)\) \{\s*e\.preventDefault\(\);\s*GroupChat\._saveEdit/, 'the channel\'s inline editor');
-  assert.match(read('public/js/app-view.js'), /if \(GroupChat\._enterSends\(e\)\) \{\s*e\.preventDefault\(\);\s*submitGeneral\(\);/, 'a channel\'s box');
+  // One message box (27 Nov 2026): a channel's, a thread's and a board
+  // card's reply box are Messages' box, which keeps the rule itself.
+  const box = read('frontend/src/features/messages/composer.tsx');
+  assert.match(box, /if \(enterSends\(event\.nativeEvent\)\) \{ event\.preventDefault\(\); submit\(\); \}/, 'every box');
+  assert.match(read('frontend/src/features/group-chat/composer.tsx'), /<MessageBox place=\{place\}/, 'a channel\'s and a thread\'s box');
   assert.match(read('frontend/src/features/messages/message-row.tsx'),
     /if \(event\.key === 'Escape'\) setEditing\(false\); else if \(enterSends\(event\.nativeEvent\)\) \{ event\.preventDefault\(\); void saveEdit\(\); \}/,
     'Messages\' inline editor: on a touch screen Enter is a new line there too');
-  assert.match(read('frontend/src/features/dev-board/card/feed-thread.tsx'), /if \(!enterSends\(e\.nativeEvent\)\) return;/, 'a board card\'s reply');
+  assert.match(read('frontend/src/features/dev-board/card/feed-thread.tsx'), /<MessageBox place=\{place\} \/>/, 'a board card\'s reply');
 });
 
 test('the conversation composer and the New thread box share the rule, and say it only where it holds', () => {

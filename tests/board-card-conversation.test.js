@@ -188,7 +188,8 @@ test('an unfolded board card draws the comment tail and the reply box', () => {
   assert.match(html, /data-comments-for="1575"><\/div><div class="dev-feed-thread">/,
     'the thread sits directly under the GitHub tail, as it does on the Workshop');
   assert.match(html, /<div class="dev-feed-thread">[\s\S]*?<textarea [^>]*aria-label="Reply to this item"/);
-  assert.match(html, /<div class="dev-feed-thread">[\s\S]*?<button type="submit"[^>]*aria-label="Send reply"/);
+  // One message box (27 Nov 2026): the reply box is Messages' own.
+  assert.match(html, /<div class="dev-feed-thread">[\s\S]*?<button type="button"[^>]*class="messages-send"/);
   // The proposal's card gets the thread without a GitHub tail above it.
   assert.match(html, /data-proposal-row="34"[\s\S]*?<div class="dev-feed-thread">/);
 
@@ -315,9 +316,10 @@ test('a declared check reads the reply box off a board card', () => {
     '<div class="gc-vote-item[^"]*\\bdev-card-dense\\b[^"]*"[^>]*\\bdata-issue-row="\\d+"',
     '(?:(?!<div class="dev-feed-entry)[\\s\\S])*?',
     '<div class="dev-feed-comments" data-comments-for="\\d+"></div>',
-    '<div class="dev-feed-thread"><form[^>]*>',
+    '<div class="dev-feed-thread"><div class="dev-feed-reply"><div class="messages-composer ">',
+    '<div class="messages-composer-card">(?:(?!<textarea)[\\s\\S])*?',
     '<textarea[^>]*aria-label="Reply to this item"',
-    '(?:(?!</form>)[\\s\\S])*?',
-    '<button type="submit"[^>]*aria-label="Send reply"[^>]*class="[^"]*\\bdev-feed-send\\b',
+    '(?:(?!messages-send)[\\s\\S])*?',
+    '<button type="button"[^>]*class="messages-send"',
   ].join('')), 'the selector\u2019s chain exists in the rendered board');
 });

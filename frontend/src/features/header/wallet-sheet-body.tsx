@@ -28,6 +28,7 @@ import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 
 import { useMessages } from '../../lib/i18n/react';
+import { loadQRCode } from '../../lib/qr-code';
 import { useStoreState } from '../../lib/use-store-state';
 import { mountLegacyPortal, unmountLegacyPortal } from '../../lib/legacy-portals';
 import { returnKeyHandler } from '../../lib/return-to-next';
@@ -150,14 +151,21 @@ function ReceivePanel({ address }: { address: string }): ReactNode {
   const qrRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const el = qrRef.current;
-    const QR = (window as any).QRCode;
-    if (!el || !QR) return;
-    el.textContent = '';
-    // The QR library writes its own canvas/img into this node. It is the one
-    // element in this subtree React does not own, which is why it is empty in
-    // render and filled from an effect on a ref.
-    // eslint-disable-next-line no-new
-    new QR(el, { text: address, width: 160, height: 160 });
+    if (!el) return;
+    // The library is loaded here, the first time a code is drawn, not at boot
+    // (lib/qr-code.ts). `live` drops an answer for an address that has since
+    // changed or a panel that has closed.
+    let live = true;
+    loadQRCode().then((QR) => {
+      if (!live) return;
+      el.textContent = '';
+      // The QR library writes its own canvas/img into this node. It is the one
+      // element in this subtree React does not own, which is why it is empty in
+      // render and filled from an effect on a ref.
+      // eslint-disable-next-line no-new
+      new QR(el, { text: address, width: 160, height: 160 });
+    }).catch(() => { /* no code: the address is written under it */ });
+    return () => { live = false; };
   }, [address]);
   return (
     <div className="flex flex-col items-center gap-2 p-4 mb-4 rounded-lg border border-zinc-200 dark:border-zinc-800">

@@ -59,11 +59,9 @@ export function TopicSidePanel({ item, onClose }: { item: TopicRef; onClose: () 
   // filter bar: the mount publishes through a `flushSync`
   // (lib/legacy-portals.tsx), which React drops while it is still
   // committing — and an effect body is inside the commit. mountThread then
-  // reads its container before the shell is in the DOM, finds no
-  // `#gc-thread-input`, and skips the whole composer wiring (submit, the
-  // draft, Enter, attachments and the three autocomplete controllers), so
-  // typing @, # or : in the panel's Reply box opened nothing (#4629).
-  // From the microtask the flushSync runs and the composer is wired.
+  // read its container before the shell was in the DOM, and the panel's
+  // Reply box was never wired (#4629). From the microtask the flushSync
+  // runs and the page, its box included, is drawn at once.
   useEffect(() => {
     let live = true;
     queueMicrotask(() => { if (live) void callAppView('openTopicInPanel', item.kind, item.id); });

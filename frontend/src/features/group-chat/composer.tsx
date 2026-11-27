@@ -1,54 +1,42 @@
 /**
- * The group chat composer — the staged-reply chip, the attachment error, the
- * pending-upload strip, the form, and the status line above it — as the only
- * React writer below all four, for BOTH composers.
+ * A project's chat's message box — a topic's channel and the thread on a
+ * request, a change or a decision — and the status line over it.
  *
- * ── One renderer, because there was always one renderer ───────────────
+ * ── The box is Messages' box (one message box, 27 Nov 2026) ───────────
  *
- * `_renderQuotePreview`, `_setAttachError`, `_renderAttachStrip` and the two
- * typing writers each began with `thread ? 'gc-thread-…' : 'gc-…'` and then
- * built one piece of markup. Splitting that into a thread component and a
- * general component would have been the first time these two controls could
- * disagree. They take a `scope` instead, which is the same ternary in the same
- * one place — see ./composer-store.ts for why the store has two slots.
+ * The box is ../messages/composer.tsx's MessageBox, the one every chat
+ * draws: the field, the formatting, the @, # and emoji menus, the draft, the
+ * attachments strip, dictation and the send. This file only says where the
+ * words go — the PLACE: sent over the chat's socket (GroupChat.send, which
+ * queues it while the socket is down and takes the staged reply), files
+ * uploaded to the project's chat, `@` and `#` answered by ./chat-sources.ts,
+ * and the staged reply's chip from ./composer-store.ts. The box's draft is
+ * saved the one way every box saves it (../messages/store draftFor), under
+ * the place's own scope (`chatScopeKey`), and a draft the old box saved
+ * under `usernode:gc-draft:*` is carried over once, on the first visit.
  *
- * ── What each side still owns ─────────────────────────────────────────
+ * It replaces the form, the reply strip, the error line and the uploads
+ * strip this file drew for public/js/group-chat.js, which bound its own
+ * listeners, menus and drafts to them by id. The ids stay on the box
+ * (`gc-thread-input`, `gc-form` …): the quote's focus, the request page's
+ * plan card and the declared checks find it by them.
  *
- * The BAR around this is the caller's: ./thread-shell.tsx pins its own to the
- * bottom of the thread panel, ./general-chat.tsx to the bottom of the chat
- * pane, and the two read-only notices are worded and placed differently
- * enough that sharing them would be a change rather than a de-duplication.
- * What is shared is everything between the bar's edges. The bar itself is
- * the chat foot's (@/components/ui/chat ChatComposerBar), the one Messages'
- * composer sits in, so its padding is decided in one place for both.
+ * ── What stays the chat's ─────────────────────────────────────────────
  *
- * The LISTENERS are still attached by the module, on the line after the mount:
- * submit, input, keydown, the paperclip, the paste and drag-and-drop wiring,
- * and both autocompletes. They are listeners on nodes — they write no markup —
- * which keeps one owner for the draft, the typing ping, the multi-line submit
- * semantics and the Escape-clears-reply rule.
- *
- * One of them writes an ATTRIBUTE and is fine: `_autoGrowTextarea` sets
- * `style.height` on the field after every keystroke, to grow it to its content
- * and cap it. Nothing here renders a `style` prop, so React never diffs that
- * attribute — the same tolerated overlap the inline message editor's
- * `display:none` runs under, and for the same reason.
+ * The status line (who is typing, the reconnect notice, Homeroom bot's
+ * line) is published by the module into ./composer-store.ts and drawn here.
+ * Which message a staged reply points at is the module's too: it is staged
+ * from a row (GroupChat.setQuote) and taken by GroupChat.send.
  */
 
-import { useRef, useState } from 'react';
+import { useState, type ReactNode, type RefObject } from 'react';
 
-import { Button } from '@/components/ui/button';
 import { ChatStatusLine } from '@/components/ui/chat';
-import { ArrowUpIcon, PaperClipIcon, PlusIcon } from '@/components/ui/icons';
-import { Textarea } from '@/components/ui/textarea';
-import { SpeakButton } from '../dictation/speak-button';
-
-import { DropOverlay } from '../attachments/file-drag';
+import { chatAttachmentLimit } from '../attachments/limits';
+import { MessageBox, type ComposerIds, type ComposerPlace, type ComposerReply } from '../messages/composer';
+import { draftFor, setDraft, type ComposerScope as DraftScope } from '../messages/store';
 import { BOT_CHIP_CLASS } from './bot-request';
-import {
-  PendingStrip,
-  type PendingAttachmentView,
-} from '../attachments/pending-strip';
+import { chatPeople, chatRefMatch, heldChatRefs, loadChatRefs, uploadChatFile } from './chat-sources';
 import { useMessages } from '../../lib/i18n/react';
 import { useStoreState } from '../../lib/use-store-state';
 import {
@@ -63,37 +51,59 @@ function controller(): any {
 }
 
 /**
- * The ids each scope's controls answer to.
- *
- * Every one of them is read back by public/js/group-chat.js or
- * public/js/app-view.js — `setupAttachments` finds the paperclip and the file
- * input, `mountThread` and `renderGroupChatTab` bind the form and the
- * textarea, and `dapp.json` selects on several. They are the contract, so they
- * are written out per scope rather than built by interpolation, which also
- * keeps them greppable.
+ * The ids each scope's box answers to. Read back by public/js/group-chat.js
+ * (`setQuote` focuses the field), by the request page's plan card, and by
+ * `dapp.json`'s declared checks. Written out per scope rather than built by
+ * interpolation, which also keeps them greppable.
  */
-const IDS = {
-  general: {
-    preview: 'gc-reply-preview',
-    error: 'gc-attach-error',
-    strip: 'gc-attachments',
-    form: 'gc-form',
-    attach: 'gc-attach-btn',
-    file: 'gc-file-input',
-    input: 'gc-input',
-    typing: 'gc-typing',
-  },
-  thread: {
-    preview: 'gc-thread-reply-preview',
-    error: 'gc-thread-attach-error',
-    strip: 'gc-thread-attachments',
-    form: 'gc-thread-form',
-    attach: 'gc-thread-attach-btn',
-    file: 'gc-thread-file-input',
-    input: 'gc-thread-input',
-    typing: 'gc-thread-typing',
-  },
-} as const;
+const IDS: Record<ComposerScope, ComposerIds & { typing: string }> = {
+  general: { card: 'gc-form', input: 'gc-input', attach: 'gc-attach-btn', file: 'gc-file-input', typing: 'gc-typing' },
+  thread: { card: 'gc-thread-form', input: 'gc-thread-input', attach: 'gc-thread-attach-btn', file: 'gc-thread-file-input', typing: 'gc-thread-typing' },
+};
+
+/** A topic's channel, or the thread on a request, a change or a decision. */
+export interface ChatThreadRef {
+  type: string;
+  ref: number;
+}
+
+/**
+ * The draft scope of a project chat's box: the project's own stream, a
+ * topic's channel, or a thread (`app:<slug>`, `app:<slug>:<type>:<ref>`).
+ * The comments under a change write into that change's thread, so they
+ * share its draft.
+ */
+export function chatScopeKey(slug: string, thread: ChatThreadRef | null | undefined): string {
+  return thread ? `app:${slug}:${thread.type}:${thread.ref}` : `app:${slug}`;
+}
+
+/**
+ * Carry a draft the old box saved (`usernode:gc-draft:<slug>`, and
+ * `…:<type>:<ref>` for a thread) into the box's scope, once, and stop
+ * writing it: what was typed before this change is still there on the
+ * first visit after it. A topic's channel read the project's own key.
+ */
+const carried = new Set<string>();
+export function carryOldChatDraft(slug: string, thread: ChatThreadRef | null | undefined, scope: string, channel = false): void {
+  if (carried.has(scope) || typeof localStorage === 'undefined') return;
+  carried.add(scope);
+  const old = thread && !channel ? `usernode:gc-draft:${slug}:${thread.type}:${thread.ref}` : `usernode:gc-draft:${slug}`;
+  try {
+    const words = localStorage.getItem(old);
+    if (words == null) return;
+    if (!draftFor(scope)) setDraft(scope, words.slice(0, 8000));
+    localStorage.removeItem(old);
+  } catch { /* storage unavailable */ }
+}
+
+/**
+ * The box each scope draws now, so a classic caller can put words in it
+ * (`putInChatComposer`): the reply starters, Go ahead on a request's plan.
+ */
+const shown: Partial<Record<ComposerScope, DraftScope>> = {};
+export function shownChatScope(which: ComposerScope): DraftScope | null {
+  return shown[which] ?? null;
+}
 
 export function useComposerSlot(scope: ComposerScope): ComposerSlot {
   return useStoreState(composerStore)[scope];
@@ -105,71 +115,6 @@ const BOT_STATUS_WORDS = {
   reading: 'chat:group.botStatus.reading',
   quiet: 'chat:group.botStatus.quiet',
 } as const;
-
-/**
- * "↩ Replying to @alice" over the quoted line (#15).
- *
- * `.gc-reply-preview-inner` is styled in app.css as the Messages screen's
- * reply draft (#2391): full width on the composer, accent tint, the same
- * accent border `.gc-quoted` — the block a sent reply carries — opens with,
- * so staging a reply still reads as what it is about to produce.
- */
-function ReplyPreview({ scope, quote }: { scope: ComposerScope; quote: QuoteChipView | null }) {
-  const t = useMessages('chat');
-  return (
-    <div id={IDS[scope].preview} className={quote ? '' : 'hidden'}>
-      {quote ? (
-        <div className="gc-reply-preview-inner">
-          <div className="gc-reply-preview-body">
-            <span className="gc-reply-preview-label">
-              {quote.unnamed === 'event' ? t('chat:group.composer.replyingToPlatform')
-                : quote.unnamed === 'message' ? t('chat:group.composer.replyingToMessage')
-                  : quote.unnamed === 'system' ? t('chat:group.composer.replyingToSystem')
-                    : quote.unnamed === 'someone' ? t('chat:group.composer.replyingToSomeone')
-                  : quote.pr != null ? (quote.pr ? t('chat:group.composer.replyingToPr', { number: quote.pr }) : t('chat:group.composer.replyingToPrUnnumbered'))
-                    : t('chat:group.composer.replyingTo', { name: quote.label })}
-            </span>
-            <span className="gc-reply-preview-snippet">{quote.snippet}</span>
-          </div>
-          <button
-            type="button"
-            id={scope === 'general' ? 'gc-reply-cancel' : undefined}
-            className="gc-reply-preview-x"
-            aria-label={t('chat:group.composer.cancelReply')}
-            onClick={() => controller()?.clearQuote?.()}
-          >
-            ✕
-          </button>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function AttachError({ scope, text }: { scope: ComposerScope; text: string | null }) {
-  return (
-    <div id={IDS[scope].error} className={text ? 'dc-attach-error' : 'dc-attach-error hidden'}>
-      {text}
-    </div>
-  );
-}
-
-/**
- * The pending-upload strip is ../attachments/pending-strip.tsx's, drawn
- * with the `dc-attach-*` styles. What stays here is which host it goes in
- * and how a row is removed: the live entry holds a File and an object URL,
- * so it never leaves group-chat.js and the row
- * reports its position instead.
- */
-function AttachStrip({ scope, items }: { scope: ComposerScope; items: PendingAttachmentView[] }) {
-  return (
-    <PendingStrip
-      id={IDS[scope].strip}
-      items={items}
-      onRemove={(index) => controller()?._removeAttachmentAt?.(index, scope)}
-    />
-  );
-}
 
 /**
  * The one-line slot under the messages — who is typing, or the reconnect
@@ -212,175 +157,74 @@ export function StatusLine({ scope }: { scope: ComposerScope }) {
   return <StatusLineView scope={scope} status={slot.status} bot={slot.bot} />;
 }
 
-/** The three module-fed rows above the form, in their shipped order. */
-export function ComposerSlotsView({ scope, slot }: { scope: ComposerScope; slot: ComposerSlot }) {
-  return (
-    <>
-      <ReplyPreview scope={scope} quote={slot.quote} />
-      <AttachError scope={scope} text={slot.attachError} />
-      <AttachStrip scope={scope} items={slot.attachments} />
-    </>
-  );
+/**
+ * "Replying to @alice" over the quoted line (#15), worded as the chat words
+ * it: a platform message, a message whose author is gone, a stand-in
+ * author, or a pull request each have a sentence of their own.
+ */
+export function replyChip(t: (id: string, values?: Record<string, unknown>) => string, quote: QuoteChipView): ComposerReply {
+  const title = quote.unnamed === 'event' ? t('chat:group.composer.replyingToPlatform')
+    : quote.unnamed === 'message' ? t('chat:group.composer.replyingToMessage')
+      : quote.unnamed === 'system' ? t('chat:group.composer.replyingToSystem')
+        : quote.unnamed === 'someone' ? t('chat:group.composer.replyingToSomeone')
+          : quote.pr != null ? (quote.pr ? t('chat:group.composer.replyingToPr', { number: quote.pr }) : t('chat:group.composer.replyingToPrUnnumbered'))
+            : t('chat:group.composer.replyingTo', { name: quote.label });
+  return { key: `${title}\n${quote.snippet}`, title, snippet: quote.snippet };
 }
 
-export function ComposerSlots({ scope }: { scope: ComposerScope }) {
-  return <ComposerSlotsView scope={scope} slot={useComposerSlot(scope)} />;
-}
-
-export interface ComposerFormProps {
+export interface ChatComposerProps {
   scope: ComposerScope;
-  /** The taller sizing: the general composer and the topic thread's. */
-  fill: boolean;
-  placeholder: string;
-  /** GC_MAX_MESSAGE_LEN, passed through so the module owns the number. */
-  maxLength: number;
+  /** The project the chat is. */
+  slug: string;
   /**
-   * #4453: a request's page is a Messages reply thread, so its composer is
-   * Messages' own card: the + disc, the field, the round send. Same ids, so
-   * the module's listeners and the attachment wiring find it unchanged.
+   * The thread a `thread` box posts to; for `general`, the topic's channel
+   * the pane shows (null: the project's own stream).
    */
-  messages?: boolean;
+  thread?: ChatThreadRef | null;
+  placeholder: string;
+  /** Drawn over the card: the reply starters. */
+  above?: ReactNode;
+  /**
+   * #6810: the transcript over the box, kept at its newest line when the
+   * box shrinks (../../lib/use-auto-grow.ts).
+   */
+  scroller?: RefObject<HTMLElement | null>;
 }
 
-export function ComposerForm({ scope, fill, placeholder, maxLength, messages = false }: ComposerFormProps) {
+/** A project chat's box: Messages' box, with this chat as its place. */
+export function ChatComposer({ scope, slug, thread = null, placeholder, above, scroller }: ChatComposerProps) {
   const t = useMessages('chat');
-  const ids = IDS[scope];
-  // A request's reply box speaks as Messages' does (design review, 25 Nov
-  // 2026): the same dictation button between the field and Send. The field
-  // is the module's (group-chat.js reads and clears it), so the words go in
-  // through its value and an `input` event, the event the module already
-  // listens to for the draft, the field's height and the typing line.
-  const field = useRef<HTMLTextAreaElement>(null);
-  const [dictating, setDictating] = useState(false);
-  const putWords = (text: string) => {
-    const el = field.current;
-    if (!el) return;
-    el.value = text;
-    el.dispatchEvent(new Event('input', { bubbles: true }));
-  };
-  // #4065: the drop zone, while a file is held over this composer or its
-  // messages. The module's tracker publishes the flag; it lies over the card,
-  // and takes no pointer events, so the drop still lands on the form.
   const slot = useComposerSlot(scope);
-  const dragging = !!slot.dragging;
-  const dropZone = dragging ? <DropOverlay /> : null;
-  // Audit C06: with nothing to send, Send looks as Messages' own does, faded
-  // (app.css reads the empty field off :placeholder-shown, which follows
-  // the module's own writes to it too). Files staged are something to send.
-  const files = slot.attachments.length ? '' : undefined;
-  if (messages) {
-    return (
-      <form id={ids.form} className="messages-composer-card" data-gc-files={files}>
-        <div className="flex items-end gap-1.5">
-          <div className="messages-composer-add">
-            <button type="button" id={ids.attach} className="messages-composer-action" aria-label={t('chat:group.composer.page.attachFiles')} title={t('chat:group.composer.page.attachFiles')}>
-              <PlusIcon aria-hidden="true" />
-            </button>
-          </div>
-          <input type="file" id={ids.file} className="hidden" multiple />
-          <textarea
-            ref={field}
-            id={ids.input}
-            rows={1}
-            maxLength={maxLength}
-            autoComplete="off"
-            placeholder={placeholder}
-            aria-label={t('chat:group.composer.page.reply')}
-            className="messages-composer-input"
-            // While words are being taken down, Enter waits for them: the
-            // module's own Enter (bound on the field) would send the box
-            // half written. The dictation button stops ⌘/Ctrl+Enter and the
-            // form's submit itself.
-            onKeyDownCapture={(event) => { if (dictating && event.key === 'Enter') { event.preventDefault(); event.stopPropagation(); } }}
-          />
-          <SpeakButton scope={`chat:${scope}`} getText={() => field.current?.value || ''} onText={putWords} maxLength={maxLength} onBusyChange={setDictating} />
-          {/* Keeps the field focused through the press, as Messages' Send does. */}
-          <button type="submit" disabled={dictating} className="messages-send" aria-label={t('chat:group.composer.page.send')} title={t('chat:group.composer.page.send')} onMouseDown={(event) => event.preventDefault()}>
-            <ArrowUpIcon aria-hidden="true" />
-          </button>
-        </div>
-        {dropZone}
-      </form>
-    );
-  }
-  // THE CARD. The two full-height composers — the Discussion's and a topic
-  // thread's — are the same card Messages draws at the foot of its sheet: a
-  // white surface with bare glyphs, a borderless field at reading size and
-  // the round accent send disc. The boxed thread (`fill` false, inside a
-  // board card) keeps its compact bordered row: it sits inside a card
-  // already, and a card in a card is the thing the language avoids.
-  if (fill) {
-    return (
-      <form id={ids.form} className="gc-composer-card flex items-end gap-1.5" data-gc-files={files}>
-        <button
-          type="button"
-          id={ids.attach}
-          title={t('chat:group.composer.attachFiles')}
-          aria-label={t('chat:group.composer.attachFiles')}
-          className="gc-composer-glyph shrink-0"
-        >
-          <PaperClipIcon aria-hidden="true" />
-        </button>
-        <input type="file" id={ids.file} className="hidden" multiple />
-        <Textarea
-          id={ids.input}
-          maxLength={maxLength}
-          rows={1}
-          autoComplete="off"
-          placeholder={placeholder}
-          lead="composer"
-          width="flex"
-          box="composerCard"
-          hint="muted"
-          ring="bare"
-        />
-        {/* A press on Send must not take focus from the field. The blur would
-            drop the keyboard, the tab bar and the Resume strip would come back
-            (lib/keyboard-open.ts), the composer would fall by the keyboard's
-            height, and the click would land on nothing: the message stayed
-            in the box (5 Oct 2026, the iOS app). Messages' Send does the same. */}
-        <button
-          type="submit"
-          className="gc-send shrink-0"
-          aria-label={t('chat:group.composer.send')}
-          title={t('chat:group.composer.send')}
-          onMouseDown={(event) => event.preventDefault()}
-        >
-          <ArrowUpIcon aria-hidden="true" />
-        </button>
-        {dropZone}
-      </form>
-    );
-  }
-  return (
-    <form id={ids.form} className="flex gap-2 items-end">
-      <button
-        type="button"
-        id={ids.attach}
-        title={t('chat:group.composer.attachFiles')}
-        aria-label={t('chat:group.composer.attachFiles')}
-        className="shrink-0 rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 text-sm text-zinc-500 dark:text-zinc-400 hover:text-violet-500 hover:border-violet-500 transition-colors"
-      >
-        📎
-      </button>
-      <input type="file" id={ids.file} className="hidden" multiple />
-      <Textarea
-        id={ids.input}
-        maxLength={maxLength}
-        rows={1}
-        autoComplete="off"
-        placeholder={placeholder}
-        lead="composer"
-        width="flex"
-        box="composerTight"
-        hint="muted"
-        ring="seamless"
-      />
-      {/* Keeps the field focused through the press, as the card's Send above. */}
-      <Button type="submit" size="sm" className="shrink-0" onMouseDown={(event) => event.preventDefault()}>
-        {t('chat:group.composer.send')}
-      </Button>
-      {dropZone}
-    </form>
-  );
+  const draftScope = chatScopeKey(slug, thread);
+  carryOldChatDraft(slug, thread, draftScope, scope === 'general');
+  shown[scope] = draftScope;
+  // The refs `#` offers are read when somebody first types `#`, not when a
+  // chat is merely shown; their arrival draws the list.
+  const [, refsArrived] = useState(0);
+  const posts = scope === 'thread' ? thread : null;
+  const place: ComposerPlace = {
+    scope: draftScope,
+    inThread: scope === 'thread',
+    placeholder,
+    label: scope === 'thread' ? t('chat:group.composer.page.reply') : placeholder,
+    // A topic's channel is a channel: it formats as Messages' channels do.
+    formatting: scope === 'general',
+    ids: IDS[scope],
+    above,
+    // Sent over the chat's socket, or queued until it is back. The general
+    // pane's box posts to the channel the pane shows (GroupChat._channel).
+    send: (input) => { controller()?.send?.(input.content, posts, input.attachmentIds); },
+    upload: (file) => uploadChatFile(slug, file),
+    fileLimit: chatAttachmentLimit,
+    typing: (on) => { if (on) controller()?.sendTyping?.(posts); },
+    people: chatPeople(slug),
+    refs: (before) => {
+      const held = heldChatRefs(slug);
+      if (!held && before.includes('#')) void loadChatRefs(slug).then(() => refsArrived((n) => n + 1));
+      return chatRefMatch(before, held);
+    },
+    reply: slot.quote ? replyChip(t, slot.quote) : null,
+    cancelReply: () => controller()?.clearQuote?.(),
+  };
+  return <MessageBox place={place} scroller={scroller} />;
 }

@@ -579,17 +579,17 @@ test('the flag survives every copy between the normalizer and the sentence', asy
 });
 
 test('the reply strip words a nameless row in its own sentence', async (t) => {
-  const { module: composer } = await loadInSpanish(t, 'frontend/src/features/group-chat/composer.tsx', {
+  const { module: composer, runtime } = await loadInSpanish(t, 'frontend/src/features/group-chat/composer.tsx', {
     'chat:group.composer.replyingTo': '↩ Respondiendo a {{name}}',
     'chat:group.composer.replyingToSystem': '↩ Respondiendo a un aviso del sistema',
     'chat:group.composer.replyingToSomeone': '↩ Respondiendo a alguien',
   });
-  const strip = (quote) => renderToHtml(createElement(composer.ComposerSlotsView, {
-    scope: 'general', slot: { quote: { snippet: 'x', ...quote }, attachError: null, attachments: [], status: '' },
-  }));
-  assert.match(strip({ label: '@System', unnamed: 'system' }), />↩ Respondiendo a un aviso del sistema</);
-  assert.match(strip({ label: '@Someone', unnamed: 'someone' }), />↩ Respondiendo a alguien</);
-  assert.match(strip({ label: '@System', unnamed: null }), />↩ Respondiendo a @System</, 'an account really called System is named');
+  // One message box (27 Nov 2026): the strip is the box's reply chip, which
+  // the chat words (replyChip) in the language on screen.
+  const strip = (quote) => composer.replyChip(runtime.t, { snippet: 'x', ...quote }).title;
+  assert.match(strip({ label: '@System', unnamed: 'system' }), /↩ Respondiendo a un aviso del sistema/);
+  assert.match(strip({ label: '@Someone', unnamed: 'someone' }), /↩ Respondiendo a alguien/);
+  assert.match(strip({ label: '@System', unnamed: null }), /↩ Respondiendo a @System/, 'an account really called System is named');
   assert.equal(message('chat:group.composer.replyingToSystem'), message('chat:group.composer.replyingTo', { name: '@System' }));
   assert.equal(message('chat:group.composer.replyingToSomeone'), message('chat:group.composer.replyingTo', { name: '@Someone' }));
 });

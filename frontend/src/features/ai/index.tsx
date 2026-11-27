@@ -95,8 +95,9 @@ import { FRESH } from '../../lib/live-reads';
 import { useStoreState } from '../../lib/use-store-state';
 import { useVisibility, useVisibilityHiddenClass } from '../../lib/visibility-store';
 import { EmbeddedConversation } from '../messages';
-import { LiveStartBeside, NewThreadDocked, closeNewThread, liveOpeningStore, liveStartStore, newThreadIn, startNewThread, useNewThread, type NewThreadPreset } from '../messages/new-thread';
+import { LiveStartBeside, LiveStartReopen, NewThreadDocked, closeNewThread, liveOpeningStore, liveStartStore, newThreadIn, startNewThread, useNewThread, type NewThreadPreset } from '../messages/new-thread';
 import { LiveStartPane } from '../messages/live-start-pane';
+import { setLiveColumnClosed, useLiveColumnClosed } from './live-column';
 import { noteThreadNames } from '../messages/private-thread-bar';
 import { keptConversations, openBotConversation } from '../messages/api';
 import { closeThread, embed, loadConversations, useMessagesSnapshot } from '../messages/store';
@@ -179,6 +180,11 @@ async function readJson<T>(path: string, init?: RequestInit): Promise<ListRead<T
  * for one of them, with no answer from the server ('unreachable') or with
  * an error ('failed'). Null when every list has something to draw.
  */
+/** The waiting column's close, the way back from it, and the close of a draft that is still opening. */
+const closeLiveColumn = (): void => setLiveColumnClosed(true);
+const showLiveColumn = (): void => setLiveColumnClosed(false);
+const stopLiveOpening = (): void => { liveOpeningStore.set(null); };
+
 /** How long the column says a live start's draft is opening before it gives the room back. */
 const LIVE_OPENING_MS = 120_000;
 
@@ -669,7 +675,11 @@ export function AiScreen(): ReactNode {
   const liveChat = useStoreState(liveStartStore);
   const liveOpening = useStoreState(liveOpeningStore);
   const roomForLive = !!botId && docked && !phone && fits === 'three' && !panel.open && !detailHere;
-  const waitingNew = roomForLive && column?.at === 'new' && !!liveChat && liveChat.bot;
+  // The column can be closed (./live-column.ts), a choice kept on this device:
+  // then New chat's head offers Live preview, which brings it back.
+  const liveClosed = useLiveColumnClosed();
+  const liveNew = roomForLive && column?.at === 'new' && !!liveChat && liveChat.bot;
+  const waitingNew = liveNew && !liveClosed;
   const openingHere = roomForLive && column?.at === 'thread' && !!liveOpening && liveOpening.rootId === column.rootId;
   const waitingHere = waitingNew || openingHere;
   // What the layout calls a preview: the detail, or the column waiting for one.
@@ -1525,7 +1535,9 @@ export function AiScreen(): ReactNode {
             <NewThreadDocked.Provider value>
               {/* With the preview's column beside it, Start is there, not in the head. */}
               <LiveStartBeside.Provider value={waitingNew}>
-                <EmbeddedConversation conversationId={botId!} active={visible && columnOpen} at={at} threadsOnly />
+                <LiveStartReopen.Provider value={liveNew && liveClosed ? showLiveColumn : null}>
+                  <EmbeddedConversation conversationId={botId!} active={visible && columnOpen} at={at} threadsOnly />
+                </LiveStartReopen.Provider>
               </LiveStartBeside.Provider>
             </NewThreadDocked.Provider>
           ) : null}
@@ -1576,7 +1588,11 @@ export function AiScreen(): ReactNode {
             widthKey={AI_LIVE_PREVIEW_WIDTH_KEY}
             probe={previewProbe}
           />
-          <LiveStartPane opening={openingHere && liveOpening ? { name: liveOpening.name } : null} />
+          <LiveStartPane
+            opening={openingHere && liveOpening ? { name: liveOpening.name } : null}
+            // Waiting, its close is the choice kept; just started, it only gives the room back.
+            onClose={openingHere ? stopLiveOpening : closeLiveColumn}
+          />
         </aside>
       ) : null}
     </main>

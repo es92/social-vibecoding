@@ -74,7 +74,10 @@ test('the quote, the reply bar and the inbox preview all use it', () => {
   assert.match(row, /className="messages-quote"[\s\S]{0,400}plainText\(message\.reply\.content\) \|\| t\('messages:row\.quote\.attachment'\)/);
   const composer = read('frontend/src/features/messages/composer.tsx');
   assert.equal(message('messages:composer.replyAttachment'), 'Attachment');
-  assert.match(composer, /className="messages-reply-draft"[\s\S]{0,420}<p className="truncate">\{plainText\(reply\.content\) \|\| t\('messages:composer\.replyAttachment'\)\}<\/p>/);
+  // One message box (27 Nov 2026): MessageComposer words the chip's line,
+  // and the box draws it in the reply bar.
+  assert.match(composer, /snippet: plainText\(reply\.content\) \|\| t\('messages:composer\.replyAttachment'\),/);
+  assert.match(composer, /className="messages-reply-draft"[\s\S]{0,200}<p className="truncate">\{reply\.snippet\}<\/p>/);
   const api = read('frontend/src/features/messages/api.ts');
   assert.match(api, /const summary = plainText\(text\(pick\(row, 'latestSummary', 'latest_summary', 'preview'\)\) \|\| latestMessage\?\.content \|\| ''\);/);
   assert.match(api, /latestSummary: homeroomBot \? botRowPreview\(summary\) : summary,/);

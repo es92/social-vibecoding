@@ -47,7 +47,7 @@ const THEME_MODES = ['light', 'dark', 'system'] as const;
 type ThemeMode = (typeof THEME_MODES)[number];
 
 const THEME_SEG_CLASS =
-  'theme-seg ui-row ui-row-sm flex-1 basis-0 rounded-md px-1.5 py-1 transition-colors';
+  'theme-seg flex-1 basis-0 rounded-md px-1.5 py-1 transition-colors';
 
 const THEME_LABELS: Record<ThemeMode, string> = {
   light: 'settings:theme.mode.light',

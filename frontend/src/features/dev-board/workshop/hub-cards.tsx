@@ -72,6 +72,7 @@ import { Button } from '@/components/ui/button';
 import { SectionHeader, ListRow } from '@/components/ui/grouped-list';
 import { IconTile } from '@/components/ui/icon-tile';
 import { ArrowPathIcon, ArrowUpTrayIcon, BallotIcon, BoardIcon, ChatIcon, CheckIcon, ChevronRightIcon, ClockIcon, HashIcon, SparklesIcon } from '@/components/ui/icons';
+import { StateTag } from '@/components/ui/state-tag';
 import { RichMessage, useMessages } from '../../../lib/i18n/react';
 import { t as translate } from '../../../lib/i18n/runtime';
 import { agoStamp } from '../../../lib/timestamp';
@@ -592,10 +593,10 @@ function NeedsRow({ queue, slug, canPost, onOpen, outsider = false }: {
           leading={<IconTile size="xs" className={OWED_TILE}><BallotIcon aria-hidden="true" /></IconTile>}
           titleClassName={TITLE_WITH_PILL}
           title={pillTitle(t('project:hub.needs.upForVote'), (
-            <span className="dev-ws-foryou-pill dev-ws-foryou-pill-light one-tag" data-ws-hub-needs-count="">
+            <StateTag data-ws-hub-needs-count="">
               <span aria-hidden="true">{votes.length}</span>
               <span className="sr-only">{t('project:hub.needs.upForVoteCount', { count: votes.length })}</span>
-            </span>
+            </StateTag>
           ))}
           subtitle={<span data-ws-hub-needs-join="">{t('project:hub.needs.joinToVote')}</span>}
         />
@@ -624,7 +625,7 @@ function NeedsRow({ queue, slug, canPost, onOpen, outsider = false }: {
         onClick={onOpen}
         leading={<IconTile size="xs" className={count ? OWED_TILE : undefined}><BallotIcon aria-hidden="true" /></IconTile>}
         titleClassName={TITLE_WITH_PILL}
-        title={pillTitle(t('project:hub.needs.title'), count ? <span className="dev-ws-foryou-pill one-tag one-tag-strong">{t('project:hub.needs.toVote', { count })}</span> : null)}
+        title={pillTitle(t('project:hub.needs.title'), count ? <StateTag state="needs">{t('project:hub.needs.toVote', { count })}</StateTag> : null)}
         subtitle={sub}
       />
       {count && !canPost ? (
@@ -727,9 +728,9 @@ function DiscussionRow({ data, onOpen, outsider = false }: {
           components={[<span className="dev-ws-foryou-handle" />]}
         />
       ), unread > 0 ? (
-        <span className="dev-ws-foryou-pill one-tag one-tag-grey" data-ws-channel-unread={String(unread)}>
+        <StateTag data-ws-channel-unread={String(unread)}>
           {t('project:hub.channel.unread', { count: unread, shown: capCount(unread) })}
-        </span>
+        </StateTag>
       ) : null)}
       subtitle={sub}
     />
@@ -853,9 +854,9 @@ export function TopicsCard({ data, onOpen }: {
                   {topic.name || topic.handle} <span className="dev-ws-foryou-handle">#{topic.handle}</span>
                 </>
               ), unread ? (
-                <span className="dev-ws-foryou-pill one-tag one-tag-grey" data-ws-hub-topic-unread={String(unread)}>
+                <StateTag data-ws-hub-topic-unread={String(unread)}>
                   {t('project:hub.channel.unread', { count: unread, shown: capCount(unread) })}
-                </span>
+                </StateTag>
               ) : null)}
               subtitle={topic.about || undefined}
             />

@@ -33,15 +33,16 @@ test('the Messages reply banner × is a 44px tap target', () => {
   assert.ok(px(body, 'height') >= 44, 'at least 44px tall');
 });
 
-test('the group-chat reply preview × is a 44px tap target', () => {
-  const body = rule('.gc-reply-preview-x');
-  assert.ok(px(body, 'width') >= 44, 'at least 44px wide');
-  assert.ok(px(body, 'height') >= 44, 'at least 44px tall');
+// One message box (27 Nov 2026): the group chat's box is Messages' own, so
+// its reply banner is the Messages one above, × and all.
+test('the group chat\'s reply banner is the Messages one', () => {
+  assert.doesNotMatch(CSS, /\.gc-reply-preview-x/);
+  const box = fs.readFileSync(path.join(__dirname, '..', 'frontend/src/features/group-chat/composer.tsx'), 'utf8');
+  assert.match(box, /<MessageBox place=\{place\}/);
 });
 
-test('both overhang their strip padding instead of making the strip taller', () => {
-  // Strip padding is 6px top/bottom (messages: `padding: 6px 10px`; group
-  // chat: `padding: 6px 8px`), so a 44px button pulls back 6px each way.
+test('it overhangs its strip padding instead of making the strip taller', () => {
+  // Strip padding is 6px top/bottom (`padding: 6px 10px`), so a 44px
+  // button pulls back 6px each way.
   assert.match(rule('.messages-pending-object button'), /\n\s*margin-block: -6px -6px; margin-inline: auto -8px;/);
-  assert.match(rule('.gc-reply-preview-x'), /\n\s*margin-block: -6px -6px; margin-inline: 0 -8px;/);
 });

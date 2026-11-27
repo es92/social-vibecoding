@@ -546,6 +546,9 @@ const STAGING_SEEDS = Object.freeze([
   stagingSeed('seedStagingGroupFacesRows', async (pool, config) => { await seedStagingGroupFacesRows(pool); }),
   // Desktop polish 11: a run of follow-up lines from a fake person. The same people.
   stagingSeed('seedStagingFollowUpBubbles', async (pool, config) => { await seedStagingFollowUpBubbles(pool); }),
+  // After seedStagingRenamedChange and #general's people: one of them is sent
+  // that change, so its card in a message shows the name it has everywhere.
+  stagingSeed('seedStagingSharedRenamedChange', async (pool, config) => { await seedStagingSharedRenamedChange(pool, config); }),
   stagingSeed('seedStagingOwnReviewChange', async (pool, config) => { await seedStagingOwnReviewChange(pool, config); }),
   stagingSeed('seedStagingGroupChatAttachments', async (pool, config) => { await seedStagingGroupChatAttachments(pool, config); }),
   stagingSeed('seedStagingAppFiles', async (pool, config) => { await seedStagingAppFiles(pool); }),
@@ -9356,6 +9359,86 @@ async function seedStagingRenamedChange(pool, config) {
     }
   } catch (err) {
     log.warn('db', 'Staging renamed-change fixture seeding failed', { message: err.message });
+  }
+}
+
+// The one model of a change: a change shared in a message is named as every
+// other screen names it (its pull request's title, else the one chosen before
+// it had one, else its session's name). The share card led with the session's
+// old name. The renamed change above is the case: its correction is in
+// proposed_pr_title, so this shares it in a direct thread between the shots'
+// member fixture and one of #general's fake speakers, where its card shows
+// the name. Obviously fake, idempotent through the direct pair, the message's
+// idempotency key and the card's position; strictly a no-op outside staging.
+// Nothing here is a signal the code reads to decide anything.
+async function seedStagingSharedRenamedChange(pool, config) {
+  if (process.env.USERNODE_ENV !== 'staging') return;
+  try {
+    const people = await pool.query(
+      `SELECT id, username FROM users
+        WHERE username IN ('usernode-capture', 'staging-demo-general-lin')`
+    );
+    const member = people.rows.find((row) => row.username === 'usernode-capture');
+    const other = people.rows.find((row) => row.username === 'staging-demo-general-lin');
+    if (!member || !other || member.id === other.id) {
+      log.warn('db', 'Staging shared renamed change skipped: fixture users missing');
+      return seedSkipped('no user usernode-capture or staging-demo-general-lin');
+    }
+    const { rows: [change] } = await pool.query(
+      `SELECT cs.id, cs.app_id FROM chat_sessions cs JOIN apps a ON a.id = cs.app_id
+        WHERE a.slug = $1 AND cs.branch_name = 'staging-fixture/renamed-change'
+        ORDER BY cs.id ASC LIMIT 1`,
+      [config.selfAppSlug]
+    );
+    if (!change) return seedSkipped('no renamed change');
+    const low = Math.min(member.id, other.id);
+    const high = Math.max(member.id, other.id);
+    const found = await pool.query(
+      'SELECT conversation_id FROM conversation_direct_pairs WHERE user_low_id = $1 AND user_high_id = $2',
+      [low, high]
+    );
+    let conversationId = found.rows[0]?.conversation_id;
+    if (!conversationId) {
+      const created = await pool.query(
+        `INSERT INTO conversations (kind, created_by) VALUES ('direct', $1) RETURNING id`,
+        [member.id]
+      );
+      conversationId = created.rows[0].id;
+      await pool.query(
+        `INSERT INTO conversation_direct_pairs (conversation_id, user_low_id, user_high_id)
+         VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+        [conversationId, low, high]
+      );
+    }
+    await pool.query(
+      `INSERT INTO conversation_members
+         (conversation_id, user_id, role, status, responded_at, joined_at)
+       SELECT $1, u.id, 'member', 'member', NOW(), NOW()
+         FROM users u WHERE u.id IN ($2, $3)
+       ON CONFLICT (conversation_id, user_id) DO NOTHING`,
+      [conversationId, member.id, other.id]
+    );
+    const key = 'staging-demo-shared-renamed-change';
+    await pool.query(
+      `INSERT INTO conversation_messages (conversation_id, sender_id, content, idempotency_key, created_at)
+       VALUES ($1, $2, 'Staging demo: the change I renamed, have a look', $3, NOW() - INTERVAL '2 days')
+       ON CONFLICT (conversation_id, sender_id, idempotency_key)
+         WHERE sender_id IS NOT NULL AND idempotency_key IS NOT NULL
+       DO NOTHING`,
+      [conversationId, member.id, key]
+    );
+    const { rows: [message] } = await pool.query(
+      'SELECT id FROM conversation_messages WHERE conversation_id = $1 AND sender_id = $2 AND idempotency_key = $3',
+      [conversationId, member.id, key]
+    );
+    if (!message) return;
+    await pool.query(
+      `INSERT INTO conversation_message_objects (message_id, position, object_type, app_id, object_ref)
+       VALUES ($1, 0, 'code_proposal', $2, $3) ON CONFLICT (message_id, position) DO NOTHING`,
+      [message.id, change.app_id, change.id]
+    );
+  } catch (err) {
+    log.warn('db', 'Staging shared renamed change seeding failed', { message: err.message });
   }
 }
 

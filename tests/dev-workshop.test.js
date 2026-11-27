@@ -1341,14 +1341,16 @@ test('a lane row\'s last line carries the card\'s state, in the tone the pill al
   // decides whether it can land at all rides beside it as a red tag — which
   // the row already had a seat for, because RowBand draws the card's state
   // chips after the pill at both sizes.
-  assert.match(html, /class="dev-ws-row-state dev-ws-row-state-progress"[^>]*>Vote · \d+\/\d+</,
-    'the state line carries the vote, in the vote\u2019s tone');
+  // The state is the one tag (dev-card.tsx ChangeTag): a vote that waits on
+  // the viewer is its needs-you state, in the server's words.
+  assert.match(html, /data-state-tag="needs" class="one-tag one-tag-strong" data-pill-key="needs_vote"[^>]*><span class="one-tag-words">Vote · \d+\/\d+</,
+    'the state line carries the vote, as the tag that asks for you');
   // The blocker is a tag on the row's tags line (#4486: the brief's words for
   // the card's status tags) — not on the band. The band is the vote and the
   // Vote button.
   // #2222: amber. A predicted conflict the platform resolves by itself is not
   // the reader's move, so it reads as worth knowing, not as a failure.
-  assert.match(html, /<span class="dev-ws-tag" data-tone="warn"[^>]*>Conflicts with main · 2 files<\/span>/);
+  assert.match(html, /<span data-state-tag="plain" class="one-tag one-tag-plain dev-ws-tag"[^>]*>Conflicts with main · 2 files<\/span>/);
   assert.ok(html.indexOf('Conflicts with main') < html.indexOf('dev-ws-row-band'),
     'the tag is above the band, on the meta line');
   assert.ok(!html.includes('dev-ws-row-pill'),
@@ -1761,36 +1763,36 @@ test('#4457, #4486, #4718: a change up for a vote keeps its vote on its own line
   const brief = { kind: 'change', noun: 'Change', n: 34, by: 'bob', mine: false, category: '', replies: 0, linked: [], closed: [], stage: 'vote', at: 0,
     tags: [{ label: 'Checks running…', tone: 'run' }, { label: 'Preview ready', tone: 'plain', glyph: 'eye' }], vote: { yes: 1, need: 3, ask: true } };
   const html = renderToHtml(createElement(WorkRow, { row: { ...row, brief }, slug: 'demo-app' }));
-  assert.match(html, /<span class="dev-ws-tag" data-tone="run"><span class="dc-status-spinner-arc" aria-hidden="true"><\/span>Checks running…<\/span>/);
+  assert.match(html, /<span data-state-tag="working" class="one-tag one-tag-plain one-tag-working dev-ws-tag"><span class="dc-status-spinner-arc" aria-hidden="true"><\/span>Checks running…<\/span>/);
   // #7182: Homeroom bot's own tone spins too, and paints in the bot's colour.
   const botBrief = { ...brief, tags: [{ label: 'Homeroom bot is building this', tone: 'bot' }] };
   const botHtml = renderToHtml(createElement(WorkRow, { row: { ...row, brief: botBrief }, slug: 'demo-app' }));
-  assert.match(botHtml, /<span class="dev-ws-tag" data-tone="bot"><span class="dc-status-spinner-arc" aria-hidden="true"><\/span>Homeroom bot is building this<\/span>/);
-  assert.match(CSS, /\.dev-ws-tag\[data-tone="bot"\] \{ color: var\(--bot-ink\); background: var\(--bot-tint\); \}/);
+  assert.match(botHtml, /<span data-state-tag="working" class="one-tag one-tag-plain one-tag-working dev-ws-tag"><span class="dc-status-spinner-arc" aria-hidden="true"><\/span>Homeroom bot is building this<\/span>/);
+  // Homeroom bot's own work turns like any other: the one tag's working state.
   // #4499: once the run knows its total, the tag carries a bar instead of
   // "619/732", with the count as its tooltip and the bar's name.
   const runningBrief = { ...brief, tags: [{ label: 'Checks', tone: 'run', title: '619 of 732 checks done. Automated tests are still running.', progress: { done: 619, total: 732, text: '619 of 732 checks done' } }] };
   const running = renderToHtml(createElement(WorkRow, { row: { ...row, brief: runningBrief }, slug: 'demo-app' }));
-  assert.match(running, /<span class="dev-ws-tag" data-tone="run" title="619 of 732 checks done\. Automated tests are still running\."><span class="dc-status-spinner-arc" aria-hidden="true"><\/span>Checks<span class="checks-chip-bar" role="progressbar" aria-valuemin="0" aria-valuemax="732" aria-valuenow="619" aria-label="619 of 732 checks done"><span class="checks-chip-bar-fill" style="width:85%"><\/span><\/span><\/span>/);
+  assert.match(running, /<span data-state-tag="working" class="one-tag one-tag-plain one-tag-working dev-ws-tag" title="619 of 732 checks done\. Automated tests are still running\."><span class="dc-status-spinner-arc" aria-hidden="true"><\/span>Checks<span class="checks-chip-bar" role="progressbar" aria-valuemin="0" aria-valuemax="732" aria-valuenow="619" aria-label="619 of 732 checks done"><span class="checks-chip-bar-fill" style="width:85%"><\/span><\/span><\/span>/);
   // #4486: the thin bar and its "1 of 3 yes" went; the card's own status
-  // pill says it in its own words, at its words' width plus 56px (app.css).
+  // pill says it in its own words, as the one tag (dev-card.tsx ChangeTag)
+  // at its words' width.
   const pill = row.card.pill.state;
-  assert.match(html, new RegExp(`<span class="dev-ws-wvote" data-ws-vote=""><span class="dev-ws-row-state dev-ws-row-state-${pill.tone} dev-ws-wvote-state"[^>]*>${pill.label.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}</span><span class="dev-ws-wvote-btn">`),
-    'the bar, then Vote');
+  assert.match(html, new RegExp(`<span class="dev-ws-wvote" data-ws-vote=""><span data-state-tag="[a-z]+" class="one-tag [a-z -]+ dev-ws-wvote-state"[^>]*>(?:<span class="dc-status-spinner-arc" aria-hidden="true"></span>)?<span class="one-tag-words">${pill.label.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}</span></span><span class="dev-ws-wvote-btn">`),
+    'the tag, then Vote');
   assert.ok(!/dev-ws-wvote-bar|dev-ws-wvote-n|dev-ws-wvote-cell/.test(html), 'no thin bar, no count beside it');
-  assert.match(CSS, /\.dev-ws-wvote-state \{ flex: none; padding: 0 calc\(10px \+ 56px\) 0 10px; \}/);
   // #4718: the vote takes a line of its own under the tags, at the row's
   // far end, on every width — it never rides the tags' line, so rows beside
   // each other keep their pills lined up whatever the tags' length.
   assert.match(html, /<\/span><span class="dev-ws-wrow-votes"><span class="dev-ws-wvote" data-ws-vote="">/, 'the tags line closes, then the votes line opens with the vote');
   const statusLine = html.slice(html.indexOf('<span class="dev-ws-wrow-status">'), html.indexOf('<span class="dev-ws-wrow-votes">'));
   assert.ok(!statusLine.includes('dev-ws-wvote'), 'the tags line holds no vote');
-  assert.match(html, /<span class="dev-ws-tag" data-tone="plain"><svg[^>]*>.*?<\/svg>Preview ready<\/span><\/span><span class="dev-ws-wrow-votes">/, 'a tag without short words draws its label, and the tags line ends before the vote');
+  assert.match(html, /<span data-state-tag="plain" class="one-tag one-tag-plain dev-ws-tag"><svg[^>]*>.*?<\/svg>Preview ready<\/span><\/span><span class="dev-ws-wrow-votes">/, 'a tag without short words draws its label, and the tags line ends before the vote');
   assert.match(CSS, /\.dev-ws-wrow-votes \{ margin-top: 6px; display: flex; align-items: center; \}/);
   assert.match(CSS, /\.dev-ws-wvote \{\s*position: relative; z-index: 1; margin-inline-start: auto;/);
   const short = { ...brief, tags: [{ label: 'Taking before & after screenshots', short: 'Taking screenshots', tone: 'run' }, { label: 'Preview ready', short: 'Preview', tone: 'plain', glyph: 'eye' }] };
   const shortHtml = renderToHtml(createElement(WorkRow, { row: { ...row, brief: short }, slug: 'demo-app' }));
-  assert.match(shortHtml, /<span class="dev-ws-tag" data-tone="run" title="Taking before &amp; after screenshots"><span class="dc-status-spinner-arc" aria-hidden="true"><\/span><span aria-hidden="true">Taking screenshots<\/span><span class="sr-only">Taking before &amp; after screenshots<\/span><\/span>/);
+  assert.match(shortHtml, /<span data-state-tag="working" class="one-tag one-tag-plain one-tag-working dev-ws-tag" title="Taking before &amp; after screenshots"><span class="dc-status-spinner-arc" aria-hidden="true"><\/span><span aria-hidden="true">Taking screenshots<\/span><span class="sr-only">Taking before &amp; after screenshots<\/span><\/span>/);
   assert.match(shortHtml, /title="Preview ready">.*<span aria-hidden="true">Preview<\/span><span class="sr-only">Preview ready<\/span><\/span>/);
   const { voteSpecs } = loadTsx('frontend/src/features/dev-board/card/fold.tsx');
   assert.ok(voteSpecs(row.card), 'the fixture can vote');
@@ -4674,7 +4676,7 @@ test('a run that does not know its total yet still shows its bar: "Checks" on th
   const brief = { kind: 'change', noun: 'Change', n: 4577, by: 'bob', mine: false, category: '', replies: 0, linked: [], closed: [], stage: 'run', at: 0,
     tags: [{ label: 'Checks', tone: 'run', title: tag.title, progress: tag.progress }] };
   const html = renderToHtml(createElement(WorkRow, { row: { ...row, brief }, slug: 'demo-app' }));
-  assert.match(html, /<span class="dev-ws-tag" data-tone="run" title="Checks starting\.[^"]*"><span class="dc-status-spinner-arc" aria-hidden="true"><\/span>Checks<span class="checks-chip-bar checks-chip-bar-busy" role="progressbar" aria-valuemin="0" aria-label="Checks starting"><\/span><\/span>/);
+  assert.match(html, /<span data-state-tag="working" class="one-tag one-tag-plain one-tag-working dev-ws-tag" title="Checks starting\.[^"]*"><span class="dc-status-spinner-arc" aria-hidden="true"><\/span>Checks<span class="checks-chip-bar checks-chip-bar-busy" role="progressbar" aria-valuemin="0" aria-label="Checks starting"><\/span><\/span>/);
 });
 
 // #6145 (2 Nov 2026): a row's side panel is portalled to <body>, so it stayed

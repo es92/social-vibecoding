@@ -634,6 +634,9 @@ html.un-kb:is([data-browser-scroller="settings-screen"], [data-browser-scroller=
    `.messages-layout` around it (project-discussion.tsx). */
 .messages-layout,
 .dev-ws-discussion,
+/* The comments box under a change (one message box, 27 Nov 2026) is
+   Messages' card, drawn wherever the change's card is. */
+.dev-feed-reply,
 /* #6431: the column's heading beside the bot page is the same kind of row as
    a thread's, and its ⋯ menu is Messages' own (.messages-thread-menu). Those
    tokens are only declared where they are drawn, so the menu's fill resolved
@@ -662,6 +665,7 @@ html.un-kb:is([data-browser-scroller="settings-screen"], [data-browser-scroller=
 }
 .dark .messages-layout,
 .dark .dev-ws-discussion,
+.dark .dev-feed-reply,
 .dark .side-panel-head,
 .dark #ai-screen .ai-askbar {
   --messages-surface: var(--dc-raised);
@@ -2323,7 +2327,7 @@ html:root .messages-message.messages-message-end .messages-message-author { flex
    laid out on desktop even while empty, a 4px gap and a 15px blank band
    under the row, so every Messages composer (the Homeroom bot's thread, a
    DM, a group, #general, a reply thread) stood about 75px against the app
-   channel's 56px (`.gc-composer-card`: 8 + 40 + 8). It is now laid out at
+   channel's 56px (8 + 40 + 8). It is now laid out at
    every width only once the text nears the limit, where it appears in amber,
    so the card is that same 8 + 40 + 8. The element stays in the DOM (a
    declared check selects it). Two selectors' worth of specificity, so it
@@ -2387,6 +2391,9 @@ html:root .messages-message.messages-message-end .messages-message-author { flex
   background: var(--messages-surface);
   box-shadow: 0 -7px 20px rgba(0, 0, 0, .12);
 }
+/* Where over the box is cut off (a box at the top of a scrolling body, the
+   comments under a change in Needs you), the box opens it under itself. */
+.messages-mention-menu[data-below] { top: calc(100% - 3px); bottom: auto; box-shadow: 0 7px 20px rgba(0, 0, 0, .12); }
 .messages-mention-menu button { display: block; width: 100%; padding: 9px 12px; border-radius: 10px; color: var(--text-primary); font-size: 15px; text-align: start; }
 .messages-mention-menu button:hover { background: var(--messages-surface-2); }
 /* QA 2026-09-24 Q13: the row the arrow keys have highlighted, which Enter or
@@ -2431,14 +2438,14 @@ html:root .messages-message.messages-message-end .messages-message-author { flex
    its own pane and its own zone. */
 .messages-thread-pane > .messages-drop-overlay,
 .messages-reply-pane > .messages-drop-overlay { inset: 8px; }
-.gc-composer-card,
-#gc-form,
-#gc-thread-form,
 #feedback-form { position: relative; }
 #feedback-form > .attach-drop-overlay { inset: -6px; border-radius: 16px; }
-/* The boxed thread composer inside a board card has no card radius of its own. */
-#gc-form:not(.gc-composer-card) > .attach-drop-overlay,
-#gc-thread-form:not(.gc-composer-card) > .attach-drop-overlay { border-radius: 12px; }
+/* A project chat's pane and a thread's page take a drop as Messages' panes
+   do (group-chat/general-chat.tsx, thread-shell.tsx): the outline frames the
+   pane, and the sheet holds it while a file is over it. */
+.gc-chat-pane > .messages-drop-overlay,
+.dev-request-sheet > .messages-drop-overlay { inset: 8px; }
+.dev-request-sheet:has(> .messages-drop-overlay) { position: relative; }
 
 /* ── The two panes, and the width they are actually drawn at ────────────
    From 768px up both panes sit on the one strip: the list column fixed at
@@ -2955,7 +2962,7 @@ html.dark[data-contrast="more"] .dark\:border-zinc-800 { border-color: #48484a; 
      Pinned explicitly to an OPAQUE platform surface — --un-group-bg is a
      translucent violet tint by design, so a popover inheriting it showed
      the app grid straight through (#847). Matches the platform's other
-     floating dropdowns (.attr-popover, .gc-mention-menu). */
+     floating dropdowns (.attr-popover). */
   --un-popover-bg: var(--bg-primary);
   --un-navbar-bg: rgba(255, 255, 255, 0.82);
   --un-radius-card: 12px;
@@ -9088,7 +9095,6 @@ html:root #dev-workshop .wip-hero-preview > .wip-hero-preview-pic { position: ab
 }
 /* THE VOTE COUNT on the Needs you door is the look's filled action in small: black on a light page, yellow on a dark
    one. It was the accent with white words, and under this look the accent on a dark page is cream (20 Nov 2026). */
-html:root #dev-workshop .dev-ws[data-ws-tab="status"] .dev-ws-foryou-pill:not([data-ws-channel-unread]):not(.dev-ws-foryou-pill-light) { background: var(--wip-cta-from); color: var(--wip-cta-ink); }
 /* A PROJECT'S NEEDS YOU is laid out as its hub is (review-flow.tsx): the
    page's whole width on the page's own ground, its name a label of the
    look, what waits as rows of Home's kind in the look's card, in the look's
@@ -10113,30 +10119,12 @@ html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-wrow:hove
 html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-wrow-link { font-size: var(--wip-title-size); font-weight: var(--wip-title-weight); line-height: 1.3; color: var(--wip-ink); }
 html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-wrow-sub { font-size: var(--wip-link-size); color: var(--wip-ink-muted); }
 html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-wrow-status { gap: 0.375rem; }
-html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-tag {
-  border-radius: var(--wip-radius-pill);
-  background-color: var(--wip-tag-plain-bg);
-  color: var(--wip-tag-plain-ink);
-  font-weight: 600;
-}
-html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-tag[data-tone="ok"] { background-color: var(--wip-tag-ok-bg); color: var(--wip-tag-ok-ink); }
-html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-tag[data-tone="bad"] { background-color: var(--wip-tag-bad-bg); color: var(--wip-tag-bad-ink); }
-html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-tag[data-tone="warn"] { background-color: var(--wip-tag-warn-bg); color: var(--wip-tag-warn-ink); }
-html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-tag[data-tone="run"] { background-color: var(--wip-tag-run-bg); color: var(--wip-tag-run-ink); }
-html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-tag[data-tone="bot"] { background-color: var(--bot-tint); color: var(--bot-ink); }
 html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban :is(.attr-chip.dev-badge, .dev-chat-badge) {
   border-radius: var(--wip-radius-pill);
   background-color: var(--wip-tag-plain-bg);
   color: var(--wip-tag-plain-ink);
 }
 html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .attr-chip .attr-dot { background-color: transparent; color: var(--wip-ink-muted); }
-html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-row-state {
-  border-radius: var(--wip-radius-pill);
-  background-color: var(--wip-mark-2-bg);
-  color: var(--wip-mark-2-ink);
-  font-weight: 600;
-}
-html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-row-state-ok { background-color: var(--wip-tag-ok-bg); color: var(--wip-tag-ok-ink); }
 html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-vote-btn { border-radius: var(--wip-radius-pill); }
 html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-card-menu-btn { color: var(--wip-ink-muted); }
 @media (prefers-reduced-motion: reduce) {
@@ -10164,7 +10152,7 @@ html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-wrow-sub 
 html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-wrow-link { font-size: 0.9375rem; line-height: 1.35; letter-spacing: -0.005em; }
 html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-wrow-status { display: flex; flex-wrap: wrap; align-items: center; margin-top: 0.125rem; gap: 0 0.375rem; }
 html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-wrow-status > :not(.dev-chat-badge) { margin-top: 0.5rem; }
-html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban :is(.dev-ws-tag, .attr-chip.dev-badge) { height: 1.375rem; padding-inline: 0.5rem; font-size: 0.75rem; line-height: 1; }
+html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .attr-chip.dev-badge { height: 1.375rem; padding-inline: 0.5rem; font-size: 0.75rem; line-height: 1; }
 /* The comment count is on the card's top line, at its far end beside the
    menu: with who and when, where a glance finds it, and never alone on a
    row of its own. */
@@ -10188,28 +10176,6 @@ html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-row-band 
   padding-top: 0.625rem;
   box-shadow: inset 0 1px 0 var(--wip-card-line);
 }
-html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-row-state {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  height: 2rem;
-  padding-inline: 0;
-  background-color: transparent;
-  color: var(--wip-ink-soft);
-  font-size: 0.8125rem;
-  font-weight: 600;
-}
-html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-row-state::before {
-  content: "";
-  flex: none;
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background-color: var(--wip-mark-2-ink);
-  box-shadow: 0 0 0 3px var(--wip-mark-2-bg);
-}
-html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-row-state-ok { background-color: transparent; color: var(--wip-tag-ok-ink); }
-html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-row-state-ok::before { background-color: var(--wip-tag-ok-ink); box-shadow: 0 0 0 3px var(--wip-tag-ok-bg); }
 html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-vote-btn { height: 2rem; padding-inline: 0.875rem 0.625rem; font-size: 0.8125rem; font-weight: 700; }
 /* THE BOARD'S TIES (board-links.ts): while a card is rested on, a ring
    round it and round each card it is tied to, and an arrow from a request
@@ -11077,7 +11043,7 @@ html:root.dark {
   --wip-btn-link-ink: #fffeea;
   --wip-btn-link-off: #71717a;
 }
-html:root :is(button, a, label, summary, [role="button"]):where(.bg-violet-600, .wip-cta, .rf-go, .rf-end-btn, .rf-desc-go, .gc-vote-btn-primary, .bg-red-500\/10, .bg-red-600, .border.border-red-400, .border:is(.text-red-500, .text-red-600, .text-red-700), :is(.bg-zinc-100, .bg-zinc-200, .bg-white.shadow-sm, .border.border-zinc-300):is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-full)):where(:not(.ui-lrow, .ui-row, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag)) {
+html:root :is(button, a, label, summary, [role="button"]):where(.bg-violet-600, .wip-cta, .rf-go, .rf-end-btn, .rf-desc-go, .gc-vote-btn-primary, .bg-red-500\/10, .bg-red-600, .border.border-red-400, .border:is(.text-red-500, .text-red-600, .text-red-700), :is(.bg-zinc-100, .bg-zinc-200, .bg-white.shadow-sm, .border.border-zinc-300):is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-full)):where(:not(.ui-lrow, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag)) {
   border: 1px solid var(--wip-btn-line);
   border-radius: var(--wip-btn-radius);
   box-shadow: var(--wip-btn-edge);
@@ -11086,66 +11052,66 @@ html:root :is(button, a, label, summary, [role="button"]):where(.bg-violet-600, 
   font-weight: var(--wip-btn-weight);
   letter-spacing: var(--wip-btn-track);
 }
-html:root :is(button, a, label, summary, [role="button"]):where(.bg-violet-600, .wip-cta, .rf-go, .rf-end-btn, .rf-desc-go, .gc-vote-btn-primary, .bg-red-500\/10, .bg-red-600, .border.border-red-400, .border:is(.text-red-500, .text-red-600, .text-red-700), :is(.bg-zinc-100, .bg-zinc-200, .bg-white.shadow-sm, .border.border-zinc-300):is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-full)):where(:not(.ui-lrow, .ui-row, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag)):is(.text-xs, .py-1, .py-0\.5, .py-1\.5) {
+html:root :is(button, a, label, summary, [role="button"]):where(.bg-violet-600, .wip-cta, .rf-go, .rf-end-btn, .rf-desc-go, .gc-vote-btn-primary, .bg-red-500\/10, .bg-red-600, .border.border-red-400, .border:is(.text-red-500, .text-red-600, .text-red-700), :is(.bg-zinc-100, .bg-zinc-200, .bg-white.shadow-sm, .border.border-zinc-300):is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-full)):where(:not(.ui-lrow, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag)):is(.text-xs, .py-1, .py-0\.5, .py-1\.5) {
   box-shadow: var(--wip-btn-edge-small);
   font-size: var(--wip-btn-size-small);
 }
-html:root :is(button, a, label, summary, [role="button"]):where(.bg-violet-600, .wip-cta, .rf-go, .rf-end-btn, .rf-desc-go, .gc-vote-btn-primary, .bg-red-500\/10, .bg-red-600, .border.border-red-400, .border:is(.text-red-500, .text-red-600, .text-red-700), :is(.bg-zinc-100, .bg-zinc-200, .bg-white.shadow-sm, .border.border-zinc-300):is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-full)):where(:not(.ui-lrow, .ui-row, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag)):active:not(:disabled, [aria-disabled="true"]) {
+html:root :is(button, a, label, summary, [role="button"]):where(.bg-violet-600, .wip-cta, .rf-go, .rf-end-btn, .rf-desc-go, .gc-vote-btn-primary, .bg-red-500\/10, .bg-red-600, .border.border-red-400, .border:is(.text-red-500, .text-red-600, .text-red-700), :is(.bg-zinc-100, .bg-zinc-200, .bg-white.shadow-sm, .border.border-zinc-300):is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-full)):where(:not(.ui-lrow, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag)):active:not(:disabled, [aria-disabled="true"]) {
   box-shadow: none;
   transform: var(--wip-btn-press);
 }
-html:root :is(button, a, label, summary, [role="button"]):where(.bg-violet-600, .wip-cta, .rf-go, .rf-end-btn, .rf-desc-go, .gc-vote-btn-primary, .bg-red-500\/10, .bg-red-600, .border.border-red-400, .border:is(.text-red-500, .text-red-600, .text-red-700), :is(.bg-zinc-100, .bg-zinc-200, .bg-white.shadow-sm, .border.border-zinc-300):is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-full)):where(:not(.ui-lrow, .ui-row, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag)):focus-visible {
+html:root :is(button, a, label, summary, [role="button"]):where(.bg-violet-600, .wip-cta, .rf-go, .rf-end-btn, .rf-desc-go, .gc-vote-btn-primary, .bg-red-500\/10, .bg-red-600, .border.border-red-400, .border:is(.text-red-500, .text-red-600, .text-red-700), :is(.bg-zinc-100, .bg-zinc-200, .bg-white.shadow-sm, .border.border-zinc-300):is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-full)):where(:not(.ui-lrow, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag)):focus-visible {
   outline: 2px solid var(--wip-btn-focus);
   outline-offset: 2px;
 }
-html:root :is(button, a, label, summary, [role="button"]):where(.bg-violet-600, .wip-cta, .rf-go, .rf-end-btn, .rf-desc-go, .gc-vote-btn-primary, .bg-red-500\/10, .bg-red-600, .border.border-red-400, .border:is(.text-red-500, .text-red-600, .text-red-700), :is(.bg-zinc-100, .bg-zinc-200, .bg-white.shadow-sm, .border.border-zinc-300):is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-full)):where(:not(.ui-lrow, .ui-row, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag)):is(:disabled, [aria-disabled="true"]) {
+html:root :is(button, a, label, summary, [role="button"]):where(.bg-violet-600, .wip-cta, .rf-go, .rf-end-btn, .rf-desc-go, .gc-vote-btn-primary, .bg-red-500\/10, .bg-red-600, .border.border-red-400, .border:is(.text-red-500, .text-red-600, .text-red-700), :is(.bg-zinc-100, .bg-zinc-200, .bg-white.shadow-sm, .border.border-zinc-300):is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-full)):where(:not(.ui-lrow, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag)):is(:disabled, [aria-disabled="true"]) {
   box-shadow: none;
   cursor: not-allowed;
   opacity: var(--wip-btn-off);
 }
-html:root :is(button, a, label, summary, [role="button"]):is(.bg-violet-600, .wip-cta, .rf-go, .rf-end-btn-go, .gc-vote-btn-primary):where(:not(.ui-lrow, .ui-row, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag)) {
+html:root :is(button, a, label, summary, [role="button"]):is(.bg-violet-600, .wip-cta, .rf-go, .rf-end-btn-go, .gc-vote-btn-primary):where(:not(.ui-lrow, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag)) {
   border-color: var(--wip-btn-1-line);
   background: var(--wip-btn-1-bg);
   color: var(--wip-btn-1-ink);
 }
-html:root :is(button, a, label, summary, [role="button"]):is(.bg-violet-600, .wip-cta, .rf-go, .rf-end-btn-go, .gc-vote-btn-primary):where(:not(.ui-lrow, .ui-row, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag)):hover:not(:disabled, [aria-disabled="true"]) { background: var(--wip-btn-1-hover); filter: none; }
+html:root :is(button, a, label, summary, [role="button"]):is(.bg-violet-600, .wip-cta, .rf-go, .rf-end-btn-go, .gc-vote-btn-primary):where(:not(.ui-lrow, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag)):hover:not(:disabled, [aria-disabled="true"]) { background: var(--wip-btn-1-hover); filter: none; }
 /* Level 2 is flat. A secondary in red words is the destructive level's (below), so it is left out here: this
    rule's class pair outranks that one's. */
-html:root :is(button, a, label, summary, [role="button"]):is(:is(.bg-zinc-100, .bg-zinc-200, .bg-white.shadow-sm, .border.border-zinc-300):is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-full), .rf-desc-go, .rf-end-btn:not(.rf-end-btn-go)):where(:not(.ui-lrow, .ui-row, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag, .text-red-500, .text-red-600, .text-red-700)) {
+html:root :is(button, a, label, summary, [role="button"]):is(:is(.bg-zinc-100, .bg-zinc-200, .bg-white.shadow-sm, .border.border-zinc-300):is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-full), .rf-desc-go, .rf-end-btn:not(.rf-end-btn-go)):where(:not(.ui-lrow, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag, .text-red-500, .text-red-600, .text-red-700)) {
   border-color: transparent;
   background: var(--wip-btn-2-bg);
   box-shadow: none;
   color: var(--wip-btn-2-ink);
 }
-html:root :is(button, a, label, summary, [role="button"]):is(:is(.bg-zinc-100, .bg-zinc-200, .bg-white.shadow-sm, .border.border-zinc-300):is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-full), .rf-desc-go, .rf-end-btn:not(.rf-end-btn-go)):where(:not(.ui-lrow, .ui-row, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag, .text-red-500, .text-red-600, .text-red-700)):hover:not(:disabled, [aria-disabled="true"]) { background: var(--wip-btn-2-hover); }
-html:root :is(button, a, label, summary, [role="button"]):is(:is(.bg-zinc-100, .bg-zinc-200, .bg-white.shadow-sm, .border.border-zinc-300):is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-full), .rf-desc-go, .rf-end-btn:not(.rf-end-btn-go)):where(:not(.ui-lrow, .ui-row, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag, .text-red-500, .text-red-600, .text-red-700)):active:not(:disabled, [aria-disabled="true"]) {
+html:root :is(button, a, label, summary, [role="button"]):is(:is(.bg-zinc-100, .bg-zinc-200, .bg-white.shadow-sm, .border.border-zinc-300):is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-full), .rf-desc-go, .rf-end-btn:not(.rf-end-btn-go)):where(:not(.ui-lrow, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag, .text-red-500, .text-red-600, .text-red-700)):hover:not(:disabled, [aria-disabled="true"]) { background: var(--wip-btn-2-hover); }
+html:root :is(button, a, label, summary, [role="button"]):is(:is(.bg-zinc-100, .bg-zinc-200, .bg-white.shadow-sm, .border.border-zinc-300):is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-full), .rf-desc-go, .rf-end-btn:not(.rf-end-btn-go)):where(:not(.ui-lrow, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag, .text-red-500, .text-red-600, .text-red-700)):active:not(:disabled, [aria-disabled="true"]) {
   box-shadow: none;
   filter: var(--wip-btn-flat-dim);
   transform: var(--wip-btn-flat-press);
 }
 /* An icon alone (a sheet's close, a square of the shell's icon sizes) is the flat disc rather than a tinted pill:
    white, one hairline, the ink. */
-html:root :is(button, a, label, summary, [role="button"]):is(:is(.bg-zinc-100, .bg-zinc-200, .bg-white.shadow-sm, .border.border-zinc-300):is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-full), .rf-desc-go, .rf-end-btn:not(.rf-end-btn-go)):is(.h-7.w-7, .h-8.w-8, .h-9.w-9, .h-10.w-10, .h-11.w-11, .h-12.w-12):where(:not(.ui-lrow, .ui-row, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag, .text-red-500, .text-red-600, .text-red-700)) {
+html:root :is(button, a, label, summary, [role="button"]):is(:is(.bg-zinc-100, .bg-zinc-200, .bg-white.shadow-sm, .border.border-zinc-300):is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-full), .rf-desc-go, .rf-end-btn:not(.rf-end-btn-go)):is(.h-7.w-7, .h-8.w-8, .h-9.w-9, .h-10.w-10, .h-11.w-11, .h-12.w-12):where(:not(.ui-lrow, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag, .text-red-500, .text-red-600, .text-red-700)) {
   background: var(--wip-btn-disc-bg);
   box-shadow: inset 0 0 0 1px var(--wip-btn-disc-line);
   color: var(--wip-btn-disc-ink);
 }
-html:root :is(button, a, label, summary, [role="button"]):is(:is(.bg-zinc-100, .bg-zinc-200, .bg-white.shadow-sm, .border.border-zinc-300):is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-full), .rf-desc-go, .rf-end-btn:not(.rf-end-btn-go)):is(.h-7.w-7, .h-8.w-8, .h-9.w-9, .h-10.w-10, .h-11.w-11, .h-12.w-12):where(:not(.ui-lrow, .ui-row, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag, .text-red-500, .text-red-600, .text-red-700)):hover:not(:disabled, [aria-disabled="true"]) { background: var(--wip-btn-disc-hover); }
+html:root :is(button, a, label, summary, [role="button"]):is(:is(.bg-zinc-100, .bg-zinc-200, .bg-white.shadow-sm, .border.border-zinc-300):is(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-full), .rf-desc-go, .rf-end-btn:not(.rf-end-btn-go)):is(.h-7.w-7, .h-8.w-8, .h-9.w-9, .h-10.w-10, .h-11.w-11, .h-12.w-12):where(:not(.ui-lrow, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag, .text-red-500, .text-red-600, .text-red-700)):hover:not(:disabled, [aria-disabled="true"]) { background: var(--wip-btn-disc-hover); }
 /* Destructive is flat too: the red tint, red words. */
-html:root :is(button, a, label, summary, [role="button"]):is(.bg-red-500\/10, .bg-red-600, .border.border-red-400, .border:is(.text-red-500, .text-red-600, .text-red-700), :is(.bg-zinc-100, .bg-zinc-200):is(.text-red-500, .text-red-600, .text-red-700)):where(:not(.ui-lrow, .ui-row, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag)) {
+html:root :is(button, a, label, summary, [role="button"]):is(.bg-red-500\/10, .bg-red-600, .border.border-red-400, .border:is(.text-red-500, .text-red-600, .text-red-700), :is(.bg-zinc-100, .bg-zinc-200):is(.text-red-500, .text-red-600, .text-red-700)):where(:not(.ui-lrow, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag)) {
   border-color: transparent;
   background: var(--wip-btn-bad-bg);
   box-shadow: none;
   color: var(--wip-btn-bad-ink);
 }
-html:root :is(button, a, label, summary, [role="button"]):is(.bg-red-500\/10, .bg-red-600, .border.border-red-400, .border:is(.text-red-500, .text-red-600, .text-red-700), :is(.bg-zinc-100, .bg-zinc-200):is(.text-red-500, .text-red-600, .text-red-700)):where(:not(.ui-lrow, .ui-row, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag)):hover:not(:disabled, [aria-disabled="true"]) { background: var(--wip-btn-bad-hover); }
-html:root :is(button, a, label, summary, [role="button"]):is(.bg-red-500\/10, .bg-red-600, .border.border-red-400, .border:is(.text-red-500, .text-red-600, .text-red-700), :is(.bg-zinc-100, .bg-zinc-200):is(.text-red-500, .text-red-600, .text-red-700)):where(:not(.ui-lrow, .ui-row, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag)):active:not(:disabled, [aria-disabled="true"]) {
+html:root :is(button, a, label, summary, [role="button"]):is(.bg-red-500\/10, .bg-red-600, .border.border-red-400, .border:is(.text-red-500, .text-red-600, .text-red-700), :is(.bg-zinc-100, .bg-zinc-200):is(.text-red-500, .text-red-600, .text-red-700)):where(:not(.ui-lrow, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag)):hover:not(:disabled, [aria-disabled="true"]) { background: var(--wip-btn-bad-hover); }
+html:root :is(button, a, label, summary, [role="button"]):is(.bg-red-500\/10, .bg-red-600, .border.border-red-400, .border:is(.text-red-500, .text-red-600, .text-red-700), :is(.bg-zinc-100, .bg-zinc-200):is(.text-red-500, .text-red-600, .text-red-700)):where(:not(.ui-lrow, .ui-plain, [role="radio"], [role="switch"], [role="tab"], [role="option"], [role="menuitem"], #platform-tabs *, #admin-screen *, .wip-fold-pill, .wip-head-more, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag)):active:not(:disabled, [aria-disabled="true"]) {
   box-shadow: none;
   filter: var(--wip-btn-flat-dim);
   transform: var(--wip-btn-flat-press);
 }
 /* Level 4: an action written as text. Underlined, so it does not rest on colour alone. */
-html:root :is(button, a):is(.text-violet-600, .text-violet-700, .home-edit-start, [class*="text-[color:var(--accent)]"]):where(:not([class^="bg-"], [class*=" bg-"], .border, #platform-tabs *, #platform-header *, #admin-screen *, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag, .ui-lrow, .ui-row, .ui-plain, [role="tab"], [role="radio"])):not(:disabled, [aria-disabled="true"]) {
+html:root :is(button, a):is(.text-violet-600, .text-violet-700, .home-edit-start, [class*="text-[color:var(--accent)]"]):where(:not([class^="bg-"], [class*=" bg-"], .border, #platform-tabs *, #platform-header *, #admin-screen *, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag, .ui-lrow, .ui-plain, [role="tab"], [role="radio"])):not(:disabled, [aria-disabled="true"]) {
   color: var(--wip-btn-link-ink);
   text-decoration: underline;
   text-decoration-color: var(--wip-btn-link-line);
@@ -11154,9 +11120,9 @@ html:root :is(button, a):is(.text-violet-600, .text-violet-700, .home-edit-start
 }
 /* Under a pointer only: a tapped link kept the dark underline on a phone, so
    "Add other apps" stood dark beside "Done" in blue (phone review, 23 Nov 2026). */
-@media (hover: hover) { html:root :is(button, a):is(.text-violet-600, .text-violet-700, .home-edit-start, [class*="text-[color:var(--accent)]"]):where(:not([class^="bg-"], [class*=" bg-"], .border, #platform-tabs *, #platform-header *, #admin-screen *, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag, .ui-lrow, .ui-row, .ui-plain, [role="tab"], [role="radio"])):not(:disabled, [aria-disabled="true"]):hover { text-decoration-color: currentColor; } }
+@media (hover: hover) { html:root :is(button, a):is(.text-violet-600, .text-violet-700, .home-edit-start, [class*="text-[color:var(--accent)]"]):where(:not([class^="bg-"], [class*=" bg-"], .border, #platform-tabs *, #platform-header *, #admin-screen *, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag, .ui-lrow, .ui-plain, [role="tab"], [role="radio"])):not(:disabled, [aria-disabled="true"]):hover { text-decoration-color: currentColor; } }
 /* Disabled: muted, no underline, so it does not look pressable (request 7131). */
-html:root :is(button, a):is(.text-violet-600, .text-violet-700, .home-edit-start, [class*="text-[color:var(--accent)]"]):where(:not([class^="bg-"], [class*=" bg-"], .border, #platform-tabs *, #platform-header *, #admin-screen *, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag, .ui-lrow, .ui-row, .ui-plain, [role="tab"], [role="radio"])):is(:disabled, [aria-disabled="true"]) {
+html:root :is(button, a):is(.text-violet-600, .text-violet-700, .home-edit-start, [class*="text-[color:var(--accent)]"]):where(:not([class^="bg-"], [class*=" bg-"], .border, #platform-tabs *, #platform-header *, #admin-screen *, .one-btn, .one-chip, .one-fab, .one-disc, .one-link, .one-tag, .ui-lrow, .ui-plain, [role="tab"], [role="radio"])):is(:disabled, [aria-disabled="true"]) {
   color: var(--wip-btn-link-off);
   text-decoration: none;
   cursor: default;
@@ -11380,7 +11346,6 @@ html:root :is(.messages-layout, .dev-ws-discussion, .side-panel-head, #ai-screen
   --messages-selected: var(--wip-item-hover);
   --messages-disc-shadow: inset 0 0 0 1px var(--wip-card-line);
 }
-html:root .gc-composer-card,
 html:root #settings-root .ui-card.bg-white {
   box-shadow: inset 0 0 0 1px var(--wip-card-line);
 }
@@ -11923,7 +11888,7 @@ html:root #settings-section-content h3 { font-size: var(--ed-head-size); letter-
 html:root #settings-profile-section .settings-profile-layout { display: grid; grid-template-columns: 10rem minmax(0, 1fr); gap: 1.5rem; align-items: center; }
 html:root #settings-profile-section #settings-profile-card { display: flex; flex-direction: column; padding: 0; gap: 0.5rem; background: none; border-radius: 0; box-shadow: none; }
 html:root #settings-profile-card > :is(img, span[aria-hidden="true"]:first-child) { width: 7.5rem; height: 7.5rem; border-radius: 0.875rem; font-size: 2.5rem; }
-html:root #settings-profile-card .ui-row-tx { display: none; }
+html:root #settings-profile-card .ui-lrow-tx { display: none; }
 html:root #settings-profile-card > svg { display: none; }
 html:root #settings-profile-card .ui-link { font-size: 0.8125rem; }
 html:root #settings-profile-details { padding: 0; border: 0; border-radius: 0; background: none; margin: 0; }
@@ -12800,8 +12765,7 @@ html:root :is(#home-screen, #communities-screen) [data-home-join-featured] .cm-c
 html:root #communities-screen .cm-card-name-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; }
 html:root #communities-screen .cm-card-name-row > .cm-card-name { flex: 0 1 auto; min-width: 0; }
 html:root #communities-screen .cm-card-name-row > .one-tag { flex: none; }
-/* (The count on a card's icon, which the tag replaces, wore the look's yellow count; the tag is the shared one.) */
-html:root #communities-screen .cm-card .one-tag[data-home-community-votes] { background: var(--one-tag-bg); color: var(--one-tag-ink); box-shadow: none; }
+/* (The count on a card's icon, which the tag replaces, wore the look's yellow count; the tag is the shared one, in its needs-you state.) */
 /* On a phone a pin is the cover alone, its name and members; from 768px it
    says what the community is and its week too, under them. */
 @media (max-width: 767.98px) {
@@ -12817,7 +12781,7 @@ html:root #communities-screen .cm-card .one-tag[data-home-community-votes] { bac
   html:root #communities-screen .cm-grid[data-cm-grid="pinned"] .cm-card-name-row { display: contents; }
   html:root #communities-screen .cm-grid[data-cm-grid="pinned"] .cm-card-name-row > .cm-card-name { grid-column: 1 / -1; }
   html:root #communities-screen .cm-grid[data-cm-grid="pinned"] .cm-card-id > .cm-card-members { grid-column: 1; grid-row: 2; }
-  html:root #communities-screen .cm-grid[data-cm-grid="pinned"] .cm-card-name-row > .one-tag { grid-column: 2; grid-row: 2; height: 22px; padding-inline: 8px; font-size: 12px; }
+  html:root #communities-screen .cm-grid[data-cm-grid="pinned"] .cm-card-name-row > .one-tag { grid-column: 2; grid-row: 2; }
 }
 @media (min-width: 768px) {
   html:root :is(#home-screen, #communities-screen) :is([data-home-join-featured] .cm-grid, .cm-grid[data-cm-grid="pinned"]) .cm-card .cm-card-pic { height: 96px; }
@@ -12829,7 +12793,15 @@ html:root #communities-screen .cm-card .one-tag[data-home-community-votes] { bac
 html:root #communities-screen #communities-all-section > [data-home-join-featured] > :is(h3, [data-cm-grid]) { padding-inline: 0; }
 /* While Featured is read its place is held by covers of the same size. */
 html:root :is(#home-screen, #communities-screen) [data-home-join-featured] .cm-card-skel .cm-card-pic { height: 76px; aspect-ratio: auto; }
-html:root :is(#home-screen, #communities-screen) [data-home-join-featured] .cm-card-skel .cm-card-skel-body { height: 58px; }
+html:root :is(#home-screen, #communities-screen) [data-home-join-featured] .cm-card-skel .cm-card-skel-body { height: 63px; }
+/* A cover's words (its name over one line) stand 62.75px under its band on a
+   phone and 61.75px from 768px, where the name's row is a pixel shorter; the
+   placeholder's were 58px, and it holds as many covers as Featured shows
+   (features/home/communities-to-join.tsx), so each row came up 4px short
+   (27 Nov 2026). */
+@media (min-width: 768px) {
+  html:root :is(#home-screen, #communities-screen) [data-home-join-featured] .cm-card-skel .cm-card-skel-body { height: 62px; }
+}
 
 
 /* Joined: on a phone one list card, a row each (the row's title over its
@@ -15051,76 +15023,6 @@ a.gc-event-box:focus-visible { outline: 2px solid var(--accent); outline-offset:
 }
 .gc-quoted:hover { filter: brightness(1.08); }
 
-/* #2391: the staged-reply strip is the Messages screen's reply draft
-   (.messages-reply-draft): full composer width, the accent tint, an open
-   rounded edge, and text at the composer's reading size. It was the sent
-   quote's 11/12px chip, capped at 560px with 4px corners, under a 22px-radius
-   composer card. */
-.gc-reply-preview-inner {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-inline-start: 3px solid var(--accent);
-  border-start-start-radius: 0; border-start-end-radius: 12px; border-end-end-radius: 12px; border-end-start-radius: 0;
-  background: var(--accent-tint);
-  padding-block: 6px 6px; padding-inline: 10px 8px;
-}
-
-.gc-quoted-author,
-.gc-reply-preview-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--accent);
-  white-space: nowrap;
-  flex-shrink: 0;
-  /* Cap + clip so a long author/label can't push the quote block wider
-     than its container (which would force horizontal scroll). */
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.gc-reply-preview-label { font-size: 13px; font-weight: 700; }
-.gc-quoted-snippet,
-.gc-reply-preview-snippet {
-  font-size: 12px;
-  color: var(--text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-  /* Inside .gc-quoted (a flex column with align-items: flex-start) the
-     snippet otherwise sizes to its full nowrap content width and the
-     ellipsis never engages — capping at 100% bounds it to the container
-     so it truncates instead of overflowing. */
-  max-width: 100%;
-}
-.gc-quoted { flex-direction: column; align-items: flex-start; gap: 0; }
-.gc-reply-preview-snippet { font-size: 15px; }
-
-#gc-reply-preview { margin-bottom: 6px; }
-.gc-reply-preview-body { display: flex; flex-direction: column; min-width: 0; flex: 1; gap: 1px; }
-/* #1927: 44px tap target, overhanging the strip's 6px/8px padding so the
-   strip keeps its height. */
-.gc-reply-preview-x {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  margin-block: -6px -6px; margin-inline: 0 -8px;
-  background: none;
-  border: none;
-  border-radius: 9999px;
-  cursor: pointer;
-  color: var(--text-muted);
-  font-size: 20px;
-  line-height: 1;
-  padding: 0;
-  flex-shrink: 0;
-}
-.gc-reply-preview-x:hover { color: var(--text-primary); }
-
-/* Brief highlight when you jump to a quoted message's original. */
 .gc-msg-flash { animation: gcMsgFlash 1.5s ease-out; }
 @keyframes gcMsgFlash {
   0% { background: color-mix(in srgb, var(--accent) 30%, transparent); }
@@ -15378,112 +15280,6 @@ a.gc-event-box:focus-visible { outline: 2px solid var(--accent); outline-offset:
   border-top: 1px solid var(--border);
 }
 .gc-react-bar-grid.hidden { display: none; }
-
-/* ── #87: @mention autocomplete dropdown ───────────────── */
-
-.gc-mention-menu {
-  position: fixed;
-  z-index: 1000;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
-  padding: 4px;
-  max-height: 240px;       /* ~8 rows, then scroll */
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-.gc-mention-menu.hidden { display: none; }
-/* #2145: the Activity feed's reply box (features/dev-board/card/
-   feed-thread.tsx) opens this same menu from its own `@`. Its composer is a
-   React island with one field per row, so the list is a sibling of the
-   textarea inside the form (position: relative there) rather than the
-   body-level element group-chat.js measures — placed above the field, as
-   the chat composers' are, and stopping short of the 36px send disc and its
-   8px gap on the right. `-below` is the flip for a field with no room above
-   it (a short thread in the Needs-you comments sheet, whose body scrolls). */
-.gc-mention-menu.dev-feed-mention-menu {
-  position: absolute;
-  inset-inline-start: 0;
-  inset-inline-end: 44px;
-  bottom: calc(100% + 4px);
-}
-.gc-mention-menu.dev-feed-mention-menu-below {
-  top: calc(100% + 4px);
-  bottom: auto;
-}
-.gc-mention-option {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 6px 10px;
-  border-radius: 8px;
-  font-size: 14px;
-  color: var(--text-primary, inherit);
-  cursor: pointer;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.gc-mention-option:hover,
-.gc-mention-option-active {
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
-  color: var(--accent);
-}
-.gc-mention-option-at { color: var(--accent); font-weight: 600; }
-/* B9: Homeroom bot's row: its mark at the line's height, before its name. */
-.gc-mention-option-mark {
-  width: 18px;
-  height: 18px;
-  margin-inline-end: 6px;
-  border-radius: 5px;
-  flex-shrink: 0;
-}
-.gc-mention-option .messages-bot-badge { margin-inline-start: 6px; }
-
-/* #130: reference-autocomplete rows reuse the mention menu/option styling;
-   these only add room for the PR#N / #N badge plus a truncating title. */
-.gc-ref-option { gap: 8px; }
-.gc-ref-option-title {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 13px;
-  color: var(--text-secondary, inherit);
-}
-.gc-mention-option-you {
-  margin-inline-start: auto;
-  font-size: 11px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-/* `:th` — the emoji shortcode menu (#gc-emoji-menu). Same box and rows as
-   the mention menu; a heading repeats the query, and each row is the glyph
-   beside its `:code:`. Tall enough for its eight rows without scrolling. */
-.gc-mention-menu.gc-emoji-menu { max-height: min(320px, 50vh); }
-.gc-emoji-menu-heading {
-  padding: 4px 10px 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-.gc-emoji-menu-query { color: var(--text-primary, inherit); }
-.gc-emoji-option { gap: 10px; padding: 5px 10px; }
-.gc-emoji-option-glyph {
-  flex: none;
-  width: 24px;
-  font-size: 20px;
-  line-height: 24px;
-  text-align: center;
-}
-.gc-emoji-option-code {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 
 @keyframes dc-spin { to { transform: rotate(360deg); } }
 
@@ -15854,11 +15650,9 @@ html.un-kb #settings-content-col > .settings-sheet {
    The board column is the STRIP and a topic or the Discussion is the SHEET
    (features/dev-board/board-frame.tsx, topic-frame.tsx, chat-frame.tsx,
    group-chat/thread-shell.tsx, general-chat.tsx), through the same three
-   lift classes the session view below wears. What this block adds is the
-   composer card those two sheets end in — the card Messages draws
-   (.messages-composer-card above), restated here for the group-chat
-   composer's own class names because features/group-chat/composer.tsx is
-   the one component serving both. */
+   lift classes the session view below wears. The box those two sheets end
+   in is Messages' own (.messages-composer-card above; one message box,
+   27 Nov 2026). */
 /* The two sheet hosts: a column with the strip's 12px shoulder above the
    sheet that is mounted into them. Padding on the HOST rather than a margin
    on the sheet, so the sheet's `h-full` still fits. */
@@ -15870,81 +15664,6 @@ html.un-kb #settings-content-col > .settings-sheet {
 }
 #dev-topic-thread > .dev-thread,
 #dev-chat-body > .dc-lift { min-height: 0; }
-
-.gc-composer-card {
-  border-radius: 22px;
-  padding-block: 8px 8px; padding-inline: 12px 8px;
-  background: #ffffff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-.dark .gc-composer-card { background: var(--dc-raised); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); }
-.gc-composer-card .gc-composer-input {
-  min-height: 40px;
-  max-height: 140px;
-  /* #2882: the card is the one edge; the field draws none — see
-     `.messages-composer-input`, the same field in the conversation composer. */
-  -webkit-appearance: none;
-  appearance: none;
-  box-shadow: none;
-  -webkit-tap-highlight-color: transparent;
-}
-.gc-composer-card .gc-composer-input::placeholder { color: var(--text-faint); }
-.gc-composer-glyph {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 9999px;
-  color: var(--text-secondary);
-  transition: background 150ms;
-}
-.gc-composer-glyph svg {
-  width: 22px;
-  height: 22px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.gc-composer-glyph:hover { background: var(--bg-secondary); }
-.gc-send {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 9999px;
-  color: var(--accent-ink);
-  background: var(--accent);
-  transition: background 150ms;
-}
-.gc-send svg {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.4;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.gc-send:hover { background: var(--accent-light); }
-.gc-send:disabled { opacity: .35; }
-.gc-composer-card:not([data-gc-files]):has(textarea:placeholder-shown) .gc-send { opacity: .35; }
-/* #3735: the same compact line on a phone as the Messages composer (the
-   phone block after `.messages-send` above): a 44px pill, 4px of padding
-   round a 36px row, with the paperclip and the send disc drawn at 36px and
-   each held to a 44px tap target by a 4px overhang. */
-@media (max-width: 767px) {
-  .gc-composer-card { padding-block: 4px 4px; padding-inline: 8px 4px; }
-  .gc-composer-card .gc-composer-input { min-height: 36px; padding-top: 7px; padding-bottom: 7px; }
-  .gc-send { width: 36px; height: 36px; }
-  .gc-composer-glyph,
-  .gc-send { position: relative; }
-  .gc-composer-glyph::after,
-  .gc-send::after { content: ''; position: absolute; inset: -4px; }
-}
 
 /* ── The three-layer lift ─────────────────────────────────
    The move a running app already makes, repeated once per layer. A
@@ -19592,30 +19311,10 @@ body.is-offline [data-offline-disabled] {
 }
 .dev-feed-msg-time { color: var(--text-muted); white-space: nowrap; }
 .dev-feed-msg-text { color: var(--text-primary); }
-/* The reply box: a 36px white pill field and a send disc
-   (36px, filled accent, up-arrow), the pair every composer on the platform
-   now shares. The field's own utilities (input.tsx `activityReply`) draw a
-   bordered r16 box; this is the widget-language reading of the same field,
-   and the host scope keeps it to the places it is read that way — the two
-   card surfaces, and nowhere else. */
-:is(#dev-workshop, #dev-kanban) .dev-feed-thread textarea {
-  min-height: 36px;
-  padding: 8px 14px;
-  border-radius: 18px;
-  border-color: transparent;
-  font-size: 13px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-.dev-feed-send {
-  width: 36px;
-  height: 36px;
-  border-radius: 9999px;
-  background: var(--accent);
-  color: var(--accent-ink);
-  transition: background 150ms;
-}
-.dev-feed-send svg { width: 18px; height: 18px; stroke-width: 2.4; }
-.dev-feed-send:hover:not(:disabled) { background: var(--accent-light); }
+/* The reply box is Messages' own (one message box, 27 Nov 2026;
+   feed-thread.tsx FeedReplyComposer), drawn inside the card with no chat
+   foot's bar round it: a little air over it, and its menus over the card. */
+.dev-feed-reply { margin-top: 4px; }
 /* Nothing loaded and no box to draw (a viewer who cannot post) — collapse
    rather than leaving a gap under every row. */
 :is(#dev-workshop, #dev-kanban) .dev-feed-thread:empty {
@@ -24196,26 +23895,16 @@ html:root body:has(#ai-preview-pane [data-detail-body="preview"]) #staging-overl
    second-line size, from the rows' own edge. */
 .dev-ws-foryou > .dev-ws-week-note { margin: 0; padding: 14px 2px; font-size: 13px; text-align: start; }
 .dev-ws-foryou-item > .dev-ws-hub-needs-join { padding-block: 0 12px; padding-inline: 46px 2px; margin-top: -6px; }
-.dev-ws-foryou-pill {
-  flex: none; height: 22px; padding: 0 9px; border-radius: 999px;
-  display: inline-grid; place-items: center; white-space: nowrap;
-  background: var(--accent); color: #fff;
-  font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums;
-}
-/* The Discussion row's count is NEW TO READ, not waiting on you (#18): the
-   grey the sidebar's "2 unread" beside it wears, where the accent made the
-   same messages read as a vote owed (audit N04, 1 Nov 2026). */
-.dev-ws-foryou-pill[data-ws-channel-unread] { background: var(--text-faint, #8e8e93); }
-/* For somebody not in the community, Up for a vote's count says how many,
-   not how many wait on them: the accent's light tint, not its fill. */
-.dev-ws-foryou-pill.dev-ws-foryou-pill-light { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+/* A door's count is the one tag (StateTag): "1 to vote" in its needs-you
+   state; a Discussion's "3 new" and, for somebody not in the community, Up
+   for a vote's count are plain, how many and not a vote owed (audit N04). */
 .dev-ws-foryou-count { flex: none; font-size: 13px; color: var(--text-muted); white-space: nowrap; }
 /* The pill on the title line (hub-cards.tsx pillTitle, phone review #91): the
    name first, cut short before the pill when it must be, the pill at the
    line's end, and the line under them the row's whole width. */
 .dev-ws-foryou-title { display: flex; align-items: center; gap: 8px; }
 .dev-ws-foryou-title > .dev-ws-foryou-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dev-ws-foryou-title > .dev-ws-foryou-pill { margin-inline-start: auto; }
+.dev-ws-foryou-title > .one-tag { margin-inline-start: auto; }
 .dev-ws-foryou-handle { font-weight: 500; color: var(--text-muted); }
 /* TOP CONTRIBUTORS (ContributorsCard, request 6837): For you's card and
    rows, read not pressed. A row is a face, a name and a muted count in
@@ -24883,7 +24572,7 @@ button.dev-ws-recent-card {
 /* The thread fills the tab and its reply box stays at the foot, on the
    sheet's own fill, as a comment box under a reel does. */
 .dev-ws-talk > .dev-ws-sheet-body > .dev-feed-thread { flex: 1 0 auto; }
-.dev-ws-talk > .dev-ws-sheet-body > .dev-feed-thread > form {
+.dev-ws-talk > .dev-ws-sheet-body > .dev-feed-thread > .dev-feed-reply {
   position: sticky; bottom: 0; margin-top: auto; padding: 8px 0 4px;
   background-color: var(--dc-sheet);
 }
@@ -25840,11 +25529,11 @@ html[data-community-tint] body:has(#app-view:not(.hidden)) #platform-header {
   display: flex; flex-direction: column; gap: 2px;
   min-height: 0; overflow-y: auto; overscroll-behavior: contain;
 }
+/* A switcher row is the shared ListRow (community-switcher.tsx's
+   SWITCHER_ROW, which also sets its inset and gap); this is what a menu's
+   row adds to it: its height and its own rounded ground. */
 .community-switcher-row {
-  display: flex; align-items: center; gap: 12px;
-  width: 100%; min-height: 60px; padding: 8px 12px; box-sizing: border-box;
-  border: 0; border-radius: 14px; background: transparent;
-  color: inherit; font: inherit; text-align: start; cursor: pointer;
+  min-height: 60px; border-radius: 14px;
   -webkit-tap-highlight-color: transparent;
 }
 .community-switcher-menu .community-switcher-row { min-height: 52px; border-radius: 10px; }
@@ -25877,12 +25566,6 @@ html[data-community-tint] body:has(#app-view:not(.hidden)) #platform-header {
   background: transparent; color: var(--text-muted);
   box-shadow: inset 0 0 0 1.5px var(--app-sheet-line);
 }
-.community-switcher-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.community-switcher-name {
-  font-size: 15px; font-weight: 650; line-height: 20px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.community-switcher-sub { font-size: 13px; line-height: 17px; color: var(--text-muted); }
 .community-switcher-waiting {
   flex: none; height: 22px; padding: 0 8px; border-radius: 999px;
   display: inline-flex; align-items: center;
@@ -26793,7 +26476,7 @@ html[data-browser-scroller] .dev-ws[data-ws-tab^="c:"] {
   .dev-ws-talk-tab { height: 42px; font-size: 14.5px; }
   .dev-ws-talk-tabs > .dev-ws-sheet-x { inset-inline-end: 12px; top: 12px; }
   .dev-ws-talk > .dev-ws-sheet-body { padding: 4px 18px 0; }
-  .dev-ws-talk > .dev-ws-sheet-body > .dev-feed-thread > form { background-color: var(--dc-sheet-solid); }
+  .dev-ws-talk > .dev-ws-sheet-body > .dev-feed-thread > .dev-feed-reply { background-color: var(--dc-sheet-solid); }
   .dev-ws-sheet-handle { display: none; }
   /* The vote: a popover on its button, arrow towards it. The button's top in
      the rail is measured (`--ws-vote-top`, workshop.tsx), because the rail's
@@ -27420,7 +27103,6 @@ html[data-browser-scroller] .dev-ws[data-ws-tab^="c:"] {
    row's chip was inline-block at its natural width, so on a 540px Workshop
    sheet it ended 221px short of the vote and the two sizes drew the same
    state at two lengths. */
-.dev-ws-row-band > .dev-ws-row-state { flex: 1 1 0; }
 .dev-ws-row-band > .dev-ws-row-trailing { margin-inline-start: auto; }
 /* The card's facts-row geometry (:is(.dev-card-dense, .dev-card-topic)
    .dev-card-meta > .dev-badge), so "In review" and "@maya" are the same chip
@@ -27431,27 +27113,6 @@ html[data-browser-scroller] .dev-ws[data-ws-tab^="c:"] {
    and its words ellipsise inside a whole pill. */
 .dev-ws-row-band > .dev-badge { flex: 0 1 auto; min-width: 0; overflow: hidden; height: 19px; font-size: 11.5px; }
 .dev-ws-row-band > .dev-badge > :not(.dev-badge-label):not(.dev-badge-name) { flex-shrink: 0; }
-/* The composite pill, wearing the tone it has always carried. Tones are
-   `statusPillState`'s vocabulary (neutral / ok / attention / blocked /
-   progress), not the merge badge's colour names — an unknown one falls
-   through to the neutral base rather than rendering unstyled. */
-/* At the card's bar's height and shape (30px, r14, 12.5px — the dense
-   `.dev-status-pill-block` above) rather than a 10px chip: the row's last
-   line is 30px tall whenever it carries the vote button, and a chip that
-   grows into the bar when the card opens was the one thing on that line
-   that still jumped. Content-width, ellipsising, where the card's bar
-   flexes to fill. */
-.dev-ws-row-state {
-  display: inline-block; min-width: 0; overflow: hidden; text-overflow: ellipsis;
-  height: 30px; line-height: 30px; box-sizing: border-box;
-  font-size: 12.5px; font-weight: 500; white-space: nowrap;
-  padding: 0 10px; border-radius: 14px;
-  background: var(--state-neutral-bg); color: var(--state-neutral);
-}
-.dev-ws-row-state-blocked   { background: var(--state-blocked-bg);   color: var(--state-blocked); }
-.dev-ws-row-state-ok        { background: var(--state-ok-bg);        color: var(--state-ok); }
-.dev-ws-row-state-attention { background: var(--state-attention-bg); color: var(--state-attention); }
-.dev-ws-row-state-progress  { background: var(--state-progress-bg);  color: var(--state-progress); }
 /* ── The fold mark ───────────────────────────────────────────
    Which SIZE the item is at, at the top right of the row and of the card
    (card/fold.tsx FoldMark). The same two chevrons on both; on the open card
@@ -31406,18 +31067,6 @@ html.in-side-panel body {
 }
 .dev-ws-wrow-status { margin-top: 6px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .dev-ws-wrow-chev { flex: none; width: 16px; height: 16px; margin-top: 2px; color: var(--text-muted); opacity: .7; }
-.dev-ws-tag {
-  display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 999px;
-  font-size: 12px; font-weight: 600; white-space: nowrap;
-  background: var(--state-neutral-bg); color: var(--text-secondary);
-}
-.dev-ws-tag svg { width: 12px; height: 12px; }
-.dev-ws-tag .dc-status-spinner-arc { width: 11px; height: 11px; }
-.dev-ws-tag[data-tone="run"] { color: var(--lit-ink); background: var(--lit-tint); }
-.dev-ws-tag[data-tone="bot"] { color: var(--bot-ink); background: var(--bot-tint); }
-.dev-ws-tag[data-tone="ok"] { color: var(--state-ok); background: var(--state-ok-bg); }
-.dev-ws-tag[data-tone="warn"] { color: var(--state-attention); background: var(--state-attention-bg); }
-.dev-ws-tag[data-tone="bad"] { color: var(--state-blocked); background: var(--state-blocked-bg); }
 /* #4499: how far a check run is, as a thin bar inside the checks chip
    (the cards' status band, the Workshop's rows, All items). It is drawn in
    the chip's own ink, so it wears whichever tone the chip does; the exact
@@ -31460,7 +31109,6 @@ html.in-side-panel body {
   pointer-events: none;
 }
 .dev-ws-wvote > .dev-ws-wvote-btn { pointer-events: auto; }
-.dev-ws-wvote-state { flex: none; padding: 0 calc(10px + 56px) 0 10px; }
 .dev-ws-none { margin: 6px 0 2px; font-size: 14px; color: var(--text-muted); }
 
 /* Week by week: one row a week, which opens the week's own page. */
@@ -31569,22 +31217,11 @@ html.in-side-panel body {
   max-width: 100%; min-width: 0;
 }
 .dev-ws-hrow-meta > * { flex: none; }
-.dev-ws-hrow-meta > .dev-ws-hrow-tag:not(:has(> svg)) {
-  flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
-}
+html:root .dev-ws-hrow-meta > .dev-ws-hrow-tag.one-tag { flex: 0 1 auto; min-width: 0; }
 .dev-ws-hrow-you {
   display: inline-flex; align-items: center; height: 18px; padding: 0 6px; border-radius: 999px;
   background: var(--accent-tint); color: var(--accent-wash-ink); font-size: 11px; font-weight: 700;
 }
-.dev-ws-hrow-tag[data-tone="run"] { color: var(--lit-ink); }
-.dev-ws-hrow-tag[data-tone="bad"] { color: var(--state-blocked); }
-/* What's happening's own-work rows end with where the work stands
-   (week-pages.tsx MetaTag): the tag's words in its tone, no pill, with its
-   glyph ("Only you", Homeroom bot) where it has one. */
-.dev-ws-hrow-tag[data-tone="warn"] { color: var(--state-attention); }
-.dev-ws-hrow-tag[data-tone="ok"] { color: var(--state-ok); }
-.dev-ws-hrow-tag:has(> svg) { display: inline-flex; align-items: center; gap: 4px; }
-.dev-ws-hrow-tag > svg { flex: none; width: 12px; height: 12px; }
 .dev-ws-hrow-ago { font-variant-numeric: tabular-nums; }
 .dev-ws-hweek > .dev-ws-reveal { margin-top: 2px; }
 .dev-ws-hweek + .dev-ws-wlist { margin-top: 4px; border-top: 1px solid var(--app-sheet-line); }
@@ -32813,7 +32450,6 @@ html:root :is(#dev-topic-thread, #ai-screen) .dev-request:has(.dev-thread-card) 
   html:root :is(#dev-topic-thread, #ai-screen) .dev-request:has(.dev-thread-card) :is(#gc-thread-bar, .dev-request-bar) .dev-thread-bar-text:has(> div > :is([data-change-status], [data-request-status])) > .messages-thread-sub { display: none; }
   html:root :is(#dev-topic-thread, #ai-screen) .dev-request:has(.dev-thread-card) :is(#gc-thread-bar, .dev-request-bar) .dev-thread-bar-text:has(> div > :is([data-change-status], [data-request-status])) .messages-thread-kicker::before { content: none; }
   html:root :is(#dev-topic-thread, #ai-screen) .dev-request:has(.dev-thread-card) :is(#gc-thread-bar, .dev-request-bar) .dev-thread-bar-text:has(> div > :is([data-change-status], [data-request-status])) :is([data-change-status], [data-request-status]) { margin-inline-start: 0; max-width: 100%; }
-  html:root :is(#dev-topic-thread, #ai-screen) .dev-request:has(.dev-thread-card) :is(#gc-thread-bar, .dev-request-bar) .dev-thread-bar-text:has(> div > :is([data-change-status], [data-request-status])) :is([data-change-status], [data-request-status]) .gc-vote-count-label { display: block; overflow: hidden; text-overflow: ellipsis; }
   html:root :is(#dev-topic-thread, #ai-screen) .dev-request[data-thread-head-tight]:has(.dev-thread-card) :is(#gc-thread-bar, .dev-request-bar) .dev-thread-bar-text:has(> div > :is([data-change-status], [data-request-status])) > div:has(> .messages-thread-kicker) { grid-row: 2; }
   html:root #dev-topic-thread .dev-request[data-thread-head-tight]:has(.dev-thread-card) :is(#gc-thread-bar, .dev-request-bar) .dev-thread-bar-text:has(> div > :is([data-change-status], [data-request-status])) > div:has(> .messages-thread-kicker) { grid-row: 1; }
 }
@@ -33317,8 +32953,7 @@ html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .messages-empty button:active,
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .card-add-btn[data-join]:active { box-shadow: var(--bl-pill-edge-down); transform: translateY(1px); }
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .platform-tab-votes,
-html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .platform-rail-votes,
-html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .dev-ws-foryou-pill:not([data-ws-channel-unread]) { background: var(--bl-count); color: var(--bl-on-count); font-variant-numeric: tabular-nums; }
+html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .platform-rail-votes { background: var(--bl-count); color: var(--bl-on-count); font-variant-numeric: tabular-nums; }
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .text-violet-500,
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .text-violet-600,
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .text-violet-700,
@@ -33335,8 +32970,6 @@ html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .dev-ws-chip[aria-pressed="true"] { background-color: var(--bl-sun); color: var(--bl-on-sun); }
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) #dev-topic-thread,
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) [data-vote-look="thread"] { --state-progress: var(--bl-sky); --state-progress-bg: var(--bl-tint-sky); }
-html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .dev-ws-tag[data-tone="run"] { color: var(--bl-sky); background: var(--bl-tint-sky); }
-html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .dev-ws-tag[data-tone="bot"] { color: var(--bot-ink); background: var(--bot-tint); }
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .dev-ws-wrow[data-on] { background: var(--bl-row-on); box-shadow: inset 0 0 0 1.5px var(--bl-row-on-edge); }
 @media (min-width: 768px) {
   html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) :is(.rf-run, .rf-page-wrap) { --rf-page: var(--bl-card); --rf-sheet: var(--bl-card); --rf-fill: var(--bl-page); }
@@ -33395,7 +33028,7 @@ html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) #dev-topic-thread,
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) [data-vote-look="thread"] { --cm-bg: var(--bl-card); --cm-radius: 18px; --cm-edge: inset 0 0 0 1px var(--app-sheet-line), var(--bl-lift); --cm-edge-on: inset 0 0 0 1px var(--app-sheet-line), var(--bl-lift-home); --cm-edge-lift: inset 0 0 0 1px var(--app-sheet-line), var(--bl-lift-home); --cm-ink: var(--text-primary); --cm-muted: var(--text-muted); --cm-body: var(--text-secondary); --cm-link: var(--bl-sky); --cm-small: 13px; --cm-small-line: 18px; --cm-card-min: 212px; --cm-gap: 14px; }
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .cm-card [data-home-community-votes] { top: -7px; inset-inline-end: -5px; min-width: 20px; height: 20px; padding: 0 5px; font-size: 11px; }
-html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) :is(.messages-composer-card, .gc-composer-card) { background: var(--bl-raise); box-shadow: var(--bl-field-edge); }
+html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .messages-composer-card { background: var(--bl-raise); box-shadow: var(--bl-field-edge); }
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .messages-composer-card:focus-within { box-shadow: var(--bl-field-edge), 0 0 0 2px var(--accent); }
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .messages-composer-card .messages-send:not([data-bot-stop]) { background: var(--bl-sun); color: var(--bl-on-sun); box-shadow: var(--bl-pill-edge); opacity: 1; }
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .messages-composer-card .messages-send:not([data-bot-stop]):not(:disabled):hover { background: var(--bl-sun-lit); }
@@ -33426,7 +33059,6 @@ html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) [data-ws-hub-needs] .dev-ws-foryou-row > :first-child { background: var(--bl-tint-sun); color: var(--bl-on-tint); }
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) [data-ws-mine-card] > :first-child { background: var(--bl-tint-sky); color: var(--bl-on-tint); }
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) [data-ws-channel="preview"] > :first-child { background: var(--bl-tint-leaf); color: var(--bl-on-tint); }
-html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .dev-ws-foryou-pill[data-ws-channel-unread] { background: var(--bl-solid); color: var(--bl-on-solid); }
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .dev-ws-recent-pic,
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .dev-ws-media-view { outline: 1px solid var(--bl-pic-line); outline-offset: -1px; }
 html:root:is(:not(.dark):not([data-app-tone="dark"]), .dark:not([data-app-tone="light"])) :where(#dev-topic-thread) .messages-empty::before { content: ""; display: block; align-self: stretch; height: 170px; margin-bottom: 12px; background: url('/illustrations/people/phone.png') center / contain no-repeat; }
@@ -34148,12 +33780,8 @@ html:root {
   --one-press: translate(2px, 2px);  /* a sticker pressed onto its edge */
   --one-flat-press: scale(0.97);     /* a flat button pressed: a little smaller, a touch darker */
   --one-flat-dim: brightness(0.95);
-  --one-tag-bg: var(--one-sky-tint);
-  --one-tag-ink: var(--one-sky-ink);
-  --one-tag-strong-bg: #121a0e;      /* a count that asks for you ("1 to vote") */
+  --one-tag-strong-bg: #121a0e;      /* the tag that asks for you ("1 to vote") */
   --one-tag-strong-ink: #ffffff;
-  --one-tag-grey-bg: #7d8077;        /* a count of what is new ("3 new") */
-  --one-tag-grey-ink: #ffffff;
   --one-seg-track: var(--one-quiet);
   --one-seg-thumb: #121a0e;
   --one-seg-ink: var(--one-ink-2);
@@ -34206,7 +33834,6 @@ html:root.dark {
   --one-flat-dim: brightness(1.15);
   --one-tag-strong-bg: #fffeea;
   --one-tag-strong-ink: #121a0e;
-  --one-tag-grey-bg: #5c5f57;
   --one-seg-thumb: #fffeea;
   --one-seg-on-ink: #121a0e;
   --one-bubble-in: var(--dc-raised, #2c2c2e);
@@ -34220,12 +33847,16 @@ html:root.dark {
 }
 /* THE SHARED PARTS, each drawn once. Markup keeps its own ids and classes (the declared checks select on them) and adds
    the part's class; an area's own rules below only place a part, never redraw it. */
-/* A tag labels what a row needs or holds ("Read", "Vote", "2 to vote", "3 new"). The row is what you tap, so a tag never
-   looks pressable: flat, no edge, no hover. */
-html:root .one-tag { display: inline-flex; align-items: center; flex: none; height: 24px; padding: 0 9px; border: 0; border-radius: 9999px; background: var(--one-tag-bg); color: var(--one-tag-ink); font-size: 13px; font-weight: 600; line-height: 1; letter-spacing: 0; white-space: nowrap; box-shadow: none; }
-html:root .one-tag.one-tag-strong { background: var(--one-tag-strong-bg); color: var(--one-tag-strong-ink); }
-html:root .one-tag.one-tag-grey { background: var(--one-tag-grey-bg); color: var(--one-tag-grey-ink); }
-html:root .one-tag.one-tag-quiet { background: var(--one-quiet); color: var(--one-ink-2); }
+/* The tag for where something stands (StateTag, frontend/@/components/ui/state-tag.tsx): one part in three states, on
+   every screen that says how far along a change or a request is. Plain says where it stands: an outline in the quiet
+   ink ("Live", "0 of 1 approval", "3 new"). Working is plain with the turning mark (checking, being built, going live).
+   Needs is the strong pill, for what asks for you ("3 to vote", "Vote", "Read"). The row is what you tap, so a tag never
+   looks pressable: flat, no edge, no hover. An area's rule may place a tag, never repaint it. */
+html:root .one-tag { display: inline-flex; align-items: center; gap: 5px; flex: none; max-width: 100%; height: 24px; padding: 0 9px; border: 0; border-radius: 9999px; background: transparent; color: var(--one-ink-2); font-size: 13px; font-weight: 600; line-height: 1; letter-spacing: 0; white-space: nowrap; box-shadow: inset 0 0 0 1px var(--one-field-line); overflow: hidden; text-overflow: ellipsis; }
+html:root .one-tag.one-tag-strong { background: var(--one-tag-strong-bg); color: var(--one-tag-strong-ink); box-shadow: none; }
+html:root .one-tag > .dc-status-spinner-arc { flex: none; width: 11px; height: 11px; margin: 0; vertical-align: 0; }
+html:root .one-tag > svg { flex: none; width: 12px; height: 12px; }
+html:root .one-tag > .one-tag-words { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 /* A segmented control: the chosen option an ink pill with white words, the rest grey on a light track. With
    --one-seg-n (options) and --one-seg-i (the chosen one's index) set on it, the pill slides between them. */
 html:root .one-seg { position: relative; display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; align-items: stretch; min-height: 34px; padding: 2px; border: 0; border-radius: 9999px; background: var(--one-seg-track); box-shadow: none; isolation: isolate; }
@@ -34503,9 +34134,6 @@ html:root #ai-screen .ai-lists [data-ai-line-title] { font-size: 16px; line-heig
 html:root #ai-screen .ai-lists [data-ai-line]:not([data-ai-fresh]) [data-ai-line-title] { font-weight: 600; }
 html:root #ai-screen .ai-lists :is([data-ai-line-why], [data-ai-line-where]) { margin-top: 2px; font-size: 14px; line-height: 19px; color: var(--one-ink-2); }
 html:root #ai-screen .ai-lists [data-ai-line]:not([data-ai-lit]) [data-ai-line-title] { color: var(--one-ink); }
-/* The tag at the end is a label, never a button: no ring on the row's hover or press. */
-html:root #ai-screen .ai-lists [data-ai-line] .one-tag { box-shadow: none; }
-html:root #ai-screen .ai-lists [data-ai-line]:active .one-tag:not(.one-tag-quiet) { background: var(--one-tag-bg); }
 /* Dismiss keeps its own 44px target beside Reply; it is drawn as a quiet tag. */
 html:root #ai-screen .ai-lists [data-ai-dismiss] {
   position: relative; isolation: isolate; margin-inline-start: 2px; padding-inline: 9px;
@@ -34846,7 +34474,15 @@ html:root #messages-screen .messages-new-btn.one-fab svg { width: 21px; height: 
 html:root #messages-screen .messages-new-btn.one-fab:active:not(:disabled) { box-shadow: inset 0 0 0 1px var(--one-edge-line); transform: var(--one-press); }
 /* "DMs & groups" over the card, and the unread count at its end in the sky ink. */
 html:root #messages-screen .messages-list-pane .messages-list-scroll { padding: 0 16px; }
-html:root #messages-screen .messages-list-pane .messages-section-head {
+/* WHILE THE LIST IS READ, ITS PLACEHOLDER KEEPS THE HEADING'S PLACE (27 Nov
+   2026). The rows that land stand under "DMs & groups", and the placeholder
+   rows started where the heading does, so every row dropped by the heading
+   (39px on a phone, 40px from 768px) when the list arrived. The placeholder
+   now leads with an empty line in the heading's own box: it is named in the
+   heading's rules, here and in the 768px one below, so the two cannot drift. */
+html:root #messages-screen .messages-list-pane .messages-list-scroll > .animate-pulse::before { content: "\00A0"; display: block; }
+html:root #messages-screen .messages-list-pane .messages-section-head,
+html:root #messages-screen .messages-list-pane .messages-list-scroll > .animate-pulse::before {
   padding: 15px 6px 8px;
   color: var(--one-ink-2);
   font-size: 12px;
@@ -35129,7 +34765,8 @@ html:root .messages-message.messages-message-bubble.messages-message-saved .mess
   html:root #messages-screen .messages-search-input { height: 36px; font-size: 15px; }
   html:root #messages-screen .messages-new-btn.one-fab { width: 36px; height: 36px; }
   html:root #messages-screen .messages-new-btn.one-fab svg { width: 19px; height: 19px; }
-  html:root #messages-screen .messages-list-pane .messages-section-head { padding: 16px 6px 8px; }
+  html:root #messages-screen .messages-list-pane .messages-section-head,
+  html:root #messages-screen .messages-list-pane .messages-list-scroll > .animate-pulse::before { padding: 16px 6px 8px; }
   html:root #messages-screen .messages-layout > .messages-thread-pane:not(.messages-no-selection) { margin: 0; margin-inline-start: 18px; padding: 12px 0 24px; }
   html:root #messages-screen .messages-layout.messages-list-collapsed > .messages-thread-pane:not(.messages-no-selection) { margin-inline: auto; }
   html:root #messages-screen .messages-layout.messages-list-collapsed.messages-has-reply-thread > .messages-thread-pane:not(.messages-no-selection) { margin-inline: 0; }
@@ -35433,21 +35070,6 @@ html:root #dev-workshop .dev-ws[data-ws-tab="status"] > .dev-ws-tabbody [data-ws
 html:root #dev-workshop .dev-ws[data-ws-tab="status"] > .dev-ws-tabbody [data-ws-hub-for-you] .dev-ws-foryou .wip-hub-door-sub { margin-top: 2px; font: var(--one-row-sub); color: var(--one-ink-2); }
 html:root #dev-workshop .dev-ws[data-ws-tab="status"] > .dev-ws-tabbody [data-ws-hub-for-you] .dev-ws-foryou .dev-ws-foryou-handle { font-weight: inherit; color: inherit; }
 html:root #dev-workshop .dev-ws[data-ws-tab="status"] > .dev-ws-tabbody [data-ws-hub-for-you] .dev-ws-foryou .dev-ws-foryou-row .ui-lrow-go { width: 17px; height: 17px; color: var(--one-ink-3); }
-/* A door's count is a tag at its title's end ("1 to vote" in ink, "3 new" in grey), never a button. */
-html:root #dev-workshop .dev-ws[data-ws-tab="status"] .dev-ws-foryou-pill.one-tag {
-  height: 24px;
-  min-width: 0;
-  padding: 0 9px;
-  border-radius: 9999px;
-  background: var(--one-tag-bg);
-  color: var(--one-tag-ink);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1;
-  box-shadow: none;
-}
-html:root #dev-workshop .dev-ws[data-ws-tab="status"] .dev-ws-foryou-pill.one-tag.one-tag-strong { background: var(--one-tag-strong-bg); color: var(--one-tag-strong-ink); }
-html:root #dev-workshop .dev-ws[data-ws-tab="status"] .dev-ws-foryou-pill.one-tag.one-tag-grey { background: var(--one-tag-grey-bg); color: var(--one-tag-grey-ink); }
 /* On a phone the three are one card of rows (the markup's own card, which the page split into three), parted by
    hairlines from the text's edge; the rows do not lift under the pointer as the doors do. */
 @media (max-width: 767.98px) {
@@ -36482,6 +36104,14 @@ html:root #app-list:not([data-view]) > .animate-pulse {
   html:root #app-list:not([data-view]) > .animate-pulse > div > :last-child::after { height: 0.5rem; }
 }
 
+/* ...AND CHALLENGES' LABEL ROW IS AS TALL AS THE ONE THAT LANDS (27 Nov
+   2026). The label that arrives is a link with "See all" at its end, 32px
+   tall in the row's padding: 54px, the height Pinned projects' label row is
+   held at (STANDARD (WIP), `#home-apps-section > .home-area-label`). The
+   placeholder's held label was the bare words' 38px, so the posters dropped
+   16px, and everything under them, when the challenges landed. */
+html:root #home-screen #home-challenges-section.home-section-pending > .home-area-label { min-height: 3.375rem; }
+
 /* ── HOME: Recent activity ───────────────────────────────────── */
 /* A row of cards that scrolls sideways, as today: each the shared card, its
    icon a small white tile, its name on the row's title, its state in the
@@ -36915,6 +36545,36 @@ html:root #leaderboard-screen .tc-se-card[data-challenge-state="done"] > span:la
   html:root #profile-identity-card .profile-id-about { font-size: 0.875rem; line-height: 1.36; }
 }
 /* ── END ONE LOOK · HOME, COMMUNITIES, YOU, SETTINGS AND CHALLENGES ── */
+
+/* ── PHONE AUDIT (request 7164, page by page): FIVE SMALL CONTROLS PRESSED AT 44PX ──
+   Under 768px only. Nothing is drawn any larger: each control gets a tap box beyond its own shape.
+   CHALLENGES' TABS (30px in a 34px track). The strip scrolls sideways, so it clips what is past its padding box:
+   it takes 5px more padding above and below, pulled back by its margins so nothing under it moves, and each tab's
+   box reaches into that room. The track is then drawn by the strip's ::after, 5px in, where it always was, and the
+   sliding pill keeps its 2px from the track's edge.
+   A THREAD'S REACTIONS (32px). The chips wrap into rows 6px apart, so a box over the chip would take the next
+   row's taps. It sits under every chip of the row instead (z-index -1 in the row's own stacking context, as the
+   cards' attribute chips do): a chip's own shape always wins, and the box answers only in the gaps around it.
+   THE WORKSHOP'S HEAD LINKS (Open the board, a week's list, Earlier weeks: 32px). 6px more above and below, inside
+   the card's own padding and the 12px over what follows.
+   ALL ITEMS. A card's menu button is 28px: 8px of reach on every side, which stops at the card's edge. Its category
+   chip is 22px and opens the category vote: its box, under the chip's words, is 44px tall. A chip that is only a
+   label is a span and gets nothing. */
+@media (max-width: 767.98px) {
+  html:root #leaderboard-screen #standings-tabs.one-seg { padding-block: 7px; margin-block: -5px 7px; background: none; }
+  html:root #leaderboard-screen #standings-tabs.one-seg::after { content: ""; position: absolute; z-index: -1; inset: 5px 0; border-radius: 9999px; background: var(--one-seg-track); }
+  html:root #leaderboard-screen #standings-tabs.one-seg[style*="--one-seg-i"]::before { top: 7px; bottom: 7px; }
+  html:root #leaderboard-screen #standings-tabs.one-seg > button::after { content: ""; position: absolute; inset: -7px 0; }
+  html:root .messages-reactions { isolation: isolate; }
+  html:root .messages-reactions button { position: relative; }
+  html:root .messages-reactions button::after { content: ""; position: absolute; z-index: -1; inset-inline: 0; top: 50%; height: 44px; transform: translateY(-50%); }
+  html:root #dev-workshop .dev-ws-front-go { position: relative; }
+  html:root #dev-workshop .dev-ws-front-go::after { content: ""; position: absolute; inset-inline: 0; top: 50%; height: 44px; transform: translateY(-50%); }
+  html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-wrow-menu > .dev-card-menu-btn { position: relative; }
+  html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-wrow-menu > .dev-card-menu-btn::after { content: ""; position: absolute; inset: -8px; }
+  html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-wrow-status > button.attr-chip { position: relative; }
+  html:root #dev-workshop .dev-ws[data-ws-tab="all"] #dev-kanban .dev-ws-wrow-status > button.attr-chip::after { content: ""; position: absolute; z-index: -1; inset-inline: 0; top: 50%; height: 44px; transform: translateY(-50%); }
+}
 
 /* ── PHONE AUDIT (request 7164, points 2 and 5): A FINGER'S REACH AND 16PX BOXES ──
    Under 768px only, in the standard look; nothing here is read on a desktop.

@@ -33,17 +33,31 @@ type Translate = (id: string, values?: Record<string, unknown>) => string;
  * the attached files plus the uploads still running): the files to upload,
  * and the line naming the ones left out — the first reason, and how many
  * more went with it (#4065). A pick with no room at all uploads nothing and
- * says so.
+ * says so. `limitOf` is the ceiling for one file where the place's server
+ * has its own (a project's chat, `chatAttachmentLimit`).
  */
-export function stageFiles(files: File[], held: number, t: Translate): { upload: File[]; refused: string } {
+export function stageFiles(files: File[], held: number, t: Translate, limitOf: (file: File) => number = attachmentLimit): { upload: File[]; refused: string } {
   const room = Math.max(0, MAX_ATTACHMENTS - held);
   const selected = files.slice(0, room);
   if (!selected.length) return { upload: [], refused: t('messages:composer.attachLimit', { count: MAX_ATTACHMENTS }) };
-  const tooLarge = selected.filter((file) => file.size > attachmentLimit(file));
+  const tooLarge = selected.filter((file) => file.size > limitOf(file));
   const cut = files.length - selected.length;
   const firstReason = tooLarge.length
     ? t('messages:composer.fileTooLarge', { file: tooLarge[0].name })
     : (cut ? t('messages:composer.attachLimit', { count: MAX_ATTACHMENTS }) : '');
   const refused = refusalSummary(firstReason, tooLarge.length + cut - 1);
   return { upload: selected.filter((file) => !tooLarge.includes(file)), refused };
+}
+
+/**
+ * The ceiling a project's chat takes for one file (src/services/attachments.js
+ * validateChatUpload): an image, a Markdown or HTML page, a short text, and
+ * anything else. Its box (features/group-chat/composer.tsx) stages with it.
+ */
+export function chatAttachmentLimit(file: File): number {
+  const ext = (file.name.toLowerCase().match(/\.([a-z0-9]+)$/) || [])[1] || '';
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) return 4 * 1024 * 1024;
+  if (ext === 'md' || ext === 'markdown') return 512 * 1024;
+  if (ext === 'html' || ext === 'htm') return 2 * 1024 * 1024;
+  return 10 * 1024 * 1024;
 }

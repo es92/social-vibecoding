@@ -23,7 +23,7 @@ const read = (rel) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
 const COMPOSER = read('frontend/src/features/messages/composer.tsx');
 const API = read('frontend/src/features/messages/api.ts');
 const HUB = read('frontend/src/features/dev-board/workshop/hub-cards.tsx');
-const TYPEAHEAD = read('frontend/src/features/dev-board/card/mention-typeahead.tsx');
+const SOURCES = read('frontend/src/features/group-chat/chat-sources.ts');
 const SERVICE = read('src/services/conversations.js');
 const ROUTES = read('src/routes/conversations.js');
 const CHAT_ROUTES = read('src/routes/chat.js');
@@ -36,12 +36,20 @@ const between = (src, from, to) => {
   return src.slice(start, end);
 };
 
+// One message box (27 Nov 2026): the box asks its PLACE for people. A
+// channel's place (MessageComposer) is a lookup by prefix; a group's and a
+// DM's a roster; a project's chat's ../group-chat/chat-sources.ts.
 test('a channel asks the server for the people matching the typed prefix', () => {
-  const effect = between(COMPOSER, 'const isChannel = ', 'const mention = useMemo');
-  assert.match(effect, /active\?\.kind === 'channel'/);
-  // One lookup per conversation, which orders, shares and remembers requests.
-  assert.match(effect, /prefixLookup\(\(query\) => api\.getMentionCandidates\(conversationId, query, CHANNEL_MENTION_LIMIT\)\)/);
-  assert.match(effect, /\[isChannel, conversationId\]\)/, 'a different conversation starts a fresh lookup');
+  const place = between(COMPOSER, 'const isChannel = ', 'refs: (before) =>');
+  assert.match(place, /active\.kind === 'channel'/);
+  assert.match(place, /\{ kind: 'lookup', key: `c\$\{conversationId\}`, ask: \(query\) => api\.getMentionCandidates\(conversationId, query, CHANNEL_MENTION_LIMIT\)\.then\(\(users\) => users\.map\(personOf\)\) \}/);
+  // Groups and DMs keep their loaded roster, accepted members only.
+  assert.match(place, /\{ kind: 'roster', people: active\.members\.filter\(\(member\) => member\.status === 'member'\)\.map\(personOf\) \}/);
+  // The box: one lookup per place, which orders, shares and remembers
+  // requests; a different place (its key) starts a fresh one.
+  const effect = between(COMPOSER, 'const people = place.people;', 'const roster =');
+  assert.match(effect, /prefixLookup\(\(query\) => \(askPeople\.current \? askPeople\.current\(query\) : Promise\.resolve\(\[\]\)\)\)/);
+  assert.match(effect, /\[lookupKey\]\)/, 'a different place starts a fresh lookup');
   // After a pause in typing unless already answered; a superseded answer
   // (null) or one for an effect since torn down never lands.
   assert.match(effect, /window\.setTimeout\(ask, 120\)/);
@@ -51,14 +59,13 @@ test('a channel asks the server for the people matching the typed prefix', () =>
 });
 
 test('the list shows only the answer for what is typed now', () => {
-  const memo = between(COMPOSER, 'const mention = useMemo', 'const channelMatches');
-  assert.match(memo, /channelPeople\.lookup === channelLookup/, 'never another conversation\'s people');
+  const memo = between(COMPOSER, 'const mention = useMemo', 'const refMatch');
+  assert.match(memo, /channelPeople\.lookup === channelLookup/, 'never another place\'s people');
   assert.match(memo, /channelPeople\.key === prefix/);
   assert.match(memo, /prefix\.startsWith\(channelPeople\.key\) && channelPeople\.users\.length < CHANNEL_MENTION_LIMIT/,
     'a shorter prefix\'s answer only while it was complete');
-  assert.match(memo, /orderFriendsFirst\(people\.filter\(\(member\) => member\.username\.toLowerCase\(\)\.startsWith\(prefix\)\), friendIds\)\.slice\(0, 6\)/);
-  // Groups and DMs keep their loaded roster, accepted members only.
-  assert.match(memo, /orderFriendsFirst\(\(active\?\.members \|\| \[\]\)\.filter\(\(member\) => member\.status === 'member'/);
+  assert.match(memo, /orderFriendsFirst\(found\.filter\(matches\), friendIds\)\.slice\(0, 6\)/);
+  assert.match(memo, /orderFriendsFirst\(\(roster \|\| \[\]\)\.filter\(matches\), friendIds\)\.slice\(0, 6\)/);
 });
 
 test('the client calls the read-gated endpoint with a bounded prefix and limit', () => {
@@ -116,13 +123,12 @@ test('the same prefix asked twice shares one request, and a failure is not remem
   assert.deepEqual(await retry, ['zz_1']);
 });
 
-test('conversation tokens take legacy punctuation; app chat tokens do not', () => {
-  const { detectMentionToken } = loadTsx('frontend/src/features/dev-board/card/mention-typeahead.tsx');
-  assert.deepEqual(detectMentionToken('hi @ann-', 8, true), { start: 3, query: 'ann-' });
-  assert.deepEqual(detectMentionToken('hi @ann-m.x', 11, true), { start: 3, query: 'ann-m.x' });
-  assert.equal(detectMentionToken('mail@host', 9, true), null, 'an address is not a mention');
-  assert.equal(detectMentionToken('hi @ann-', 8, false), null, 'the app chat grammar stops at the hyphen');
-  assert.deepEqual(detectMentionToken('hi @ann', 7, false), { start: 3, query: 'ann' });
+test('every box reads one @ token: a run of anything but a space or another @', () => {
+  // A conversation's mention parser (services/conversations.js
+  // mentionsUsername) takes legacy punctuation, and the box's one grammar
+  // does too, in every place; a project chat's server reads its own names
+  // out of what is sent.
+  assert.match(COMPOSER, /return value\.slice\(0, cursor\)\.match\(\/\(\?:\^\|\\s\)@\(\[\^\\s@\]\*\)\$\/\)\?\.\[1\];/);
 });
 
 test('the server reuses the message-read gate and the directory rate limit', () => {
@@ -152,18 +158,14 @@ test('the app list behind @ is rate-limited like the other people searches', () 
   // it. (The hub's own composer, which asked per prefix, went with its
   // channel card: the hub's Discussion row opens the room itself.)
   assert.doesNotMatch(HUB, /function HubComposer/);
-  assert.match(TYPEAHEAD, /if \(res\.status === 429\) return \[\];\s*let users/);
+  assert.match(SOURCES, /if \(res\.status === 429\) return \{ users: \[\], bot: false, fetchedAt: 0 \};/);
 });
 
-test('the mention typeahead asks by prefix through its ordered lookup', () => {
+test('a project chat\'s box asks by prefix through the box\'s ordered lookup', () => {
   // The hub's composer, which asked #general's conversation or the app's
-  // list by prefix, went with its channel card; the hook it used is the
-  // group chat's and the feed threads', and keeps its rules.
+  // list by prefix, went with its channel card.
   assert.equal(loadTsx('frontend/src/features/dev-board/workshop/hub-cards.tsx').conversationIdFromPostUrl, undefined);
-
-  // The hook asks through the ordered lookup and applies only a live answer.
-  const sync = between(TYPEAHEAD, 'const sync = useCallback', 'const accept = useCallback');
-  assert.match(sync, /if \(asker\) \{/);
-  assert.match(sync, /asker\.ask\(token\.query\)\.then\(\(found\) => \{ if \(found\) apply\(found\); \}\)/);
-  assert.match(TYPEAHEAD, /const asker = useMemo\(\(\) => \(lookup \? prefixLookup\(lookup\) : null\), \[lookup\]\)/);
+  // A project's chat is a lookup place too; the box's ordered lookup
+  // (lib/prefix-lookup.ts) applies only a live answer.
+  assert.match(SOURCES, /kind: 'lookup',\s*key: `app:\$\{slug\}`,/);
 });

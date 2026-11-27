@@ -1,4 +1,6 @@
 import { SectionHeading, StatusLine } from '@/components/ui/field';
+import { GroupedList, ListRow } from '@/components/ui/grouped-list';
+import { Switch } from '@/components/ui/switch';
 
 import { NotificationPrefsList } from '../notification-prefs-list';
 import { useMessages } from '../../../lib/i18n/react';
@@ -8,20 +10,19 @@ import { useMessages } from '../../../lib/i18n/react';
  * test push on the server, which sends it ten seconds later so the person
  * can switch away (wired in settings.js, POST /api/me/test-alert).
  *
- * Below it, the mobile push categories. Those rows are NOT SwitchRows: their
- * shape is the other way round (caption block first, switch right-aligned and
- * top-aligned) and their checkbox writes `type`/`class`/`disabled` in that
- * order, which the primitive's prop order does not produce. They stay literal
- * — the same call alert.tsx makes for the banner with a display conflict.
+ * Below it, the mobile push categories: the shared row (ListRow) as the
+ * label of its switch, the category's name over its sentence, the switch at
+ * the row's end. settings.js finds each switch as
+ * `[data-mobile-push-category] input` and sets `.checked` and `.disabled`.
  *
- * They are also seven WRITTEN-OUT rows rather than a map over a table, which
+ * They are seven WRITTEN-OUT rows rather than a map over a table, which
  * looks like the obvious deduplication and is not one:
  * tests/settings-mobile-push.test.js reads the label and blurb of every
- * category out of this file's SOURCE, and asserts that no internal
- * notification identifier (`mention`, `stale_pr`, `pr_proposed`, …) ever
- * appears between a `>` and a `<`. Hoisting the copy into a table would leave
- * that last check matching nothing at all — green, and no longer testing
- * anything.
+ * category out of this file's SOURCE, and asserts that every row's title and
+ * subtitle are catalog messages, so no internal notification identifier
+ * (`mention`, `stale_pr`, `pr_proposed`, …) is ever a visible label. Hoisting
+ * the copy into a table would leave that check matching nothing at all —
+ * green, and no longer testing anything.
  */
 export function AlertsSection() {
   const t = useMessages('settings');
@@ -52,72 +53,91 @@ export function AlertsSection() {
           <SectionHeading title={t('settings:alerts.push.title')} blurbClassName="leading-relaxed">
             {t('settings:alerts.push.intro')}
           </SectionHeading>
-          {/* ui-card and ui-row: names only (looks v2), the kit's card of rows under a look. */}
-          <div className="ui-card space-y-3">
-            <label className="ui-row flex items-start justify-between gap-4 cursor-pointer select-none" data-mobile-push-category="messages">
-              <span className="ui-row-tx">
-                <span className="ui-row-t block text-sm font-medium text-zinc-800 dark:text-zinc-200">{t('settings:alerts.push.messages.label')}</span>
-                <span className="ui-row-s block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{t('settings:alerts.push.messages.description')}</span>
-              </span>
-              <input type="checkbox" className="un-switch mt-0.5 shrink-0" disabled />
-            </label>
-            <label className="ui-row flex items-start justify-between gap-4 cursor-pointer select-none" data-mobile-push-category="builds">
-              <span className="ui-row-tx">
-                <span className="ui-row-t block text-sm font-medium text-zinc-800 dark:text-zinc-200">{t('settings:alerts.push.builds.label')}</span>
-                <span className="ui-row-s block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{t('settings:alerts.push.builds.description')}</span>
-              </span>
-              <input type="checkbox" className="un-switch mt-0.5 shrink-0" disabled />
-            </label>
-            <label className="ui-row flex items-start justify-between gap-4 cursor-pointer select-none" data-mobile-push-category="invite_activity">
-              <span className="ui-row-tx">
-                <span className="ui-row-t block text-sm font-medium text-zinc-800 dark:text-zinc-200">{t('settings:alerts.push.inviteActivity.label')}</span>
-                <span className="ui-row-s block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{t('settings:alerts.push.inviteActivity.description')}</span>
-              </span>
-              <input type="checkbox" className="un-switch mt-0.5 shrink-0" disabled />
-            </label>
-            <label className="ui-row flex items-start justify-between gap-4 cursor-pointer select-none" data-mobile-push-category="direct_interactions">
-              <span className="ui-row-tx">
-                <span className="ui-row-t block text-sm font-medium text-zinc-800 dark:text-zinc-200">{t('settings:alerts.push.directInteractions.label')}</span>
-                <span className="ui-row-s block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{t('settings:alerts.push.directInteractions.description')}</span>
-              </span>
-              <input type="checkbox" className="un-switch mt-0.5 shrink-0" disabled />
-            </label>
-            <label className="ui-row flex items-start justify-between gap-4 cursor-pointer select-none" data-mobile-push-category="invitations">
-              <span className="ui-row-tx">
-                <span className="ui-row-t block text-sm font-medium text-zinc-800 dark:text-zinc-200">{t('settings:alerts.push.invitations.label')}</span>
-                <span className="ui-row-s block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{t('settings:alerts.push.invitations.description')}</span>
-              </span>
-              <input type="checkbox" className="un-switch mt-0.5 shrink-0" disabled />
-            </label>
-            <label className="ui-row flex items-start justify-between gap-4 cursor-pointer select-none" data-mobile-push-category="developer_sessions">
-              <span className="ui-row-tx">
-                <span className="ui-row-t block text-sm font-medium text-zinc-800 dark:text-zinc-200">{t('settings:alerts.push.developerSessions.label')}</span>
-                <span className="ui-row-s block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{t('settings:alerts.push.developerSessions.description')}</span>
-              </span>
-              <input type="checkbox" className="un-switch mt-0.5 shrink-0" disabled />
-            </label>
-            <label className="ui-row flex items-start justify-between gap-4 cursor-pointer select-none" data-mobile-push-category="proposal_alerts">
-              <span className="ui-row-tx">
-                <span className="ui-row-t block text-sm font-medium text-zinc-800 dark:text-zinc-200">{t('settings:alerts.push.proposalAlerts.label')}</span>
-                <span className="ui-row-s block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{t('settings:alerts.push.proposalAlerts.description')}</span>
-              </span>
-              <input type="checkbox" className="un-switch mt-0.5 shrink-0" disabled />
-            </label>
-            <label className="ui-row flex items-start justify-between gap-4 cursor-pointer select-none" data-mobile-push-category="app_alerts">
-              <span className="ui-row-tx">
-                <span className="ui-row-t block text-sm font-medium text-zinc-800 dark:text-zinc-200">{t('settings:alerts.push.appAlerts.label')}</span>
-                <span className="ui-row-s block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{t('settings:alerts.push.appAlerts.description')}</span>
-              </span>
-              <input type="checkbox" className="un-switch mt-0.5 shrink-0" disabled />
-            </label>
-            <label className="ui-row flex items-start justify-between gap-4 cursor-pointer select-none" data-mobile-push-category="lightweight_activity">
-              <span className="ui-row-tx">
-                <span className="ui-row-t block text-sm font-medium text-zinc-800 dark:text-zinc-200">{t('settings:alerts.push.lightweightActivity.label')}</span>
-                <span className="ui-row-s block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{t('settings:alerts.push.lightweightActivity.description')}</span>
-              </span>
-              <input type="checkbox" className="un-switch mt-0.5 shrink-0" disabled />
-            </label>
-          </div>
+          {/* The shared rows, each the label of its switch: pressing the name
+              or the sentence under it toggles it. */}
+          <GroupedList className="mx-0">
+            <ListRow
+              as="label"
+              data-mobile-push-category="messages"
+              title={t('settings:alerts.push.messages.label')}
+              subtitle={t('settings:alerts.push.messages.description')}
+              subtitleClassName="whitespace-normal"
+              trailing={<Switch disabled />}
+              chevron={false}
+            />
+            <ListRow
+              as="label"
+              data-mobile-push-category="builds"
+              title={t('settings:alerts.push.builds.label')}
+              subtitle={t('settings:alerts.push.builds.description')}
+              subtitleClassName="whitespace-normal"
+              trailing={<Switch disabled />}
+              chevron={false}
+            />
+            <ListRow
+              as="label"
+              data-mobile-push-category="invite_activity"
+              title={t('settings:alerts.push.inviteActivity.label')}
+              subtitle={t('settings:alerts.push.inviteActivity.description')}
+              subtitleClassName="whitespace-normal"
+              trailing={<Switch disabled />}
+              chevron={false}
+            />
+            <ListRow
+              as="label"
+              data-mobile-push-category="direct_interactions"
+              title={t('settings:alerts.push.directInteractions.label')}
+              subtitle={t('settings:alerts.push.directInteractions.description')}
+              subtitleClassName="whitespace-normal"
+              trailing={<Switch disabled />}
+              chevron={false}
+            />
+            <ListRow
+              as="label"
+              data-mobile-push-category="invitations"
+              title={t('settings:alerts.push.invitations.label')}
+              subtitle={t('settings:alerts.push.invitations.description')}
+              subtitleClassName="whitespace-normal"
+              trailing={<Switch disabled />}
+              chevron={false}
+            />
+            <ListRow
+              as="label"
+              data-mobile-push-category="developer_sessions"
+              title={t('settings:alerts.push.developerSessions.label')}
+              subtitle={t('settings:alerts.push.developerSessions.description')}
+              subtitleClassName="whitespace-normal"
+              trailing={<Switch disabled />}
+              chevron={false}
+            />
+            <ListRow
+              as="label"
+              data-mobile-push-category="proposal_alerts"
+              title={t('settings:alerts.push.proposalAlerts.label')}
+              subtitle={t('settings:alerts.push.proposalAlerts.description')}
+              subtitleClassName="whitespace-normal"
+              trailing={<Switch disabled />}
+              chevron={false}
+            />
+            <ListRow
+              as="label"
+              data-mobile-push-category="app_alerts"
+              title={t('settings:alerts.push.appAlerts.label')}
+              subtitle={t('settings:alerts.push.appAlerts.description')}
+              subtitleClassName="whitespace-normal"
+              trailing={<Switch disabled />}
+              chevron={false}
+            />
+            <ListRow
+              as="label"
+              data-mobile-push-category="lightweight_activity"
+              title={t('settings:alerts.push.lightweightActivity.label')}
+              subtitle={t('settings:alerts.push.lightweightActivity.description')}
+              subtitleClassName="whitespace-normal"
+              trailing={<Switch disabled />}
+              chevron={false}
+            />
+          </GroupedList>
           <p data-mobile-push-status aria-live="polite" className="ui-note text-xs mt-3 text-zinc-500 dark:text-zinc-400">
             {t('settings:alerts.push.loading')}
           </p>

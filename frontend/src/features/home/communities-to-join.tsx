@@ -223,17 +223,33 @@ export function CommunitiesToJoin({ apps, failed = false, exclude, signedIn, que
         </FadeRail>
         {oneLine && list.length > 1 ? sortMenu : null}
         </div>
+      ) : holdFeatured ? (
+        // The filter line's place, held while the directory is read (27 Nov
+        // 2026): the line's own box with a chip's and the menu's shapes in
+        // it, so it is the line's height at every width (two lines under
+        // 480px, as the real one wraps) and the cards under it do not drop
+        // by it when the kinds land.
+        <div className="wip-filterbar animate-pulse" data-loading="" aria-hidden="true">
+          <span className="flex min-w-0 flex-1 gap-2">
+            <span className="h-11 w-16 shrink-0 rounded-full bg-zinc-200/70 dark:bg-zinc-800/70" />
+            <span className="h-11 w-24 shrink-0 rounded-full bg-zinc-200/70 dark:bg-zinc-800/70" />
+          </span>
+          <span className="ms-auto h-11 w-24 shrink-0 rounded-full bg-zinc-200/70 dark:bg-zinc-800/70" />
+        </div>
       ) : null}
       {holdFeatured ? (
         // Standard (WIP) draws Featured as a row of Home's own, above this
-        // list: its place is held while the directory is read, by its larger
-        // first row's cards, so the rows under it do not move when they land.
+        // list: its place is held while the directory is read, by as many
+        // covers as Featured shows at most (FEATURED_MAX: three rows of two
+        // on a phone, two of three from 768px), so the rows under it do not
+        // move when they land. It held one row, and the list under it
+        // dropped by the rest (27 Nov 2026).
         <div data-home-join-featured="" data-loading="" className="pb-4 animate-pulse" aria-hidden="true">
           <h3 className={`${SMALL_CAPS_LABEL} px-1 pb-2`}>{t('home:join.featured')}</h3>
           {probeGrid}
           <div className={GRID} data-cm-grid="lead" style={leadStyle}>
-            {/* One look: a row of covers, at least two across (app.css). */}
-            {Array.from({ length: Math.max(2, leadCount) }, (_, i) => <CommunityCardSkeleton key={i} lead />)}
+            {/* One look: one grid of covers of one size (app.css). */}
+            {Array.from({ length: FEATURED_MAX }, (_, i) => <CommunityCardSkeleton key={i} lead />)}
           </div>
         </div>
       ) : null}

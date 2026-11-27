@@ -36,7 +36,7 @@ const KIND_CLASS: Record<ThreadPageKind, string> = {
   private: 'dev-request dev-private-thread',
 };
 
-export function ThreadPage({ kind, label, hosts = false, back = null, bar = null, sheet, scroller, scrollClassName = '', scrollProps, children = null, foot = null }: {
+export function ThreadPage({ kind, label, hosts = false, back = null, bar = null, sheet, sheetProps, scroller, scrollClassName = '', scrollProps, children = null, foot = null }: {
   kind: ThreadPageKind;
   /** The sheet's accessible name. */
   label: string;
@@ -47,6 +47,8 @@ export function ThreadPage({ kind, label, hosts = false, back = null, bar = null
   /** The head card (../dev-board/topic/thread-head.tsx). */
   bar?: ReactNode;
   sheet?: RefObject<HTMLElement | null>;
+  /** More on the sheet: a public page's drop zone (./thread-shell.tsx). */
+  sheetProps?: HTMLAttributes<HTMLElement>;
   scroller: RefObject<HTMLDivElement | null>;
   /** More classes for the scroller (a chat's own, such as `platform-safe-scroll`). */
   scrollClassName?: string;
@@ -59,7 +61,7 @@ export function ThreadPage({ kind, label, hosts = false, back = null, bar = null
   return (
     <div className={KIND_CLASS[kind]} data-thread-page={kind}>
       <div id={hosts ? 'gc-thread-back' : undefined} className="dev-request-back">{back}</div>
-      <section ref={sheet} className="dev-request-sheet dc-lift dc-lift-session" aria-label={label}>
+      <section {...sheetProps} ref={sheet} className="dev-request-sheet dc-lift dc-lift-session" aria-label={label}>
         <div id={hosts ? 'gc-thread-bar' : undefined} className="dev-request-bar">{bar}</div>
         <div
           {...scrollProps}

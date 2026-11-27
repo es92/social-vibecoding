@@ -32,7 +32,8 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
-import { CheckIcon, ChevronDownIcon, SearchIcon, Squares2X2Icon } from '@/components/ui/icons';
+import { ListRow } from '@/components/ui/grouped-list';
+import { ChevronDownIcon, SearchIcon, Squares2X2Icon } from '@/components/ui/icons';
 import { AppIconContent, appIconKind } from '../apps/app-card-view';
 import { RichMessage, useMessages } from '../../lib/i18n/react';
 import { useMenu } from '../../lib/menu';
@@ -43,7 +44,7 @@ import { navStore } from '../nav/nav-store.js';
 import { pinnedAppsStore } from '../nav/pinned-apps-store.js';
 import { readKept } from '../nav/rail-communities';
 import { communityScopeStore, loadCommunities, type CommunityInfo } from '../workshop/community-scope';
-import { switcherRecent, switcherSub } from '../workshop/community-switcher';
+import { SWITCHER_ROW, SwitcherTick, switcherRecent, switcherSub } from '../workshop/community-switcher';
 import { matchRows } from '../workshop/sections';
 
 const WIDE = '(min-width: 768px)';
@@ -129,23 +130,20 @@ export function ProjectChip({ slug, open, onOpen }: {
 function Row({ info, current, onPick }: { info: CommunityInfo; current: boolean; onPick: (slug: string) => void }): ReactNode {
   const color = useCommunityColor({ color: info.iconColor, iconUrl: info.iconUrl, iconEmoji: info.iconEmoji, key: info.slug });
   return (
-    <button
-      type="button"
-      className="community-switcher-row"
+    <ListRow
+      as="button"
+      inset="none"
+      className={SWITCHER_ROW}
       data-bot-project-option={info.slug}
       aria-current={current ? 'true' : undefined}
       style={current ? { background: `color-mix(in srgb, ${color} 12%, transparent)` } : undefined}
       onClick={() => onPick(info.slug)}
-    >
-      <Tile info={info} className="community-switcher-tile" />
-      <span className="community-switcher-text">
-        <span className="community-switcher-name">{info.name}</span>
-        <span className="community-switcher-sub">{switcherSub(info)}</span>
-      </span>
-      <span className="community-switcher-tick" style={{ color, visibility: current ? 'visible' : 'hidden' }} aria-hidden="true">
-        <CheckIcon className="w-5 h-5" strokeWidth="2.5" />
-      </span>
-    </button>
+      leading={<Tile info={info} className="community-switcher-tile" />}
+      title={info.name}
+      subtitle={switcherSub(info)}
+      trailing={<SwitcherTick on={current} color={color} />}
+      chevron={false}
+    />
   );
 }
 
@@ -208,25 +206,24 @@ function PickerBody({ slug, menu, onPick }: { slug: string | null; menu: boolean
       </label>
       <div className="community-switcher-list" onKeyDown={roveRows}>
         {found ? null : (
-          <button
-            type="button"
-            className="community-switcher-row"
+          <ListRow
+            as="button"
+            inset="none"
+            className={SWITCHER_ROW}
             data-bot-project-option=""
             aria-current={any ? 'true' : undefined}
             style={any ? { background: 'var(--bg-secondary)' } : undefined}
             onClick={() => onPick(null)}
-          >
-            <span className="community-switcher-tile community-switcher-tile-add" aria-hidden="true">
-              <Squares2X2Icon className="w-5 h-5" />
-            </span>
-            <span className="community-switcher-text">
-              <span className="community-switcher-name">{t('messages:newThread.anyProject')}</span>
-              <span className="community-switcher-sub">{t('messages:newThread.picker.anySub')}</span>
-            </span>
-            <span className="community-switcher-tick" style={{ visibility: any ? 'visible' : 'hidden' }} aria-hidden="true">
-              <CheckIcon className="w-5 h-5" strokeWidth="2.5" />
-            </span>
-          </button>
+            leading={(
+              <span className="community-switcher-tile community-switcher-tile-add" aria-hidden="true">
+                <Squares2X2Icon className="w-5 h-5" />
+              </span>
+            )}
+            title={t('messages:newThread.anyProject')}
+            subtitle={t('messages:newThread.picker.anySub')}
+            trailing={<SwitcherTick on={any} />}
+            chevron={false}
+          />
         )}
         {st.list == null ? (
           <p className="community-switcher-note" data-bot-project-loading="">{t('messages:newThread.picker.loading')}</p>

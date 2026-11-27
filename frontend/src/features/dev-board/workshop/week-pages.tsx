@@ -27,6 +27,7 @@
 import { useState, type MouseEvent, type ReactNode } from 'react';
 
 import { ChevronDownIcon, ChevronRightIcon, PencilSquareIcon } from '@/components/ui/icons';
+import { StateTag } from '@/components/ui/state-tag';
 
 import { RichMessage, useMessages } from '../../../lib/i18n/react';
 import { getDateLocale, t as translate } from '../../../lib/i18n/runtime';
@@ -361,8 +362,8 @@ export function HappenedRow({ row, fresh, slug, on = false, onOpen, act = null }
         ) : <span className="dev-ws-hrow-link">{card.title.text}</span>}
         <span className="dev-ws-hrow-meta">
           {b.mine ? <span className="dev-ws-hrow-you">{t('project:happened.row.you')}</span> : null}
-          {going ? <span className="dev-ws-hrow-tag" data-tone="run">{t('project:happened.row.goingLive')}</span> : null}
-          {stuck && s ? <span className="dev-ws-hrow-tag" data-tone="bad">{s.label}</span> : null}
+          {going ? <StateTag state="working" className="dev-ws-hrow-tag">{t('project:happened.row.goingLive')}</StateTag> : null}
+          {stuck && s ? <StateTag className="dev-ws-hrow-tag">{s.label}</StateTag> : null}
           {when && when.text ? (
             <time className="dev-ws-hrow-ago" dateTime={new Date(at).toISOString()} title={when.title}>{when.text}</time>
           ) : null}

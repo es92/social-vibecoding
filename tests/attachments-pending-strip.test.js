@@ -102,26 +102,20 @@ test('removal reports an index, and the composer resolves it', () => {
   list[1].props.onRemove(list[1].props.index);
   assert.deepEqual(removed, [0, 1]);
 
-  // The group chat wires that back to its own list.
-  assert.match(read('frontend/src/features/group-chat/composer.tsx'),
-    /onRemove=\{\(index\) => controller\(\)\?\._removeAttachmentAt\?\.\(index, scope\)\}/);
+  // The box resolves it against its own list (one message box, 27 Nov
+  // 2026: the group chat's box is Messages' own).
+  assert.match(read('frontend/src/features/messages/composer.tsx'),
+    /<PendingStripRows items=\{staged\} onRemove=\{removeStaged\} \/>/);
 });
 
-test('the composer owns its strip element, and the class comes with it', () => {
-  // The element and its `dc-attach-strip-active` class come from the shared
-  // file, which means ONE answer to "are there attachments" instead of a
-  // rendered list and a hand-toggled class that could disagree.
-  const id = 'gc-attachments';
-  const withElement = renderComponent(STRIP, 'PendingStrip', {
-    id, items: [item()], onRemove: () => {},
-  });
-  assert.match(withElement, new RegExp(`^<div id="${id}" class="dc-attach-strip dc-attach-strip-active">`));
-  assert.match(
-    renderComponent(STRIP, 'PendingStrip', { id, items: [], onRemove: () => {} }),
-    new RegExp(`^<div id="${id}" class="dc-attach-strip"></div>$`),
-  );
-  // …and the rows-only export still emits no wrapper at all, which is what
-  // keeps a caller that already has a host from nesting a second one.
+test('the box owns its strip element, and the class comes with it', () => {
+  // The group chat's own strip element (`PendingStrip`, `#gc-attachments`)
+  // went with its box; every box draws the rows inside its own active strip.
+  assert.match(read('frontend/src/features/messages/composer.tsx'),
+    /\{staged\.length \? <div className="dc-attach-strip dc-attach-strip-active"><PendingStripRows/);
+  assert.doesNotMatch(read(STRIP), /export function PendingStrip\(/);
+  // …and the rows-only export emits no wrapper at all, which is what keeps
+  // a caller that already has a host from nesting a second one.
   assert.ok(!rows([item()]).includes('dc-attach-strip'));
 });
 

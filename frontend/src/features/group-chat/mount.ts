@@ -31,18 +31,8 @@ import { createElement } from 'react';
 import { flushSync } from 'react-dom';
 
 import { mountLegacyPortal, unmountLegacyPortal } from '../../lib/legacy-portals';
-import { EmojiMenu, MentionMenu, RefMenu } from './autocomplete';
-import {
-  autocompleteStore,
-  type EmojiOption,
-  type MentionOption,
-  type RefOption,
-} from './autocomplete-store';
-import {
-  completedShortcodeAt,
-  findShortcodeToken,
-  matchShortcodes,
-} from '../message-actions/emoji-shortcodes';
+import { putInComposer } from '../messages/composer';
+import { shownChatScope } from './composer';
 import {
   composerStore,
   type ComposerScope,
@@ -233,20 +223,7 @@ export function patchTranscriptMessage(id: number, patch: Partial<TranscriptMess
 }
 
 /**
- * `setFlush(flushSync)` on the autocomplete store, and it is load-bearing.
- *
- * `_render()` publishes the rows and then, two lines later, calls
- * `_position()`, which reads `menu.offsetHeight` to decide whether the menu
- * fits above the composer or has to flip below it. Batched — React 18's
- * default for an update that starts outside React — that measurement would run
- * against the previous frame and a freshly-opened menu would be placed as if
- * it were empty. The innerHTML assignment this replaces was synchronous, so
- * the flush is what keeps the contract rather than what changes it.
- */
-autocompleteStore.setFlush(flushSync);
-
-/**
- * And the reaction bar's, for the third instance of the same sentence:
+ * The reaction bar's store is flushed synchronously:
  * `_openReactionBar` publishes `{ gridOpen: false, editable }` and then reads
  * `bar.offsetWidth` / `bar.offsetHeight` to decide whether the bar fits above
  * the row or has to flip below it. Whether the pencil is rendered changes the
@@ -256,79 +233,29 @@ autocompleteStore.setFlush(flushSync);
 reactionBarStore.setFlush(flushSync);
 
 /**
- * The composer's store gets it too. `setupAttachments` publishes the strip and
- * then reads the paperclip and the file input back by id on the next line;
- * `mountThread` publishes the staged reply and then measures the composer to
- * place an autocomplete against it. Both were synchronous when they were
- * `innerHTML`, so the flush keeps the contract rather than changing it.
+ * The composer's store gets it too: `setQuote` publishes the staged reply
+ * and then focuses the box on its next line, so the chip is drawn when the
+ * caret arrives, as it was when the chip was `innerHTML`.
  */
 composerStore.setFlush(flushSync);
 
-// ── The composer's autocomplete menus ─────────────────────────────────
-//
-// Same seam, one level smaller: `_ensureMenu` still creates the floating host
-// and appends it to `document.body` — it is `position: fixed`, measured
-// against the composer, and belongs to no React tree — and then mounts a
-// portal into it ONCE. Everything after that is a publish.
-//
-// `mountLegacyPortal` is the right tool even though these hosts are never
-// destroyed: it is what gives the subtree a root, and the unmount path exists
-// for symmetry rather than because anything calls it today.
-
-/** Establish the `@name` menu's contents. Idempotent — the host is cached. */
-export function mountMentionMenu(host: Element | null): void {
-  if (!host) return;
-  mountLegacyPortal(host, createElement(MentionMenu));
-}
-
-/** Establish the `#123` / `PR#123` menu's contents. */
-export function mountRefMenu(host: Element | null): void {
-  if (!host) return;
-  mountLegacyPortal(host, createElement(RefMenu));
-}
-
 /**
- * The rows and the highlighted index, together.
- *
- * One call rather than a publish plus a separate "move the highlight",
- * because an arrow key changes only `active` and a new token changes both —
- * and the module already holds them as one pair (`_items` / `_active`).
+ * Put words in a project chat's box, the channel pane's (`general`) or a
+ * thread's (`thread`): Go ahead on a request's plan
+ * (AppView.answerBotOnRequest). The box is Messages' (../messages/composer.tsx
+ * putInComposer), so the words go through its own state and draft.
  */
-export function publishMentionMenu(items: MentionOption[], active: number): void {
-  autocompleteStore.set({ mention: { items, active } });
+export function putInChatComposer(which: ComposerScope, text: string, opts: { onlyIfEmpty?: boolean } = {}): boolean {
+  const scope = shownChatScope(which);
+  return scope != null && putInComposer(scope, text, opts);
 }
-
-export function publishRefMenu(items: RefOption[], active: number): void {
-  autocompleteStore.set({ ref: { items, active } });
-}
-
-/** Establish the `:shortcode` menu's contents. */
-export function mountEmojiMenu(host: Element | null): void {
-  if (!host) return;
-  mountLegacyPortal(host, createElement(EmojiMenu));
-}
-
-/** The rows, the highlight and the `:query` the heading repeats. */
-export function publishEmojiMenu(query: string, items: EmojiOption[], active: number): void {
-  autocompleteStore.set({ emoji: { items, active, query } });
-}
-
-// The emoji menu's matching lives in the bundle, not in group-chat.js: the
-// emoji and their shortcodes are features/message-actions/, which the Messages
-// composer reads directly. Handing the classic script the same three pure
-// functions keeps one definition of what `:th` and `:tada:` mean.
-export const emojiShortcodeToken = findShortcodeToken;
-export const matchEmojiShortcodes = matchShortcodes;
-export const completedEmojiShortcode = completedShortcodeAt;
-
+//
 /**
  * The thread panel's shell — scroller, messages host, typing slot, composer.
  *
  * `mountThread` used to assign `container.innerHTML` and then bind its
- * listeners to what came back. The assignment is this; the listeners still
- * attach to the same ids on the line after, which is what keeps the draft, the
- * typing ping, the multi-line submit semantics and both autocompletes in one
- * owner.
+ * listeners to what came back. The assignment is this; the box at its foot
+ * is Messages' (./composer.tsx ChatComposer) and needs no listeners.
  *
  * The props go through the portal node rather than a store: they are fixed for
  * the life of one mount and only change when `mountThread` runs again, and
@@ -340,18 +267,17 @@ export function mountThreadShell(host: Element | null, props: ThreadShellProps):
   mountLegacyPortal(host, createElement(ThreadShell, props));
 }
 
-// ── The two composers ─────────────────────────────────────────────────
+// ── The two boxes ─────────────────────────────────────────────────────
 //
-// One store with a slot per scope, one set of components, two callers. See
-// ./composer-store.ts for why they are together.
+// One store with a slot per scope (the staged reply, the status line), two
+// callers. See ./composer-store.ts for why they are together.
 
 /**
  * The general chat pane, into `#dev-chat-body`.
  *
  * `AppView.renderGroupChatTab` used to assign that host's `innerHTML` and then
- * bind its listeners to what came back. The assignment is this; the listeners
- * still attach to the same ids on the line after, exactly as `mountThread`
- * does for the thread panel.
+ * bind its listeners to what came back. The assignment is this; the box is
+ * Messages' and needs none, as on a thread's page.
  */
 export function mountGeneralChat(host: Element | null, props: GeneralChatProps): void {
   if (!host) return;
@@ -364,12 +290,10 @@ export function unmountGeneralChat(host: Element | null): void {
 }
 
 /**
- * Patch one composer's slot — the staged reply, the error line, the pending
- * uploads, the status line — leaving the other scope's alone.
- *
- * A patch rather than a whole-state publish because the module's writers are
- * independent: `_setAttachError` knows nothing about the strip, and the typing
- * ticker knows nothing about either.
+ * Patch one box's slot — the staged reply, the status line — leaving the
+ * other scope's alone. A patch rather than a whole-state publish because the
+ * module's writers are independent: the quote knows nothing about the
+ * typing ticker.
  */
 export function publishComposer(scope: ComposerScope, patch: Partial<ComposerSlot>): void {
   composerStore.set((s) => ({ ...s, [scope]: { ...s[scope], ...patch } }));
@@ -437,21 +361,13 @@ if (typeof window !== 'undefined') {
     publishTranscript,
     appendTranscriptMessage,
     patchTranscriptMessage,
-    mountMentionMenu,
-    mountRefMenu,
-    publishMentionMenu,
-    publishRefMenu,
-    mountEmojiMenu,
-    publishEmojiMenu,
-    emojiShortcodeToken,
-    matchEmojiShortcodes,
-    completedEmojiShortcode,
     mountThreadShell,
     mountReactionBar,
     publishReactionBar,
     mountGeneralChat,
     unmountGeneralChat,
     publishComposer,
+    putInChatComposer,
     openAtUnreadLine,
   };
 }

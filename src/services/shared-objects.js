@@ -79,6 +79,16 @@ function parseRepo(url) {
   return repoRef.ownerRepo(url);
 }
 
+// The name a change is known by on every screen: its pull request's own
+// title, else the title chosen before it had one (#6124), else its session's
+// name. The Needs you feed's SQL and the board (AppView._changeTitle) read the
+// same order, and the client's one model of a change
+// (frontend/src/features/dev-board/card/change.ts) is built from it, so a
+// shared card and the change's own page cannot name it differently.
+function changeTitle(row) {
+  return (row && (row.pr_title || row.proposed_pr_title || row.session_title)) || null;
+}
+
 // B4: a change's status, as people read it on its card.
 const CHANGE_STATE_WORDS = Object.freeze({
   active: 'in progress', paused: 'in progress', promoted: null, merging: 'going live', merged: 'live',
@@ -250,7 +260,7 @@ async function hydrateOne(pool, user, ref) {
     }
     if (ref.object_type === 'code_proposal') {
       const { rows } = await pool.query(
-        `SELECT cs.id, cs.session_title, cs.pr_title, cs.pr_number, cs.status, u.username, u.is_synthetic,
+        `SELECT cs.id, cs.session_title, cs.pr_title, cs.proposed_pr_title, cs.pr_number, cs.status, u.username, u.is_synthetic,
                 (SELECT COUNT(*)::int FROM community_members m JOIN apps a ON a.community_id = m.community_id
                   WHERE a.id = cs.app_id) AS members,
                 EXISTS (SELECT 1 FROM community_members m JOIN apps a ON a.community_id = m.community_id
@@ -265,7 +275,9 @@ async function hydrateOne(pool, user, ref) {
       const row = rows[0];
       return {
         ...base, sessionId: row.id, ...(row.pr_number ? { prNumber: row.pr_number } : {}),
-        title: row.session_title || row.pr_title || `Change #${row.id}`,
+        // The name it has on every other screen (changeTitle): the share
+        // card used to lead with the session's old name.
+        title: changeTitle(row) || `Change #${row.id}`,
         // B4: where the change is, in words, not its raw status; and no
         // "by homeroom_bot" under one the bot built for somebody.
         state: changeStateWords(row.status, { yours: row.mine === true && Number(row.members) === 1 }),

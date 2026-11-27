@@ -42,6 +42,7 @@ import { EyeIcon } from '@/components/ui/icons';
 
 import { projectChangesOnGithub } from '../../lib/change-ref';
 import { useMessages } from '../../lib/i18n/react';
+import { checksWords, myVoteWords, voteStanding, type ChangeWords } from '../dev-board/card/change';
 import { VoteButton } from '../dev-board/card/dev-card';
 import type { ActionSpec } from '../dev-board/card/model';
 import { ThreadFoot } from '../dev-board/topic/thread-card';
@@ -64,31 +65,27 @@ export function changeName(t: T, { number, title }: { number: number | null; tit
  */
 export function voteFacts(t: T, vote: VoteView | null | undefined): string[] {
   if (!vote) return [];
-  if (vote.status === 'merged') return [t('chat:group.voteCard.merged')];
-  if (vote.status === 'merging') return [t('chat:group.voteCard.merging')];
+  // Each fact is a phrase of the one model of a change
+  // (../dev-board/card/change.ts), which the preview's bar says too.
+  const said = (words: ChangeWords | null): string[] => (words ? [t(words.id, words.values)] : []);
+  // Decided: it went live, or is going live, and that is all it says.
+  if (vote.status === 'merged' || vote.status === 'merging') return said(voteStanding(vote));
   // T2.12: not open for votes, by the change's stored row: where it stands
   // in that row's words ("Taking screenshots · Tests passed: only the before
   // and after screenshots are left"), and the viewer's own vote.
   if (vote.work && vote.work.stage) {
-    const said = [t(vote.work.stage.id, vote.work.stage.values), ...(vote.work.line ? [t(vote.work.line.id, vote.work.line.values)] : [])];
-    if (vote.myVote === 'yes') said.push(t('chat:group.voteCard.youVotedYes'));
-    else if (vote.myVote === 'no') said.push(t('chat:group.voteCard.youVotedNo'));
-    return said;
+    return [
+      t(vote.work.stage.id, vote.work.stage.values),
+      ...(vote.work.line ? [t(vote.work.line.id, vote.work.line.values)] : []),
+      ...said(myVoteWords(vote)),
+    ];
   }
-  const facts: string[] = [];
-  const yes = vote.yes ?? 0;
-  const needed = vote.needed ?? 1;
-  if (yes < needed) facts.push(t('chat:group.voteCard.needsMore', { count: needed - yes }));
-  else if (vote.needsOtherMember) facts.push(t('chat:group.voteCard.needsOtherMember'));
-  else facts.push(t('chat:group.voteCard.reached', { yes, needed }));
-  if (vote.myVote === 'yes') facts.push(t('chat:group.voteCard.youVotedYes'));
-  else if (vote.myVote === 'no') facts.push(t('chat:group.voteCard.youVotedNo'));
-  if (vote.checks === 'passing') facts.push(t('chat:group.voteCard.checks.passed'));
-  else if (vote.checks === 'failing') facts.push(t('chat:group.voteCard.checks.failing'));
-  else if (vote.checks === 'pending') facts.push(t('chat:group.voteCard.checks.running'));
-  else if (vote.checks === 'error') facts.push(t('chat:group.voteCard.checks.error'));
-  if (vote.preview?.kind === 'building') facts.push(t('chat:group.voteCard.previewBuilding'));
-  return facts;
+  return [
+    ...said(voteStanding(vote)),
+    ...said(myVoteWords(vote)),
+    ...said(checksWords(vote.checks)),
+    ...(vote.preview?.kind === 'building' ? [t('chat:group.voteCard.previewBuilding')] : []),
+  ];
 }
 
 /** The chat's project, as the module that mounted it knows it (GroupChat.appSlug), else the open app's. */

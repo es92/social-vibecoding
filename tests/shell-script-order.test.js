@@ -320,6 +320,25 @@ const RETIRED_SCRIPTS = {
     "the dev chat's live streaming Markdown holdback, retired with the dev chat",
 };
 
+// Scripts that are still shipped and still precached, but are no longer a
+// <script> tag in the document: a screen loads each one when it first needs
+// it. Unlike a retired script, the file stays and so does its SHELL_ASSETS
+// entry (the offline cache must hold it before the screen opens offline).
+// Each entry names the loader that asks for it, and the test below holds all
+// four halves: no tag, the file, the precache entry, and the loader.
+const ON_DEMAND_SCRIPTS = {
+  // Request #7165, point 3. qrcodejs was fetched and run before first paint
+  // on every load, and only three places draw a code: the wallet sheet's
+  // Receive panel, Settings > Homeroom Wallet and the "Get the app" sheet.
+  // marked and DOMPurify are NOT here and must not be moved here without a
+  // rewrite of their callers: chat and markdown text is parsed and cleaned
+  // synchronously on screens that can be the first one shown.
+  '/vendor/qrcode-1.0.0.min.js': {
+    reason: 'QR codes are drawn on three screens, none of them the first; loaded when one opens',
+    loader: 'frontend/src/lib/qr-code.ts',
+  },
+};
+
 // public/js/topochain-events.js is deliberately NOT in that map, and now stays
 // out of it for good. It is the shared "which event should this screen open
 // on?" RULE — pure data with no DOM of its own — so chunk E could not move it
@@ -331,7 +350,7 @@ const RETIRED_SCRIPTS = {
 test('every legacy script is loaded, in exactly the baseline order', () => {
   assert.equal(scriptsOf(after).findIndex((s) => s.src === '/vendor/purify-3.4.17.min.js'),
     scriptsOf(after).findIndex((s) => s.src === '/vendor/marked-15.0.12.min.js') + 1, 'sanitizer still follows the markdown parser');
-  const expected = baseline.scripts.filter((s) => !(s in RETIRED_SCRIPTS));
+  const expected = baseline.scripts.filter((s) => !(s in RETIRED_SCRIPTS) && !(s in ON_DEMAND_SCRIPTS));
   const actual = scriptsOf(after)
     .filter((s) => s.src && s.src !== ENTRY_SRC && !ADDED_SCRIPTS.includes(s.src))
     .map((s) => s.src);
@@ -419,6 +438,49 @@ test('a retired script is really gone, everywhere', () => {
       `${src} is retired but public/sw.js still precaches it — the install would 404.`,
     );
   }
+});
+
+test('an on-demand script has no tag, and is still shipped, precached and asked for', () => {
+  const sw = require('../public/sw.js');
+  for (const [src, entry] of Object.entries(ON_DEMAND_SCRIPTS)) {
+    assert.ok(entry.reason, `ON_DEMAND_SCRIPTS[${src}] needs a reason`);
+    assert.ok(baseline.scripts.includes(src), `${src} was never a boot script; it does not belong in ON_DEMAND_SCRIPTS`);
+    assert.ok(
+      !scriptsOf(after).some((s) => s.src && s.src.endsWith(src)),
+      `${src} is listed in ON_DEMAND_SCRIPTS but public/index.html still loads it at boot.`,
+    );
+    assert.ok(
+      fs.existsSync(path.join(ROOT, 'public', src.replace(/^\//, ''))),
+      `${src} is loaded on demand, so the file must still be in the repo.`,
+    );
+    assert.ok(
+      sw.SHELL_ASSETS.includes(src),
+      `${src} is loaded on demand but public/sw.js no longer precaches it: the screen that needs it would not work offline.`,
+    );
+    const loader = fs.readFileSync(path.join(ROOT, entry.loader), 'utf8');
+    assert.ok(loader.includes(`'${src}'`), `${entry.loader} should name ${src}`);
+    assert.match(loader, /assetUrl\(/,
+      `${entry.loader} must ask for the build-scoped address, the one the worker stored the file under`);
+  }
+  // The sanitizer and the parser it cleans up after stay ahead of first paint.
+  for (const src of ['/vendor/marked-15.0.12.min.js', '/vendor/purify-3.4.17.min.js']) {
+    assert.ok(!(src in ON_DEMAND_SCRIPTS), `${src} must stay a boot script`);
+    const head = after.slice(0, after.indexOf('</head>'));
+    assert.ok(scriptsOf(head).some((s) => s.src && s.src.endsWith(src)), `${src} must load in <head>`);
+  }
+});
+
+test('the QR code callers wait for the loader and never read the global at draw time', () => {
+  const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+  for (const rel of ['frontend/src/features/header/wallet-sheet-body.tsx',
+    'frontend/src/features/notify-ask/get-app-sheet.tsx']) {
+    const src = read(rel);
+    assert.match(src, /loadQRCode\(\)\.then\(/, `${rel} draws its code once the library has loaded`);
+    assert.ok(!/window[^\n]*\)\.QRCode/.test(src), `${rel} must not read window.QRCode: it is not there at boot`);
+  }
+  const settings = read('frontend/src/features/settings/settings.js');
+  assert.match(settings, /await this\._loadQRCode\(\)\.catch\(\(\) => null\)/);
+  assert.match(read('frontend/src/features/settings/mount.ts'), /host\.Settings\._loadQRCode = loadQRCode;/);
 });
 
 test('nav-link.js loads ahead of every module that consumes it', () => {

@@ -28,17 +28,14 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { ArrowUpIcon } from '@/components/ui/icons';
-import { Textarea } from '@/components/ui/textarea';
-
 import { useMessages } from '../../../lib/i18n/react';
 import { t as translate } from '../../../lib/i18n/runtime';
 import { agoStamp } from '../../../lib/timestamp';
-import { enterSends } from '../../../lib/enter-sends';
-import { useAutoGrow } from '../../../lib/use-auto-grow';
 import { useStoreState } from '../../../lib/use-store-state';
+import { chatPeople, chatRefMatch, heldChatRefs, loadChatRefs } from '../../group-chat/chat-sources';
+import { chatScopeKey } from '../../group-chat/composer';
 import { PostedViaChip, postedViaOf } from '../../group-chat/posted-via-chip';
+import { MessageBox, putInComposer, type ComposerPlace } from '../../messages/composer';
 import { swatchFor } from '../../messages/format';
 import { ClampedComment } from '../comment-clamp';
 import {
@@ -48,8 +45,6 @@ import {
   threadKey,
   type FeedThreadMessage,
 } from './feed-thread-store';
-import { FeedMentionMenu, useMentionTypeahead } from './mention-typeahead';
-import { FeedRefMenu, useRefTypeahead } from './ref-typeahead';
 
 /** Two, matching the GitHub preview's FEED_COMMENT_PREVIEW above it. */
 const PREVIEW = 2;
@@ -158,119 +153,46 @@ export function MessageLine({ m }: { m: FeedThreadMessage }): ReactNode {
 }
 
 /**
- * The compact composer each Activity row owns.
+ * The box under a row's comments: Messages' box (one message box, 27 Nov
+ * 2026; ../../messages/composer.tsx MessageBox), with this change's thread
+ * as its place. `@` and `#` are a project chat's (../../group-chat/
+ * chat-sources.ts), the draft is saved under the thread's own scope (the
+ * one the thread's page writes too), and Enter sends by the rule every box
+ * keeps (lib/enter-sends.ts). It takes no files and has no formatting: the
+ * comments above it are plain text.
  *
- * It stays separate from FeedThread's loading/posting state so the two pieces
- * that make #1584 visible are executable in isolation: the controlled value
- * grows a textarea, and an always-present arrow sends it. The keyboard sends
- * by the rule every message box keeps (lib/enter-sends.ts): Enter where there
- * is a keyboard, Shift+Enter a new line, Enter a new line on a touch screen,
- * and ⌘/Ctrl+Enter anywhere (#2145).
- *
- * Typing `@` opens the people list (./mention-typeahead.tsx), and `PR#` or a
- * bare `#` the pull-request and issue list (./ref-typeahead.tsx): the group
- * chat's candidates and rows in both cases, as a sibling of the field inside
- * this form. A token under the caret is `@`-shaped or `#`-shaped and never
- * both, so both lists are asked on every event and at most one opens. While
- * one is open the arrows, Enter, Tab and Escape are its; otherwise every key
- * is the textarea's.
+ * The row is inside #dev-body's delegated click handler, which opens the
+ * topic for a click anywhere on a card, so a click in the box stays here.
  */
 export function FeedReplyComposer({
-  slug, draft, posting, onDraftChange, onSubmit,
+  slug, type, refId, onSend,
 }: {
   slug: string;
-  draft: string;
-  posting: boolean;
-  onDraftChange: (value: string) => void;
-  onSubmit: () => void | Promise<void>;
+  type: string;
+  refId: number;
+  onSend: (content: string) => void | Promise<void>;
 }): ReactNode {
   const t = useMessages('project');
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-  useAutoGrow(inputRef, draft);
-  const mention = useMentionTypeahead({ slug, inputRef, value: draft, onChange: onDraftChange });
-  const refs = useRefTypeahead({ slug, inputRef, value: draft, onChange: onDraftChange });
-  // Fanned out rather than chosen between: which list a keystroke concerns is
-  // the token's business, and each closes itself when the token is not its.
-  const syncMenus = () => { mention.sync(); refs.sync(); };
-
+  // The refs `#` offers are read when somebody first types `#`; their
+  // arrival draws the list.
+  const [, refsArrived] = useState(0);
+  const place: ComposerPlace = {
+    scope: chatScopeKey(slug, { type, ref: refId }),
+    bare: true,
+    placeholder: t('project:feedThread.reply.placeholder'),
+    label: t('project:feedThread.reply.name'),
+    send: (input) => onSend(input.content),
+    people: chatPeople(slug),
+    refs: (before) => {
+      const held = heldChatRefs(slug);
+      if (!held && before.includes('#')) void loadChatRefs(slug).then(() => refsArrived((n) => n + 1));
+      return chatRefMatch(before, held);
+    },
+  };
   return (
-    <form
-      // `relative`: the suggestion list is positioned against this form.
-      className="relative flex items-end gap-2 pt-0.5"
-      onSubmit={(e) => { e.preventDefault(); void onSubmit(); }}
-      // The row is inside #dev-body's delegated click handler, which opens
-      // the topic for a click anywhere on a card. Every part of this composer
-      // must stay in place while somebody writes a reply.
-      onClick={(e) => e.stopPropagation()}
-    >
-      <Textarea
-        ref={inputRef}
-        rows={1}
-        box="activityReply"
-        width="flex"
-        hint="muted"
-        ring={false}
-        className="focus:outline-none focus:ring-1 focus:ring-violet-500"
-        placeholder={t('project:feedThread.reply.placeholder')}
-        aria-label={t('project:feedThread.reply.name')}
-        value={draft}
-        disabled={posting}
-        onChange={(e) => { onDraftChange(e.target.value); syncMenus(); }}
-        // The caret moving without the text changing (a click, an arrow) can
-        // land on or leave a token just the same.
-        onSelect={syncMenus}
-        onFocus={() => { mention.warm(); refs.warm(); }}
-        onBlur={() => { mention.close(); refs.close(); }}
-        onCompositionStart={() => { mention.onCompositionStart(); refs.onCompositionStart(); }}
-        onCompositionEnd={() => { mention.onCompositionEnd(); refs.onCompositionEnd(); }}
-        onKeyDown={(e) => {
-          if (e.nativeEvent.isComposing) return;
-          // An open suggestion list owns the arrows, Enter, Tab and Escape.
-          if (mention.onKeyDown(e)) return;
-          if (refs.onKeyDown(e)) return;
-          if (!enterSends(e.nativeEvent)) return;
-          // preventDefault is unconditional for a send key, including the
-          // nothing-to-do case (#920): the keystroke must never leave a stray
-          // newline in the box as its only visible effect.
-          e.preventDefault();
-          if (!posting && draft.trim()) void onSubmit();
-        }}
-      />
-      {/* The send disc: a 36px filled accent circle with the
-          up-arrow (app.css `.dev-feed-send`), so every "send" on the platform
-          is the same object. */}
-      <Button
-        type="submit"
-        variant="unstyled"
-        disabledStyle="block"
-        size="icon"
-        ink="none"
-        className="dev-feed-send shrink-0 un-touch-target inline-flex items-center justify-center"
-        disabled={posting || !draft.trim()}
-        title={t('project:feedThread.reply.send')}
-        aria-label={t('project:feedThread.reply.send')}
-        // The field keeps focus through the press, so the keyboard and the
-        // composer stay where the tap landed (lib/keyboard-open.ts). The
-        // press still closes the suggestion lists, as the blur did.
-        onMouseDown={(event) => { event.preventDefault(); mention.close(); refs.close(); }}
-      >
-        {posting ? '…' : <ArrowUpIcon aria-hidden="true" />}
-      </Button>
-      <FeedMentionMenu
-        items={mention.items}
-        active={mention.active}
-        below={mention.below}
-        menuRef={mention.menuRef}
-        onPick={mention.accept}
-      />
-      <FeedRefMenu
-        items={refs.items}
-        active={refs.active}
-        below={refs.below}
-        menuRef={refs.menuRef}
-        onPick={refs.accept}
-      />
-    </form>
+    <div className="dev-feed-reply" onClick={(e) => e.stopPropagation()}>
+      <MessageBox place={place} />
+    </div>
   );
 }
 
@@ -287,11 +209,10 @@ export function FeedThread({
   const state = all[key] || readThread(key);
   const t = useMessages('project');
   const hostRef = useRef<HTMLDivElement>(null);
-  const [draft, setDraft] = useState('');
-  // #6730: the key of the comment currently being sent, and the words it was
-  // sent with. A failure keeps it, so pressing Send again with the same
-  // words is the same comment; editing them makes it a new one.
-  const pendingKeyRef = useRef<{ key: string; content: string } | null>(null);
+  // #6730: the key each comment was sent with, kept while its send failed,
+  // so pressing Send again with the same words is the same comment; editing
+  // them makes it a new one.
+  const failedKeys = useRef(new Map<string, string>());
 
   const load = useCallback(async () => {
     if (readThread(key).loading) return;
@@ -342,14 +263,11 @@ export function FeedThread({
     return () => obs.disconnect();
   }, [key, load]);
 
-  const submit = useCallback(async () => {
-    const content = draft.trim();
-    if (!content || readThread(key).posting) return;
-    const pending = pendingKeyRef.current;
-    if (!pending || pending.content !== content) {
-      pendingKeyRef.current = { key: newClientKey(), content };
-    }
-    const clientKey = pendingKeyRef.current.key;
+  const submit = useCallback(async (words: string) => {
+    const content = words.trim();
+    if (!content) return;
+    const clientKey = failedKeys.current.get(content) || newClientKey();
+    failedKeys.current.delete(content);
     patchThread(key, { posting: true, error: null });
     try {
       const res = await fetch(`/api/apps/${encodeURIComponent(slug)}/messages`, {
@@ -360,17 +278,20 @@ export function FeedThread({
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       // Stored (201) or matched to the row the first attempt stored (200):
       // either way this comment is done, and the next press is a new one.
-      pendingKeyRef.current = null;
-      setDraft('');
       patchThread(key, { posting: false });
       // Re-read rather than append what we sent: the server assigns the id and
       // the timestamp, and this is also what picks up anything else posted to
       // the thread while the box was open.
       await load();
     } catch {
+      // The box emptied as the comment left, as every box does: the words
+      // come back to it (unless something new is being typed), with the
+      // key, so Send again is the same comment.
+      failedKeys.current.set(content, clientKey);
       patchThread(key, { posting: false, error: 'post' });
+      putInComposer(chatScopeKey(slug, { type, ref: refId }), content, { onlyIfEmpty: true });
     }
-  }, [draft, key, slug, type, refId, load]);
+  }, [key, slug, type, refId, load]);
 
   const hidden = state.total - state.messages.length;
 
@@ -390,15 +311,7 @@ export function FeedThread({
           {t('project:feedThread.postFailed')}
         </div>
       ) : null}
-      {canPost ? (
-        <FeedReplyComposer
-          slug={slug}
-          draft={draft}
-          posting={state.posting}
-          onDraftChange={setDraft}
-          onSubmit={submit}
-        />
-      ) : null}
+      {canPost ? <FeedReplyComposer slug={slug} type={type} refId={refId} onSend={submit} /> : null}
     </div>
   );
 }

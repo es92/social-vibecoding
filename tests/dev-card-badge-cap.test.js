@@ -256,12 +256,13 @@ test('proposal: the pill LEADS one merged status band; the chips ride the meta l
   assert.ok(meta.indexOf('@maya') < meta.indexOf('Bug'));
 });
 
-test('the detail head keeps the INLINE capsule, not a second full-width bar', () => {
+test('the detail head keeps the inline tag, not a second full-width bar', () => {
   const AppView = makeAppView();
   const headModel = AppView._proposalCardModel(PR({ my_vote: 'yes', check_state: 'passing' }), { noNav: true });
   const head = cardHtml(headModel);
-  assert.match(head, /gc-vote-count/, 'the pill is still there');
-  assert.doesNotMatch(head, /dev-status-pill-block/, 'as a capsule — that page is already full width');
+  // An inline pill is the one tag now (dev-card.tsx ChangeTag).
+  assert.match(head, /data-state-tag=/, 'the pill is still there');
+  assert.doesNotMatch(head, /dev-status-pill-block/, 'as a tag: that page is already full width');
   // And no reserved band either: the detail head is the one non-dense caller,
   // so its rows still collapse when they have nothing to say.
   assert.doesNotMatch(head, /dev-card-status/);

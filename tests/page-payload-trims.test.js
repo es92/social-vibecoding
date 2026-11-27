@@ -84,13 +84,14 @@ test('on the App tab the dev caches warm after the app frame loads', () => {
   assert.match(view, /if \(iframeId === 'app-iframe' && AppView\._afterAppFrameLoad\) AppView\._afterAppFrameLoad\(\);/);
 });
 
-test('the chat composers warm their candidates on focus, not on every mount', () => {
-  const gc = read('public/js/group-chat.js');
-  for (const who of ['RefAutocomplete', 'MentionAutocomplete']) {
-    assert.match(gc, new RegExp(`if \\(document\\.activeElement === input\\) ${who}\\._loadCandidates\\(slug\\);`));
-    // #4571: the focus handler retargets the menu to this box first (`own()`),
-    // then always warms the box's own project — the old `_input === input`
-    // guard would never warm a box the last attach had moved past.
-    assert.match(gc, new RegExp(`input\\.addEventListener\\('focus', \\(\\) => \\{\\s*own\\(\\);\\s*${who}\\._loadCandidates\\(${who}\\._slug\\);`));
-  }
+test('the chat composers read their candidates when asked, not on every mount', () => {
+  // One message box (27 Nov 2026): a project chat's `#` list (its open
+  // requests and changes, two of the board's largest reads) is read the
+  // first time somebody types `#`, and its `@` list the first time `@` is
+  // asked; showing a chat reads neither.
+  const gc = read('frontend/src/features/group-chat/composer.tsx');
+  assert.match(gc, /if \(!held && before\.includes\('#'\)\) void loadChatRefs\(slug\)/);
+  const sources = read('frontend/src/features/group-chat/chat-sources.ts');
+  assert.match(sources, /ask: async \(query\) => \{\n\s+const entry = await loadChatPeople\(slug\);/);
+  assert.doesNotMatch(gc, /useEffect/, 'nothing is read as the box mounts');
 });

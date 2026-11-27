@@ -95,23 +95,27 @@ test('the outline is the Messages one, and lies over the card', () => {
   assert.match(html, /aria-hidden="true"/);
   const css = read('public/css/app.css');
   assert.match(css, /\.messages-drop-overlay,\s*\.attach-drop-overlay \{\s*position: absolute;/, 'one style for both');
-  assert.match(css, /\.gc-composer-card,\s*#gc-form,\s*#gc-thread-form,\s*#feedback-form \{ position: relative; \}/);
+  assert.match(css, /\n#feedback-form \{ position: relative; \}/);
 });
 
 // ── Each composer draws it ────────────────────────────────────────────
 
-test('the group chat’s card draws the zone while its slot says dragging', () => {
-  const api = loadTsx('tests/fixtures/group-composer-api.ts');
-  const form = (scope, fill) => renderToHtml(createElement(api.ComposerForm, {
-    scope, fill, placeholder: 'Message…', maxLength: 8000,
-  }));
-  api.composerStore.set(api.EMPTY_COMPOSER);
-  assert.doesNotMatch(form('general', true), /attach-drop-overlay/, 'nothing on first render');
-  api.composerStore.set((s) => ({ ...s, thread: { ...s.thread, dragging: true } }));
-  assert.doesNotMatch(form('general', true), /attach-drop-overlay/, 'the other scope’s drag is not this one’s');
-  assert.match(form('thread', true), /<form id="gc-thread-form" class="gc-composer-card[^"]*">[\s\S]*Drop files to attach<\/div><\/form>/);
-  assert.match(form('thread', false), /Drop files to attach<\/div><\/form>/, 'the boxed thread composer too');
-  api.composerStore.set(api.EMPTY_COMPOSER);
+// One message box (27 Nov 2026): a project chat's box is Messages' own, so
+// its pane takes a drop as Messages' panes do (../messages/pane-drop.ts):
+// the channel's pane and a thread's page frame the outline and hand the
+// files to the box, which uploads them.
+test('the group chat’s panes take the drop as Messages’ do, and hand it to the box', () => {
+  for (const file of ['frontend/src/features/group-chat/general-chat.tsx', 'frontend/src/features/group-chat/thread-shell.tsx']) {
+    const src = read(file);
+    assert.match(src, /usePaneDrop\(chatScopeKey\(/, `${file} asks the box for its scope's drop`);
+    assert.match(src, /\{drop\.dragging \? <DropOverlay className="messages-drop-overlay" \/> : null\}/);
+  }
+  assert.match(read('frontend/src/features/group-chat/general-chat.tsx'), /className="gc-chat-pane platform-kb-column relative flex-1 flex flex-col min-h-0" \{\.\.\.drop\.handlers\}>/);
+  assert.match(read('frontend/src/features/group-chat/thread-shell.tsx'), /sheetProps=\{drop\.handlers\}/);
+  const css = read('public/css/app.css');
+  assert.match(css, /\.gc-chat-pane > \.messages-drop-overlay,\s*\.dev-request-sheet > \.messages-drop-overlay \{ inset: 8px; \}/);
+  // The module tracks no drag of its own any more.
+  assert.doesNotMatch(read('public/js/group-chat.js'), /_wireDropZone|createFileDragTracker/);
 });
 
 test('the improvement form and Messages each wire the shared zone', () => {
@@ -124,7 +128,9 @@ test('the improvement form and Messages each wire the shared zone', () => {
   // #6254: the pane takes the drop and frames the whole thread; the box it
   // forwards to no longer has a zone of its own.
   const messages = read('frontend/src/features/messages/index.tsx');
-  assert.match(messages, /useFileDrag\(\{ disabled: !ready, onFiles:/);
+  // The pane's half lives beside the box's (../messages/pane-drop.ts), where
+  // the group chat's panes take it from too.
+  assert.match(read('frontend/src/features/messages/pane-drop.ts'), /useFileDrag\(\{ disabled: !ready, onFiles:/);
   assert.match(messages, /aria-label=\{snap\.active\?\.title \|\| t\('messages:thread\.paneName'\)\} \{\.\.\.drop\.handlers\}>/, 'the conversation pane takes the drop');
   assert.match(messages, /<DropOverlay className="messages-drop-overlay" \/>/);
   const composer = read('frontend/src/features/messages/composer.tsx');
@@ -141,72 +147,23 @@ test('the thread outline frames the whole pane', () => {
 
 // ── One line for every file left out ─────────────────────────────────
 
-function loadGroupChat() {
-  const src = read('public/js/group-chat.js');
-  const fileDrag = drag();
-  const uploads = [];
-  const sandbox = {
-    // The binding the controller's i18n import gives it (the import line is stripped above).
-    t: englishPlatformI18n().t,
-    PlatformI18n: englishPlatformI18n(),
-    location: { search: '', protocol: 'http:', host: 'localhost' },
-    URLSearchParams,
-    URL: { createObjectURL: () => 'blob:x', revokeObjectURL() {} },
-    File: class {},
-    TextDecoder,
-    document: {
-      createElement: () => ({}), getElementById: () => null, querySelector: () => null,
-      querySelectorAll: () => [], addEventListener() {}, body: { appendChild() {} },
-    },
-    window: {
-      matchMedia: () => ({ matches: false }), getSelection: () => null,
-      UsernodeReact: { fileDrag: { createFileDragTracker: fileDrag.createFileDragTracker, refusalSummary: fileDrag.refusalSummary } },
-    },
-    navigator: {},
-    localStorage: { getItem() { return null; }, setItem() {}, removeItem() {} },
-    App: { user: { id: 1, username: 'alice' } },
-    fetch: () => Promise.resolve({ ok: true, json: async () => ({ id: `id${uploads.push(1)}`, kind: 'image', meta: null }) }),
-    console, setTimeout, clearTimeout, setInterval, clearInterval, Date, Math, JSON, Promise,
-  };
-  sandbox.globalThis = sandbox;
-  vm.createContext(sandbox);
-  vm.runInContext(`${src}\nglobalThis.__M = { GroupChat };`, sandbox);
-  const GroupChat = sandbox.__M.GroupChat;
-  const slot = { general: {}, thread: {} };
-  GroupChat._react = () => ({ publishComposer(scope, patch) { Object.assign(slot[scope], patch); } });
-  GroupChat._attachSlug = () => 'demo';
-  let readOnly = false;
-  GroupChat._readOnly = () => readOnly;
-  return { GroupChat, slot, uploads, setReadOnly: (v) => { readOnly = v; } };
-}
-
-const file = (name, size = 1024) => ({ name, size, type: 'image/png', arrayBuffer: async () => new ArrayBuffer(size) });
-
-test('group chat: six files with one too big attach four and say so once', async () => {
-  const { GroupChat, slot, uploads } = loadGroupChat();
-  await GroupChat._addFiles([
-    file('a.png'), file('huge.png', 5 * 1024 * 1024), file('b.png'), file('c.png'), file('d.png'), file('e.png'),
-  ], null);
-  assert.equal(uploads.length, 4, 'the four that fit uploaded');
-  assert.equal(slot.general.attachError,
-    '"huge.png" is too big. Images max 4 MB. 1 more file wasn’t attached.',
-    'the first reason, not the last, and the file past the fourth counted');
-});
-
-test('group chat: the drag tracker publishes dragging per scope, never when read-only', () => {
-  const { GroupChat, slot, setReadOnly } = loadGroupChat();
-  const listeners = {};
-  const el = { addEventListener: (type, fn) => { (listeners[type] = listeners[type] || []).push(fn); } };
-  GroupChat._wireDropZone([el], { type: 'session', ref: 9 });
-  const fire = (type, e) => (listeners[type] || []).forEach((fn) => fn(e));
-  fire('dragenter', dragEvent());
-  assert.equal(slot.thread.dragging, true);
-  assert.equal(slot.general.dragging, undefined);
-  fire('drop', dragEvent());
-  assert.equal(slot.thread.dragging, false);
-  setReadOnly(true);
-  fire('dragenter', dragEvent());
-  assert.equal(slot.thread.dragging, false, 'a read-only thread shows no zone');
+// One message box (27 Nov 2026): a project chat's box stages files with the
+// box's own rule (../attachments/limits.ts stageFiles), with the ceilings
+// its server takes for one file.
+test('group chat: the box stages with the chat\'s own ceilings and says what it left out once', () => {
+  const { stageFiles, chatAttachmentLimit } = loadTsx('frontend/src/features/attachments/limits.ts');
+  const t = (id, values) => message(id, values);
+  const f = (name, size, type = '') => ({ name, size, type });
+  const { upload, refused } = stageFiles(
+    [f('a.png', 1024, 'image/png'), f('huge.png', 5 * 1024 * 1024, 'image/png'), f('notes.md', 300 * 1024), f('c.png', 10, 'image/png'), f('d.png', 10, 'image/png')],
+    0, t, chatAttachmentLimit,
+  );
+  assert.deepEqual(upload.map((file) => file.name), ['a.png', 'notes.md', 'c.png'], 'a Markdown page takes its 512 KB here');
+  assert.match(refused, /huge\.png/);
+  assert.match(refused, /1 more file/, 'the first reason, and the file past the fourth counted');
+  assert.equal(chatAttachmentLimit(f('page.html', 0)), 2 * 1024 * 1024);
+  assert.equal(chatAttachmentLimit(f('data.bin', 0)), 10 * 1024 * 1024);
+  assert.match(read('frontend/src/features/group-chat/composer.tsx'), /fileLimit: chatAttachmentLimit,/);
 });
 
 test('Messages: files past the room are counted, not dropped without a word', () => {

@@ -154,7 +154,7 @@ export function BuildingTimeView({ week, reset, showAll = false }: {
             subtitle={r.asked ? t('settings:usage.buildingTime.askedFor', { app: r.app.name }) : r.app.name}
             titleClassName="line-clamp-2 whitespace-normal [overflow-wrap:anywhere]"
             chevron={false}
-            trailing={<span className="ui-row-meta shrink-0 tabular-nums text-[0.9375rem] text-zinc-500 dark:text-zinc-400">{pct(r.share)}</span>}
+            trailing={<span className="shrink-0 tabular-nums text-[0.9375rem] text-zinc-500 dark:text-zinc-400">{pct(r.share)}</span>}
           />
         ))}
         {folded ? (
@@ -174,7 +174,7 @@ export function BuildingTimeView({ week, reset, showAll = false }: {
           <ListRow
             title={t('settings:usage.buildingTime.others')}
             chevron={false}
-            trailing={<span className="ui-row-meta shrink-0 tabular-nums text-[0.9375rem] text-zinc-500 dark:text-zinc-400">{pct(week.otherShare)}</span>}
+            trailing={<span className="shrink-0 tabular-nums text-[0.9375rem] text-zinc-500 dark:text-zinc-400">{pct(week.otherShare)}</span>}
           />
         ) : null}
       </GroupedList>

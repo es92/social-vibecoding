@@ -136,6 +136,47 @@ test('the front page, signed out: a title that says what Homeroom is, a picture,
   assert.ok(out.indexOf('ld+json') < out.indexOf('</head>'));
 });
 
+test('a reader with no JavaScript gets the page in words: one heading, escaped, in a noscript block at the end of the body', () => {
+  // A public project: its name, the sentence its description tag carries, its address.
+  const project = preview.projectContent(APP);
+  assert.match(project, /^<noscript><h1>Game Corner<\/h1><p>Classic games, fresh every day\. 87 members are making it together on Homeroom\.<\/p>/);
+  assert.match(project, /<a href="\/app\/game-corner">Open Game Corner<\/a>/);
+  assert.match(project, /<\/noscript>$/);
+  assert.ok(project.includes(`<p>${preview.descriptionOf(APP)}</p>`), 'the words are the head\'s own');
+  // Nothing a project is named can close the block or start a tag.
+  const odd = preview.projectContent({ ...APP, name: '</noscript><script>alert(1)</script>', description: '<img src=x onerror="x"> & more' });
+  assert.equal((odd.match(/<\/noscript>/g) || []).length, 1);
+  assert.doesNotMatch(odd, /<script|<img/);
+  assert.match(odd, /&lt;\/noscript&gt;&lt;script&gt;/);
+  assert.match(odd, /&lt;img src=x onerror=&quot;x&quot;&gt; &amp; more/);
+
+  // The front page: the title and description of its head, then the listed projects.
+  const landing = preview.landingContent([
+    { slug: 'game-corner', name: 'Game Corner' },
+    { slug: 'plant-pal', name: 'Plant <b>Pal</b> & "friends"' },
+    { slug: '', name: 'No address' },
+    null,
+  ]);
+  assert.ok(landing.startsWith(`<noscript><h1>${preview.LANDING_TITLE}</h1><p>${preview.LANDING_DESCRIPTION}</p>`));
+  assert.match(landing, /<h2>Public projects on Homeroom<\/h2><ul><li><a href="\/app\/game-corner">Game Corner<\/a><\/li><li><a href="\/app\/plant-pal">Plant &lt;b&gt;Pal&lt;\/b&gt; &amp; &quot;friends&quot;<\/a><\/li><\/ul>/);
+  assert.doesNotMatch(landing, /No address/);
+  // A page of links, never the whole directory; and no empty list.
+  const many = Array.from({ length: 80 }, (_, i) => ({ slug: `p-${i}`, name: `P ${i}` }));
+  assert.equal(preview.LANDING_LINKS_MAX, 50);
+  assert.equal((preview.landingContent(many).match(/<li>/g) || []).length, 50);
+  assert.doesNotMatch(preview.landingContent([]), /<h2>|<ul>/);
+  // One top-level heading each: the shell itself serves none (PR #7192).
+  for (const block of [project, landing]) assert.equal((block.match(/<h1[\s>]/g) || []).length, 1);
+
+  // It goes in as the last thing in the body, with no space around it: the
+  // client hydrates the body's children, and leaves what follows them alone.
+  const html = '<html><head><title>Homeroom</title></head><body class="x"><main></main><script src="/js/app.js"></script></body>\n</html>\n';
+  assert.equal(preview.withBody(html, project),
+    `<html><head><title>Homeroom</title></head><body class="x"><main></main><script src="/js/app.js"></script>${project}</body>\n</html>\n`);
+  assert.equal(preview.withBody(html, ''), html);
+  assert.equal(preview.withBody('<p>no body</p>', project), '<p>no body</p>');
+});
+
 test('GET /: signed out, the shell carries the front page\'s tags; its address is the configured one, never the Host', async (t) => {
   if (!fs.existsSync(path.join(__dirname, '..', 'public', 'index.html'))) { t.skip('no built shell'); return; }
   const before = { domain: process.env.USERNODE_DOMAIN, env: process.env.USERNODE_ENV };
@@ -162,6 +203,15 @@ test('GET /: signed out, the shell carries the front page\'s tags; its address i
       assert.equal((html.match(/name="description"/g) || []).length, 1);
       assert.equal((html.match(/<title>/g) || []).length, 1);
       assert.ok(html.indexOf('ld+json') < html.indexOf('</head>'));
+      // In words for a reader with no JavaScript: what Homeroom is, and the
+      // projects the sitemap lists (the diagnostic app nobody uses is not one).
+      const words = html.match(/<noscript>[\s\S]*?<\/noscript>/g) || [];
+      assert.equal(words.length, 1);
+      assert.ok(html.endsWith(`${words[0]}</body>\n</html>\n`), 'the last thing in the body');
+      assert.match(words[0], /<h1>Homeroom: make apps together, one vote at a time<\/h1>/);
+      assert.match(words[0], /<li><a href="\/app\/game-corner">Game Corner<\/a><\/li>/);
+      assert.doesNotMatch(words[0], /echo-diagnostic|forged\.example/);
+      assert.equal((html.match(/<h1[\s>]/g) || []).length, 1, 'the page\'s one top-level heading');
       // Something that is not a page (a fetch for JSON) is not answered here.
       assert.equal(await (await fetch(`${srv.base}/`, { headers: { accept: 'application/json' } })).text(), 'catch-all');
       // A staging copy names no address, in the header or the page.
@@ -314,6 +364,13 @@ test('GET /app/<slug>: a public project\'s page carries its preview; anything el
     assert.match(html, /<meta property="og:image" content="http:\/\/127\.0\.0\.1:\d+\/api\/public\/apps\/game-corner\/cover\.png">/);
     assert.match(html, /<link rel="canonical" href="http:\/\/127\.0\.0\.1:\d+\/app\/game-corner">/);
     assert.ok(html.indexOf('og:title') < html.indexOf('</head>'));
+    // The page in words, for a reader with no JavaScript.
+    const words = html.match(/<noscript>[\s\S]*?<\/noscript>/g) || [];
+    assert.equal(words.length, 1);
+    assert.ok(html.endsWith(`${words[0]}</body>\n</html>\n`), 'the last thing in the body');
+    assert.match(words[0], /<h1>Game Corner<\/h1><p>Classic games, fresh every day\. 87 members are making it together on Homeroom\.<\/p>/);
+    assert.match(words[0], /<a href="\/app\/game-corner">Open Game Corner<\/a>/);
+    assert.equal((html.match(/<h1[\s>]/g) || []).length, 1, 'the page\'s one top-level heading');
     const secret = await fetch(`${srv.base}/app/secret-thing`, { headers: { accept: 'text/html' } });
     assert.equal(await secret.text(), 'catch-all', 'nothing said about a project that is not public');
     const cover = await fetch(`${srv.base}/api/public/apps/game-corner/cover.png`);
@@ -394,6 +451,34 @@ test('the sitemap lists the front page and each public project worth finding, at
     assert.doesNotMatch(body, /echo-diagnostic/, 'nothing about itself and nobody in it');
     assert.match(body, /<loc>http:\/\/127\.0\.0\.1:\d+\/<\/loc><lastmod>2026-10-20<\/lastmod>/, 'the front page, dated by its newest project');
     assert.match(body, /<loc>http:\/\/127\.0\.0\.1:\d+\/communities<\/loc>/);
+  } finally { await srv.close(); }
+});
+
+test('on production a project page, the sitemap and robots.txt name the configured address, whatever Host asked', async (t) => {
+  if (!fs.existsSync(path.join(__dirname, '..', 'public', 'index.html'))) { t.skip('no built shell'); return; }
+  const before = { domain: process.env.USERNODE_DOMAIN, env: process.env.USERNODE_ENV };
+  t.after(() => {
+    for (const [key, value] of [['USERNODE_DOMAIN', before.domain], ['USERNODE_ENV', before.env]]) {
+      if (value === undefined) delete process.env[key]; else process.env[key] = value;
+    }
+  });
+  process.env.USERNODE_DOMAIN = 'app.example';
+  delete process.env.USERNODE_ENV;
+  const srv = await startServer();
+  try {
+    const forged = { accept: 'text/html', 'x-forwarded-host': 'evil.example' };
+    const html = await (await fetch(`${srv.base}/app/game-corner`, { headers: forged })).text();
+    assert.match(html, /<link rel="canonical" href="https:\/\/app\.example\/app\/game-corner">/);
+    assert.match(html, /<meta property="og:url" content="https:\/\/app\.example\/app\/game-corner">/);
+    assert.match(html, /"url":"https:\/\/app\.example\/app\/game-corner"/);
+    assert.doesNotMatch(html, /evil\.example\/app\//);
+    const sitemap = await (await fetch(`${srv.base}/sitemap.xml`, { headers: forged })).text();
+    assert.match(sitemap, /<loc>https:\/\/app\.example\/<\/loc>/);
+    assert.match(sitemap, /<loc>https:\/\/app\.example\/communities<\/loc>/);
+    assert.match(sitemap, /<loc>https:\/\/app\.example\/app\/game-corner<\/loc>/);
+    assert.doesNotMatch(sitemap, /evil\.example|127\.0\.0\.1/);
+    assert.equal(await (await fetch(`${srv.base}/robots.txt`, { headers: forged })).text(),
+      'User-agent: *\nAllow: /\nSitemap: https://app.example/sitemap.xml\n');
   } finally { await srv.close(); }
 });
 

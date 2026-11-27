@@ -376,7 +376,9 @@ test('composer and moderation payloads match the backend contracts', () => {
     'selecting or creating a destination consumes the one-shot on route change');
   // The pending-share effect's own dependencies (this used to match the
   // typing cleanup's `[conversationId]` instead, which now names the thread).
-  assert.match(composer, /window\.removeEventListener\('usernode:messages-share', onShare\);\s*\};\s*\}, \[conversationId, inThread\]\);/,
+  // One message box (27 Nov 2026): whether the box takes shares is its
+  // place's (`shares`, a conversation's own box).
+  assert.match(composer, /window\.removeEventListener\('usernode:messages-share', onShare\);\s*\};\s*\}, \[conversationId, shares\]\);/,
     'the pending-share effect follows destination changes');
   const share = store.slice(store.indexOf('export async function share('),
     store.indexOf('export function takePendingShare'));

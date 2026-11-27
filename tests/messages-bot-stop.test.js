@@ -221,7 +221,10 @@ test('only a press of the button stops the bot: Enter sends or saves, an empty b
   // The field's keys: Enter is submit, which returns at once on an empty
   // box, and with words while the bot works saves them as a draft.
   const field = /<textarea ref=\{inputRef\}[^\n]*/.exec(COMPOSER)[0];
-  assert.match(field, /if \(enterSends\(event\.nativeEvent\)\) \{ event\.preventDefault\(\); submit\(\); \} else if \(event\.key === 'Escape' && reply\) setReply\(scope, null\);/);
+  // Escape takes down the staged reply through the place (one message box,
+  // 27 Nov 2026), which in a conversation is setReply(scope, null).
+  assert.match(field, /if \(enterSends\(event\.nativeEvent\)\) \{ event\.preventDefault\(\); submit\(\); \} else if \(event\.key === 'Escape' && reply\) place\.cancelReply\?\.\(\);/);
+  assert.match(COMPOSER, /cancelReply: \(\) => setReply\(scope, null\),/);
   assert.doesNotMatch(field, /stop/i);
   assert.match(COMPOSER, /function submit\(\) \{\n\s+if \(dictating \|\| uploading \|\| \(!value\.trim\(\) && !attachments\.length && !object\)\) return;\n[^\n]*\n[^\n]*\n\s+if \(sendKind === 'save'\) \{ saveTyped\(\); return; \}/);
   const submit = COMPOSER.slice(COMPOSER.indexOf('function submit() {'), COMPOSER.indexOf('\n  }\n', COMPOSER.indexOf('function submit() {')));

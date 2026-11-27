@@ -719,7 +719,10 @@ test('the change line is the first declared change, else the first sentence, nev
   assert.equal(model.changeLine('', 'What changes for people Nothing in the game changes. The tests do.'), 'Nothing in the game changes.');
   const long = model.changeLine('', 'word '.repeat(80));
   assert.ok(long.length <= 141 && long.endsWith('…'), long);
-  assert.equal(model.cleanTitle('implement this change in the app: TITLE: Add comments'), 'Add comments');
+  // The title is the one model of a change's, cleaned once for every summary.
+  const change = loadTsx('frontend/src/features/dev-board/card/change.ts');
+  assert.equal(change.cleanTitle('implement this change in the app: TITLE: Add comments'), 'Add comments');
+  assert.equal(model.toReviewItems([feedItem({ title: 'Implement this change in the app: Add comments' })], () => null)[0].title, 'Add comments');
 });
 
 test('changes come first, group decisions after', () => {
@@ -1015,7 +1018,8 @@ test('#6199: the run opens on the change that decides, and a filter holds only i
   const voteFilter = loadTsx('frontend/src/features/workshop/vote-filter.tsx');
   const src = read('frontend/src/features/review-flow/review-flow.tsx');
   assert.match(src, /const \[filter, setFilter\] = useState<VoteFilter>\('all'\);/);
-  assert.match(src, /const run = list \? filterByVoteType\(list, filter, reviewVoteType\) : \[\];/);
+  // The kind is the one model of a change's (dev-board/card/change.ts voteTypeOf).
+  assert.match(src, /const run = list \? filterByVoteType\(list, filter, voteTypeOf\) : \[\];/);
   const feed = [feedItem({ id: 41 }), feedItem({ id: 42, advisory: true })];
   const shaped = model.orderForReview(model.toReviewItems(feed, () => null));
   const openOn = (which) => {

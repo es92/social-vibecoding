@@ -44,6 +44,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
+import { ListRow } from '@/components/ui/grouped-list';
 import { CheckIcon, PlusIcon, SearchIcon, UserGroupIcon } from '@/components/ui/icons';
 import { AppIconContent, appIconKind } from '../apps/app-card-view';
 import { useMessages } from '../../lib/i18n/react';
@@ -86,6 +87,24 @@ export function switcherSub(info: Pick<CommunityInfo, 'audience' | 'memberCount'
     : translate('communities:switcher.row.open', { count });
 }
 
+/**
+ * A row of the switcher: the shared row (ListRow), with no rule between rows
+ * (they are a menu's rows, each its own rounded ground under the pointer)
+ * and the switcher's own inset. app.css's `.community-switcher-row` adds
+ * the height and the corners, and the Messages project picker draws its
+ * rows with the same string.
+ */
+export const SWITCHER_ROW = 'community-switcher-row gap-3 px-3 py-2';
+
+/** The tick on the community you are on, in its colour; kept in place on the others. */
+export function SwitcherTick({ on, color }: { on: boolean; color?: string }) {
+  return (
+    <span className="community-switcher-tick" style={{ color, visibility: on ? 'visible' : 'hidden' }} aria-hidden="true">
+      <CheckIcon className="w-5 h-5" strokeWidth="2.5" />
+    </span>
+  );
+}
+
 function Waiting({ n }: { n: number }) {
   const t = useMessages('communities');
   if (!n) return null;
@@ -98,26 +117,24 @@ function Row({ info, current }: { info: CommunityInfo; current: boolean }) {
   const color = useCommunityColor({ color: info.iconColor, iconUrl: info.iconUrl, iconEmoji: info.iconEmoji, key: info.slug });
   const app = { slug: info.slug, name: info.name, icon_url: info.iconUrl, icon_emoji: info.iconEmoji };
   return (
-    <button
-      type="button"
-      className="community-switcher-row"
+    <ListRow
+      as="button"
+      inset="none"
+      className={SWITCHER_ROW}
       data-switcher-community={info.slug}
       aria-current={current ? 'true' : undefined}
       style={current ? { background: `color-mix(in srgb, ${color} 12%, transparent)` } : undefined}
       onClick={() => goToCommunity(info.slug)}
-    >
-      <span className="app-icon-tile community-switcher-tile" data-icon={appIconKind(app as never)} aria-hidden="true">
-        <AppIconContent app={app as never} />
-      </span>
-      <span className="community-switcher-text">
-        <span className="community-switcher-name">{info.name}</span>
-        <span className="community-switcher-sub">{switcherSub(info)}</span>
-      </span>
-      <Waiting n={Number(info.needs) || 0} />
-      <span className="community-switcher-tick" style={{ color, visibility: current ? 'visible' : 'hidden' }} aria-hidden="true">
-        <CheckIcon className="w-5 h-5" strokeWidth="2.5" />
-      </span>
-    </button>
+      leading={(
+        <span className="app-icon-tile community-switcher-tile" data-icon={appIconKind(app as never)} aria-hidden="true">
+          <AppIconContent app={app as never} />
+        </span>
+      )}
+      title={info.name}
+      subtitle={switcherSub(info)}
+      trailing={<><Waiting n={Number(info.needs) || 0} /><SwitcherTick on={current} color={color} /></>}
+      chevron={false}
+    />
   );
 }
 
@@ -228,62 +245,60 @@ export function SwitcherBody(): ReactNode {
             {recent.map((info) => <Row key={info.slug} info={info} current={st.slug === info.slug} />)}
           </div>
         ) : null}
-        <button
-          type="button"
-          className="community-switcher-row"
+        <ListRow
+          as="button"
+          inset="none"
+          className={SWITCHER_ROW}
           data-switcher-community="all"
           aria-current={all ? 'true' : undefined}
           style={all ? { background: 'rgba(0,0,0,0.06)' } : undefined}
           onClick={() => goToCommunity(null)}
-        >
-          {/* THE TAB'S OWN FACE for All communities (#3663): the people
-              glyph in a square ring, not a dark tile, which in a list
-              holding Homeroom's own read as a second Homeroom. app.css sizes
-              the glyph to the tile, as it does the tab's. */}
-          <span className="community-switcher-tile community-switcher-tile-all" aria-hidden="true">
-            <UserGroupIcon />
-          </span>
-          <span className="community-switcher-text">
-            <span className="community-switcher-name">{t('communities:switcher.all.name')}</span>
-            <span className="community-switcher-sub">
-              {st.list ? t('communities:switcher.all.count', { count: st.list.length }) : t('communities:switcher.all.every')}
+          // THE TAB'S OWN FACE for All communities (#3663): the people
+          // glyph in a square ring, not a dark tile, which in a list
+          // holding Homeroom's own read as a second Homeroom. app.css sizes
+          // the glyph to the tile, as it does the tab's.
+          leading={(
+            <span className="community-switcher-tile community-switcher-tile-all" aria-hidden="true">
+              <UserGroupIcon />
             </span>
-          </span>
-          <Waiting n={Number(st.totalNeeds) || 0} />
-          <span className="community-switcher-tick" style={{ visibility: all ? 'visible' : 'hidden' }} aria-hidden="true">
-            <CheckIcon className="w-5 h-5" strokeWidth="2.5" />
-          </span>
-        </button>
+          )}
+          title={t('communities:switcher.all.name')}
+          subtitle={st.list ? t('communities:switcher.all.count', { count: st.list.length }) : t('communities:switcher.all.every')}
+          trailing={<><Waiting n={Number(st.totalNeeds) || 0} /><SwitcherTick on={all} /></>}
+          chevron={false}
+        />
         {/* #3543: two ways out, not one. "Join or start a community" went
             to Discover, where there is nothing to start; Start opens the
             new-project dialog, which asks who it is for first. */}
-        <button
-          type="button"
-          className="community-switcher-row"
+        <ListRow
+          as="button"
+          inset="none"
+          className={SWITCHER_ROW}
           data-switcher-join=""
           // One Home (#6361): the directory is Home's Communities to join.
           onClick={() => { closeSwitcher(); (window as any).Home?.showCommunitiesToJoin?.(); }}
-        >
-          <span className="community-switcher-tile community-switcher-tile-add" aria-hidden="true">
-            <SearchIcon className="w-5 h-5" />
-          </span>
-          <span className="community-switcher-text">
-            <span className="community-switcher-name">{t('communities:switcher.join')}</span>
-          </span>
-        </button>
-        <button
-          type="button"
-          className="community-switcher-row"
+          leading={(
+            <span className="community-switcher-tile community-switcher-tile-add" aria-hidden="true">
+              <SearchIcon className="w-5 h-5" />
+            </span>
+          )}
+          title={t('communities:switcher.join')}
+          chevron={false}
+        />
+        <ListRow
+          as="button"
+          inset="none"
+          className={SWITCHER_ROW}
           data-switcher-start=""
           onClick={() => { closeSwitcher(); (window as any).App?.showCreateModal?.(); }}
-        >
-          <span className="community-switcher-tile community-switcher-tile-add" aria-hidden="true">
-            <PlusIcon className="w-5 h-5" />
-          </span>
-          <span className="community-switcher-text">
-            <span className="community-switcher-name">{t('communities:switcher.start')}</span>
-          </span>
-        </button>
+          leading={(
+            <span className="community-switcher-tile community-switcher-tile-add" aria-hidden="true">
+              <PlusIcon className="w-5 h-5" />
+            </span>
+          )}
+          title={t('communities:switcher.start')}
+          chevron={false}
+        />
       </div>
     </>
   );

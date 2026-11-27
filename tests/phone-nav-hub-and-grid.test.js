@@ -38,7 +38,7 @@ test('on a phone the Hub lists every live topic, each a door to its channel', ()
   // One pill a row, and a zero says nothing.
   assert.match(topics, /titleClassName=\{TITLE_WITH_PILL\}/, "its new count on the title line (phone review #91)");
   // One look (25 Nov 2026): what is new is the shared grey tag.
-  assert.match(topics, /\), unread \? \(\n\s*<span className="dev-ws-foryou-pill one-tag one-tag-grey" data-ws-hub-topic-unread/);
+  assert.match(topics, /\), unread \? \(\n\s*<StateTag data-ws-hub-topic-unread/);
   assert.match(topics, /t\('project:hub\.channel\.unread', \{ count: unread, shown: capCount\(unread\) \}\)/);
   // The first few, then the rest behind "Show N more", as the sidebar folds them.
   assert.match(cards, /export const HUB_TOPICS_SHOWN = 6;/);

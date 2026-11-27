@@ -11,7 +11,7 @@ const { loadTsx, renderToHtml, createElement } = require('./lib/render-tsx');
 
 const read = (rel) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
 const SOURCE = read('frontend/src/features/dev-board/card/feed-thread.tsx');
-const INPUT = read('frontend/@/components/ui/input.tsx');
+const BOX = read('frontend/src/features/messages/composer.tsx');
 const dapp = JSON.parse(read('dapp.json'));
 
 let api = null;
@@ -19,74 +19,54 @@ const mod = () => (api || (api = loadTsx(
   'frontend/src/features/dev-board/card/feed-thread.tsx'
 )));
 
-function composerHtml(draft, posting = false) {
+function composerHtml() {
   return renderToHtml(createElement(mod().FeedReplyComposer, {
     slug: 'usernode-2d5619',
-    draft,
-    posting,
-    onDraftChange: () => {},
-    onSubmit: () => {},
+    type: 'issue',
+    refId: 7,
+    onSend: () => {},
   }));
 }
 
-test('the reply is a one-row textarea that grows with its controlled value', () => {
-  assert.match(SOURCE, /useAutoGrow\(inputRef, draft\)/,
-    'typing, pasting and clearing all remeasure through the shared hook');
-  assert.match(SOURCE, /<Textarea[\s\S]*?rows=\{1\}[\s\S]*?value=\{draft\}/);
+// ONE MESSAGE BOX (27 Nov 2026): the comments under a change are written in
+// Messages' own box (features/messages/composer.tsx MessageBox), with the
+// change's thread as its place. The compact field and send disc this file
+// pinned (#1584) were a third box of their own, and are gone with it.
+
+test('the reply is Messages\' box: a one-row field that grows, and the round send', () => {
   const component = SOURCE.slice(
     SOURCE.indexOf('export function FeedReplyComposer'),
     SOURCE.indexOf('\nexport function FeedThread')
   );
-  // The field sends by the rule every message box keeps (lib/enter-sends.ts):
-  // Enter where there is a keyboard, Shift + Enter and a touch screen's Enter
-  // a new line (tests/qa-menus-keyboard.test.js covers the rule itself).
-  assert.match(component, /if \(!enterSends\(e\.nativeEvent\)\) return;/,
-    'the shared rule decides which keys send');
-  assert.doesNotMatch(component, /key === 'Enter' && !e\.shiftKey/,
-    'no hand-written Enter rule of its own');
+  assert.match(component, /<MessageBox place=\{place\} \/>/, 'the one box, with this thread as its place');
+  assert.match(component, /scope: chatScopeKey\(slug, \{ type, ref: refId \}\)/,
+    'its draft is saved under the thread\'s own scope, which the thread\'s page writes too');
+  assert.match(component, /bare: true/, 'inside a card: no chat foot\'s bar, no home-indicator inset');
+  assert.doesNotMatch(component, /upload:|formatting:/, 'no files and no formatting: the comments above are plain text');
+  // The box grows with its words and sends by the rule every box keeps.
+  assert.match(BOX, /useAutoGrow\(inputRef, value, scroller\)/);
+  assert.match(BOX, /if \(enterSends\(event\.nativeEvent\)\) \{ event\.preventDefault\(\); submit\(\); \}/);
 
-  const html = composerHtml('First line\nSecond line');
-  assert.match(html, /<textarea[^>]*rows="1"[^>]*>First line\nSecond line<\/textarea>/,
-    'multiline reply content survives the render');
+  const html = composerHtml();
+  assert.match(html, /^<div class="dev-feed-reply"><div class="messages-composer ">/,
+    'a plain block round the card, not the chat foot\'s bar');
+  assert.doesNotMatch(html, /platform-safe-bar/);
+  assert.match(html, /<textarea[^>]*rows="1"[^>]*aria-label="Reply to this item"[^>]*class="messages-composer-input"/);
+  assert.doesNotMatch(html, /messages-composer-add/, 'a box that takes nothing to add draws no "+"');
 });
 
-test('growth has a CSS ceiling and keeps overflow reachable', () => {
-  const recipe = INPUT.slice(
-    INPUT.indexOf('activityReply:'),
-    INPUT.indexOf('// The DEV chat', INPUT.indexOf('activityReply:'))
-  );
-  assert.match(recipe, /\bmax-h-24\b/, 'the compact feed composer stops at its declared ceiling');
-  assert.match(recipe, /\boverflow-y-auto\b/, 'additional lines scroll instead of being clipped');
-  assert.match(recipe, /\bresize-none\b/, 'content, rather than a drag handle, owns its height');
-});
-
-test('the send arrow is always present and reflects whether it can submit', () => {
-  const empty = composerHtml('');
-  assert.match(empty,
-    /<button(?=[^>]*type="submit")(?=[^>]*disabled="")(?=[^>]*aria-label="Send reply")[^>]*>/);
-  assert.match(empty, /<button[^>]*\bun-touch-target\b/,
-    'the compact arrow keeps a 44px touch target');
-  // The dev session's send disc (round three): app.css `.dev-feed-send`
-  // draws the 36px accent circle, and the up-arrow inside is the icon.
-  assert.match(empty, /<button[^>]*\bdev-feed-send\b[^>]*>\s*<svg/, 'the action is an icon, not a hidden text button');
-  assert.match(empty, /d="M12 19V5M5 12l7-7 7 7"/, 'the same up-arrow the dev session sends with');
-
-  const ready = composerHtml('First line\nSecond line');
-  assert.match(ready, /<button[^>]*type="submit"[^>]*aria-label="Send reply"/);
-  assert.doesNotMatch(ready, /<button[^>]*type="submit"[^>]*disabled=""/,
-    'a non-empty multiline reply enables the arrow');
-
-  const posting = composerHtml('Still here', true);
-  assert.match(posting,
-    /<button(?=[^>]*type="submit")(?=[^>]*disabled="")(?=[^>]*aria-label="Send reply")[^>]*>…<\/button>/,
-    'the arrow remains in place but locks while the post is in flight');
+test('the send disc is always present and waits for words', () => {
+  const empty = composerHtml();
+  assert.match(empty, /<button(?=[^>]*type="button")(?=[^>]*disabled="")(?=[^>]*class="messages-send")[^>]*>\s*<svg/,
+    'disabled while the box is empty');
 });
 
 test('submission and row-navigation behavior stay on their existing seams', () => {
   const submit = SOURCE.slice(SOURCE.indexOf('const submit = useCallback'), SOURCE.indexOf('const hidden'));
-  assert.match(submit, /const content = draft\.trim\(\)/);
+  assert.match(submit, /const content = words\.trim\(\)/);
   assert.match(submit, /method: 'POST'/);
   assert.match(submit, /thread_type: type, thread_ref: refId/);
+  assert.match(SOURCE, /<FeedReplyComposer slug=\{slug\} type=\{type\} refId=\{refId\} onSend=\{submit\} \/>/);
   assert.match(SOURCE, /onClick=\{\(e\) => e\.stopPropagation\(\)\}/,
     'using the composer does not open its Activity row');
 });
@@ -95,16 +75,15 @@ test('a retried reply keeps its key, so the server stores it once (#6730)', () =
   const submit = SOURCE.slice(SOURCE.indexOf('const submit = useCallback'), SOURCE.indexOf('const hidden'));
   assert.match(SOURCE, /function newClientKey\(\)/, 'each comment gets a key at the press');
   assert.match(submit, /client_key: clientKey/, 'the key rides on the POST');
-  assert.match(submit, /pending\.content !== content/,
-    'an unchanged draft is the same comment; edited words are a new one');
-  assert.match(submit, /if \(!content \|\| readThread\(key\)\.posting\) return;/,
-    'a second press while one is in flight sends nothing');
-  // The key is cleared only once the POST answered, on 201 or 200 alike:
-  // a failure keeps it for the retry.
-  const cleared = submit.indexOf('pendingKeyRef.current = null');
+  assert.match(submit, /const clientKey = failedKeys\.current\.get\(content\) \|\| newClientKey\(\);/,
+    'the same words after a failure are the same comment; edited words are a new one');
+  // A failure keeps the key and gives the words back to the box, which
+  // emptied as the comment left.
+  const failed = submit.slice(submit.indexOf('} catch {'));
+  assert.match(failed, /failedKeys\.current\.set\(content, clientKey\);/);
+  assert.match(failed, /putInComposer\(chatScopeKey\(slug, \{ type, ref: refId \}\), content, \{ onlyIfEmpty: true \}\);/);
   const checked = submit.indexOf('if (!res.ok) throw');
-  assert.ok(checked !== -1 && cleared > checked,
-    'a failed send keeps its key; a successful one frees the next press');
+  assert.ok(checked !== -1 && checked < submit.indexOf('} catch {'), 'only an answered POST frees the key');
 });
 
 test('a successfully posted reply survives the inline-thread reload', () => {
@@ -211,6 +190,7 @@ test('the Workshop staging route requires both the textarea and arrow', () => {
   // that still draws every card unfolded, the composer under each. The
   // ?shot=feed-comments deep link fills and scrolls to the first slot.
   assert.equal(check.path, '/?demo=1&ws=all&group=stage&cards=open&shot=feed-comments#app/usernode-2d5619/workshop');
-  assert.match(check.expectSelector, /textarea\[aria-label="Reply to this item"\]/);
-  assert.match(check.expectSelector, /button\[aria-label="Send reply"\]:disabled/);
+  // One message box (27 Nov 2026): Messages' field and its round send.
+  assert.match(check.expectSelector, /\.dev-feed-reply textarea\[aria-label="Reply to this item"\]/);
+  assert.match(check.expectSelector, /~ button\.messages-send:disabled/);
 });

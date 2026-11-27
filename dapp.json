@@ -1206,12 +1206,12 @@
     {
       "name": "With its cards open the board draws each as the Activity sheet: the card, its thread, the send disc",
       "path": "/?demo=1&ws=all&group=stage&cards=open&shot=feed-comments#app/usernode-2d5619/workshop",
-      "expectSelector": "#dev-workshop .dev-ws-rowwrap-open > .dev-feed-entry > .gc-vote-item.dev-card-dense[data-edge] ~ .dev-feed-thread form:has(textarea[aria-label=\"Reply to this item\"]) button.dev-feed-send[aria-label=\"Send reply\"]"
+      "expectSelector": "#dev-workshop .dev-ws-rowwrap-open > .dev-feed-entry > .gc-vote-item.dev-card-dense[data-edge] ~ .dev-feed-thread > .dev-feed-reply .messages-composer-card:has(textarea[aria-label=\"Reply to this item\"]) button.messages-send"
     },
     {
       "name": "A board card unfolds into the same sheet the Workshop's does: the comment tail and the reply box under it (#1884)",
       "path": "/?demo=1&view=kanban&cards=open#app/usernode-2d5619/dev",
-      "expectSelector": "#dev-kanban .dev-ws-rowwrap-open > .dev-ws-sheet > .gc-vote-item.dev-card-dense[data-issue-row] ~ .dev-feed-comments[data-comments-for] ~ .dev-feed-thread form:has(textarea[aria-label=\"Reply to this item\"]) button.dev-feed-send[aria-label=\"Send reply\"]"
+      "expectSelector": "#dev-kanban .dev-ws-rowwrap-open > .dev-ws-sheet > .gc-vote-item.dev-card-dense[data-issue-row] ~ .dev-feed-comments[data-comments-for] ~ .dev-feed-thread > .dev-feed-reply .messages-composer-card:has(textarea[aria-label=\"Reply to this item\"]) button.messages-send"
     },
     {
       "name": "Dev board: an issue card with no pills drops its status band instead of reserving an empty row (#1139)",
@@ -2491,7 +2491,7 @@
     {
       "name": "An unfolded card has an auto-growing reply box and send arrow (#1584)",
       "path": "/?demo=1&ws=all&group=stage&cards=open&shot=feed-comments#app/usernode-2d5619/workshop",
-      "expectSelector": "#dev-workshop .dev-feed-entry .dev-feed-thread form:has(textarea[aria-label=\"Reply to this item\"]) button[aria-label=\"Send reply\"]:disabled"
+      "expectSelector": "#dev-workshop .dev-feed-entry .dev-feed-thread > .dev-feed-reply textarea[aria-label=\"Reply to this item\"] ~ button.messages-send:disabled"
     },
     {
       "name": "A project's Needs you draws the review flow, one change's page at a time",

@@ -42,7 +42,7 @@ import { ChevronDownIcon, EllipsisHorizontalIcon } from '@/components/ui/icons';
 import { Textarea } from '@/components/ui/textarea';
 import { swatchFor } from '../../group-chat/swatch';
 import { useInlineImageViewer } from '../../image-viewer/image-viewer';
-import { StatusPill, TitleContent } from '../card/dev-card';
+import { ChangeTag, TitleContent } from '../card/dev-card';
 import type { StatusPillState } from '../card/model';
 import { normalizeBotTrack } from '../../messages/api';
 import type { BotTrack } from '../../messages/types';
@@ -203,7 +203,7 @@ export function RequestBar({ r, pill = null, threadMenu = false, title = null }:
       line={pill ? (
         <div className="flex min-w-0 items-center gap-2">
           <div className="messages-thread-kicker min-w-0" data-request-kicker="">{kicker}</div>
-          <span className="shrink-0" data-request-status={pill.key}><StatusPill s={pill} inline /></span>
+          <span className="shrink-0" data-request-status={pill.key}><ChangeTag s={pill} /></span>
         </div>
       ) : <div className="messages-thread-kicker" data-request-kicker="">{kicker}</div>}
       title={<div className="messages-thread-name line-clamp-2 dev-request-bar-title">{shown}</div>}

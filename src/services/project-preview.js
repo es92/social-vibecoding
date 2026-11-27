@@ -14,6 +14,13 @@
 //                             the records that name the site and who runs it.
 //   withHead(html, tags, title)  the shell document with any page's tags
 //                             and exactly that <title>.
+//   projectContent(app)       a public project's page in words, for a reader
+//                             that runs no JavaScript: its name, what it is
+//                             and its address, in a <noscript> block.
+//   landingContent(apps)      the same for the front page: what Homeroom is,
+//                             and a link to each listed public project.
+//   withBody(html, block)     the shell document with that block as the last
+//                             thing in its <body>.
 //   pictureSize(bytes)        a picture's width and height, read from its
 //                             first bytes (PNG, JPEG, GIF, WebP).
 //   coverPng(app, icon)       the cover, 1200 x 630: the project's colour
@@ -288,7 +295,11 @@ function coverPath(slug) { return `/api/public/apps/${encodeURIComponent(slug)}/
  * around its embed page, with the picture as the still before it plays and
  * where X runs no players. X shows no player without a picture.
  */
-function previewTags(app, origin, { cover = true, player = false, imageSize = null } = {}) {
+function previewTags(app, origin, { cover = true, player = false, imageSize = null, canonical = null } = {}) {
+  // Where the page is listed: the platform's configured origin when the
+  // caller has one (as landingTags), else the origin the pictures use.
+  const home = ORIGIN_RE.test(String(canonical || '')) ? canonical : origin;
+  const address = pageUrl(home, app.slug);
   const title = app.name || app.slug;
   const description = descriptionOf(app);
   const image = cover ? `${origin}${coverPath(app.slug)}` : (app.icon_url ? `${origin}${app.icon_url}` : null);
@@ -299,10 +310,10 @@ function previewTags(app, origin, { cover = true, player = false, imageSize = nu
     '<meta property="og:site_name" content="Homeroom">',
     `<meta property="og:title" content="${escapeAttr(title)}">`,
     `<meta property="og:description" content="${escapeAttr(description)}">`,
-    `<meta property="og:url" content="${escapeAttr(pageUrl(origin, app.slug))}">`,
+    `<meta property="og:url" content="${escapeAttr(address)}">`,
     // One address per project for a search engine: the page's clean path,
     // whichever way it was reached (Discover's cards, a share, the sitemap).
-    `<link rel="canonical" href="${escapeAttr(pageUrl(origin, app.slug))}">`,
+    `<link rel="canonical" href="${escapeAttr(address)}">`,
     `<meta name="description" content="${escapeAttr(description)}">`,
     `<meta name="twitter:card" content="${card}">`,
     `<meta name="twitter:title" content="${escapeAttr(title)}">`,
@@ -327,13 +338,13 @@ function previewTags(app, origin, { cover = true, player = false, imageSize = nu
   // A hidden record for a search engine: what the project is, where it is,
   // and the day it was made on Homeroom. Inline and same-origin: a data
   // block, never an outside script.
-  const root = `${origin}/`;
+  const root = `${home}/`;
   const data = {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
     name: title,
     description,
-    url: pageUrl(origin, app.slug),
+    url: address,
   };
   const made = createdDay(app);
   if (made) data.dateCreated = made;
@@ -436,11 +447,88 @@ function withPreview(html, tags, title) {
   return withHead(html, tags, `${title} · Homeroom`);
 }
 
+// ── The page in words, for a reader that runs no JavaScript (request 7166) ──
+// The served document is the app's shell for every address: the landing's
+// story and a project's page are drawn by the client, so a link previewer, an
+// AI crawler or a search engine that runs no script got a head and an empty
+// page. These two blocks say in the body what the head's tags already say.
+//
+// They are <noscript>, so a browser that runs scripts never builds their
+// elements: it keeps the block's inside as inert text, and the page a person
+// sees is unchanged. That is also why the heading is an <h1>: the shell
+// serves none of its own (tests/shell-build.test.js, PR #7192: a screen names
+// itself once it is drawn), so this is the page's one top-level heading for a
+// reader without scripts, and no heading at all for a reader with them.
+//
+// Every value is escaped, and the links are paths on this origin, made from
+// the slug alone: nothing here reads the request's Host.
+
+/** How many projects the front page links to: a page of links, not the whole directory. */
+const LANDING_LINKS_MAX = 50;
+
+/** A project's page path on this origin. */
+function pagePath(slug) { return `/app/${encodeURIComponent(slug)}`; }
+
+/**
+ * A public project's page in words: its name as the heading, the sentence
+ * its description tag carries (descriptionOf), and its address. Only ever
+ * called for a project the public directory lists.
+ */
+function projectContent(app) {
+  const title = app.name || app.slug;
+  return [
+    '<noscript>',
+    `<h1>${escapeAttr(title)}</h1>`,
+    `<p>${escapeAttr(descriptionOf(app))}</p>`,
+    `<p><a href="${escapeAttr(pagePath(app.slug))}">Open ${escapeAttr(title)}</a></p>`,
+    '<p><a href="/">Homeroom</a></p>',
+    '</noscript>',
+  ].join('');
+}
+
+/**
+ * The front page in words: the title and the description its head carries,
+ * then a link to each project in `apps`, at most LANDING_LINKS_MAX. `apps`
+ * is the caller's list of public projects worth finding (the sitemap's own
+ * list, routes/project-preview.js listedProjects); with none, the list and
+ * its heading are left out.
+ */
+function landingContent(apps = []) {
+  const links = (Array.isArray(apps) ? apps : [])
+    .filter((app) => app && app.slug)
+    .slice(0, LANDING_LINKS_MAX)
+    .map((app) => `<li><a href="${escapeAttr(pagePath(app.slug))}">${escapeAttr(app.name || app.slug)}</a></li>`);
+  return [
+    '<noscript>',
+    `<h1>${escapeAttr(LANDING_TITLE)}</h1>`,
+    `<p>${escapeAttr(LANDING_DESCRIPTION)}</p>`,
+    links.length ? `<h2>Public projects on Homeroom</h2><ul>${links.join('')}</ul>` : '',
+    '</noscript>',
+  ].join('');
+}
+
+/**
+ * The shell document with `block` as the last thing in its <body>. Last, and
+ * with no space around it, on purpose: the client hydrates the body's
+ * children as the shell rendered them (frontend/scripts/build-shell.mjs), and
+ * an element after the last of them is left alone, where one before or
+ * between them would be a mismatch.
+ */
+function withBody(html, block) {
+  const at = html.lastIndexOf('</body>');
+  if (at === -1 || !block) return html;
+  return `${html.slice(0, at)}${block}${html.slice(at)}`;
+}
+
 module.exports = {
   previewTags,
   withPreview,
   landingTags,
   withHead,
+  projectContent,
+  landingContent,
+  withBody,
+  LANDING_LINKS_MAX,
   pictureSize,
   LANDING_TITLE,
   LANDING_DESCRIPTION,

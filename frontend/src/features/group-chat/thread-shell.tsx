@@ -33,15 +33,12 @@
  * The messages list does not scroll; the typing slot and composer are pinned
  * `shrink-0` siblings outside the scroller.
  *
- * ── The composer is shared with the general chat ──────────────────────
+ * ── The box is Messages' box ──────────────────────────────────────────
  *
- * The staged-reply chip, the attachment error, the pending-upload strip, the
- * form and the status line are ./composer.tsx's, rendered here with
- * `scope="thread"`. They were one renderer in public/js/group-chat.js — each
- * of them opening with `thread ? 'gc-thread-…' : 'gc-…'` — and they stay one
- * here. What this file keeps is the BAR around them, which really does differ
- * between the two panes: here the read-only notice REPLACES the bar, and in
- * the chat pane it sits inside it.
+ * The box at the foot is ./composer.tsx's ChatComposer, Messages' own box
+ * with this thread as its place (one message box, 27 Nov 2026), and the
+ * status line over it is ./composer.tsx's too, with `scope="thread"`. The
+ * read-only notice REPLACES the box here.
  *
  * ── Two hosts stay other owners' ──────────────────────────────────────
  *
@@ -55,22 +52,16 @@
  *     the element and nothing else; `GroupChat.renderThread` mounts
  *     ./transcript.tsx into it.
  *
- * ── The composer's listeners are still attached, not props ────────────
- *
- * `mountThread` binds submit, input, keydown, the attachment wiring and both
- * autocompletes to the elements below, on the line after this renders. They
- * are LISTENERS on nodes — they write no markup — which is the split
- * app-grid.tsx makes for the canvas recognizer, and it keeps one owner for the
- * draft, the typing ping, the multi-line submit semantics and the Escape rule.
  */
 
 import { useEffect, useRef, type RefObject } from 'react';
 
-import { ChatComposerBar } from '@/components/ui/chat';
+import { DropOverlay } from '../attachments/file-drag';
+import { usePaneDrop } from '../messages/pane-drop';
 import { useMessages } from '../../lib/i18n/react';
 import { armOnMove, readSplitWidth, splitKey, startSplitDrag, writeSplitWidth, type SplitDrag } from '../../lib/split-drag';
 import { JumpToLatest } from '../messages/jump-to-latest';
-import { ComposerForm, ComposerSlots, StatusLine } from './composer';
+import { ChatComposer, StatusLine, chatScopeKey, type ChatThreadRef } from './composer';
 import { ThreadPage } from './thread-page';
 
 const SAFE_BAR = 'platform-safe-bar';
@@ -131,6 +122,9 @@ function RailDivider({ sheet }: { sheet: RefObject<HTMLElement | null> }) {
 export const THREAD_FOLLOW_PX = 80;
 
 export interface ThreadShellProps {
+  /** The project the thread is in, and the thread its box posts to. */
+  slug: string;
+  thread: ChatThreadRef;
   /** The topic sub-view's full-height layout; false is the boxed one. */
   fill: boolean;
   /** Fill mode only: emit the in-scroll header slot the topic card fills. */
@@ -139,8 +133,6 @@ export interface ThreadShellProps {
   /** The read-only wording, which replaces the composer entirely. */
   notice: string;
   placeholder: string;
-  /** GC_MAX_MESSAGE_LEN, passed through so the module owns the number. */
-  maxLength: number;
   /**
    * #4453: a request's page, drawn as the sheet Messages opens a reply thread
    * in. Fill mode only. See `RequestShell` below.
@@ -158,7 +150,7 @@ export interface ThreadShellProps {
   decision?: boolean;
 }
 
-function Composer({ fill, readOnly, notice, placeholder, maxLength, request = false, change = false, decision = false }: ThreadShellProps) {
+function Composer({ slug, thread, readOnly, notice, placeholder, scroller }: ThreadShellProps & { scroller?: RefObject<HTMLElement | null> }) {
   // `platform-safe-bar` on BOTH variants: in fill mode this block is the
   // bottom of the screen, so it carries the home-indicator inset above its own
   // padding, and the read-only notice that replaces it needs the identical
@@ -176,20 +168,13 @@ function Composer({ fill, readOnly, notice, placeholder, maxLength, request = fa
       </div>
     );
   }
-  if (request || change || decision) {
-    return (
-      <ChatComposerBar className="messages-composer messages-composer-thread">
-        <ComposerSlots scope="thread" />
-        <ComposerForm scope="thread" fill={fill} placeholder={placeholder} maxLength={maxLength} messages />
-      </ChatComposerBar>
-    );
-  }
-  return (
-    <ChatComposerBar>
-      <ComposerSlots scope="thread" />
-      <ComposerForm scope="thread" fill={fill} placeholder={placeholder} maxLength={maxLength} />
-    </ChatComposerBar>
-  );
+  // #4453: a thread's box is Messages' reply-thread box, in every layout.
+  return <ChatComposer scope="thread" slug={slug} thread={thread} placeholder={placeholder} scroller={scroller} />;
+}
+
+/** #6254: a thread's page takes a dropped file; its box uploads it. */
+function useThreadDrop(props: ThreadShellProps) {
+  return usePaneDrop(chatScopeKey(props.slug, props.thread));
 }
 
 /**
@@ -225,6 +210,7 @@ function RequestShell(props: ThreadShellProps) {
   const sheet = useRef<HTMLElement>(null);
   const change = !!props.change;
   const decision = !!props.decision;
+  const drop = useThreadDrop(props);
   // #6440: a decision opens at its TOP — its root post and Votes card are
   // what the page is for, not the newest reply. The thread renderer places
   // a chat at its bottom, and its history lands a paint or two later, so
@@ -262,6 +248,7 @@ function RequestShell(props: ThreadShellProps) {
       label={change ? t('project:topic.change.sheetLabel') : decision ? t('project:topic.decision.sheetLabel') : t('project:topic.request.sheetLabel')}
       hosts
       sheet={sheet}
+      sheetProps={drop.handlers}
       scroller={scroll}
       foot={(
         <>
@@ -272,7 +259,8 @@ function RequestShell(props: ThreadShellProps) {
               is up the page. */}
           <JumpToLatest scroller={scroll} slack={THREAD_FOLLOW_PX} />
           <StatusLine scope="thread" />
-          <Composer {...props} />
+          <Composer {...props} scroller={scroll} />
+          {drop.dragging ? <DropOverlay className="messages-drop-overlay" /> : null}
           {/* 18 Nov 2026: the line between the card and "How it got here",
               a handle on a wide page (RailDivider above). Absolutely placed,
               so being the sheet's last child changes nothing on screen, and
@@ -319,7 +307,7 @@ export function ThreadShell(props: ThreadShellProps) {
             over the transcript's foot, as on a change's page (above). */}
         <JumpToLatest scroller={scroll} slack={THREAD_FOLLOW_PX} />
         <StatusLine scope="thread" />
-        <Composer {...props} />
+        <Composer {...props} scroller={scroll} />
       </div>
     );
   }

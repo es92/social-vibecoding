@@ -100,7 +100,10 @@ test('Enter and Cmd/Ctrl + Enter save in that state, and no key presses Stop', (
   const submit = COMPOSER.slice(COMPOSER.indexOf('function submit() {'), COMPOSER.indexOf('\n  }\n', COMPOSER.indexOf('function submit() {')));
   assert.match(submit, /^function submit\(\) \{\n\s+if \(dictating \|\| uploading \|\| \(!value\.trim\(\) && !attachments\.length && !object\)\) return;\n[^\n]*\n[^\n]*\n\s+if \(sendKind === 'save'\) \{ saveTyped\(\); return; \}\n/,
     'an empty box does nothing; words while the bot works are saved, before anything is sent');
-  assert.ok(submit.indexOf("if (sendKind === 'save')") < submit.indexOf('send({ ...input, threadRootId })'));
+  // One message box (27 Nov 2026): the box sends through its place, which
+  // for a conversation is the store's send in this place (MessageComposer).
+  assert.ok(submit.indexOf("if (sendKind === 'save')") < submit.indexOf('place.send(input)'));
+  assert.match(COMPOSER, /send: \(input\) => send\(\{ \.\.\.input, threadRootId \}\),/);
   assert.doesNotMatch(submit, /stopBot/);
   // The keys the rule reads, with the box in the save state.
   const { enterSends } = loadTsx('frontend/src/lib/enter-sends.ts');
@@ -115,7 +118,8 @@ test('saving takes the words and nothing else: files, a quoted reply and an atta
   const save = COMPOSER.slice(COMPOSER.indexOf('function saveTyped() {'), COMPOSER.indexOf('function sendSavedDraft('));
   assert.match(save, /const saved = saveBotDraft\(conversationId, threadRootId, value, \(text\) => \{/);
   // Refused (nothing typed, a full list): the words stay in the box.
-  assert.match(save, /if \(!saved\) return;\n\s+setError\(''\); notifyTyping\(false, threadRootId\);\n\s+setValue\(''\); setDraft\(scope, ''\);/);
+  // The typing line is the place's (one message box, 27 Nov 2026).
+  assert.match(save, /if \(!saved\) return;\n\s+setError\(''\); place\.typing\?\.\(false\);\n\s+setValue\(''\); setDraft\(scope, ''\);/);
   // Only the words are cleared.
   for (const staged of ['setAttachments', 'setDraftAttachments', 'updateAttachments', 'setObject', 'setChip', 'setReply', 'objectRef', 'setPrompt']) {
     assert.ok(!save.includes(staged), `${staged} is not touched by a save`);
@@ -462,7 +466,9 @@ test('a draft is sent by a tap on its row, as a normal message there, and never 
     'what was typed is kept as another draft first, and the draft leaves every device');
   // The store's own send, in this place: the words, with what is staged in
   // the box (files, the attached item; the quoted reply is the store's).
-  assert.match(send, /const input = \{ content: text, attachmentIds: attachments\.map\(\(item\) => item\.id\), attachments, object: object \? referenceOf\(object\) : undefined \};\n\s+setValue\(''\); setAttachments\(\[\]\); setObject\(null\);\n\s+send\(\{ \.\.\.input, threadRootId \}\)/);
+  // Through the place, whose send is the store's in this place (one message
+  // box, 27 Nov 2026).
+  assert.match(send, /const input = \{ content: text, attachmentIds: attachments\.map\(\(item\) => item\.id\), attachments, object: object \? referenceOf\(object\) : undefined \};\n\s+setValue\(''\); setAttachments\(\[\]\); setObject\(null\);\n\s+Promise\.resolve\(place\.send\(input\)\)/);
   // Its one caller is the row's button; the store never sends.
   assert.equal((COMPOSER.match(/sendSavedDraft\b/g) || []).length, 2, 'declared, and handed to the list');
   assert.match(LIST, /disabled=\{busy \|\| held\}\n\s+data-bot-draft-send=""\n\s+onMouseDown=\{\(event\) => event\.preventDefault\(\)\}\n\s+onClick=\{\(\) => onSend\(draft\)\}/);

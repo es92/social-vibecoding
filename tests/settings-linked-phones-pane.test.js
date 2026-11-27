@@ -65,8 +65,10 @@ test('the prerendered pane is hidden, names both groups and lists no device', ()
   const html = renderToHtml(createElement(LinkedPhonesSection, {}));
   assert.match(html, /^<div data-settings-section="phones" class="hidden">/);
   assert.match(html, /id="settings-phones-section"/);
-  assert.match(html, /<div id="settings-phones-list" class="ui-card flex flex-col"><\/div>/);
-  assert.match(html, /<div id="settings-browsers-list" class="ui-card flex flex-col"><\/div>/);
+  // Each group is the shared grouped list (its rows are ListRows), empty
+  // until the devices are read.
+  assert.match(html, /<div class="ui-glist [^"]*" id="settings-phones-list"><\/div>/);
+  assert.match(html, /<div class="ui-glist [^"]*" id="settings-browsers-list"><\/div>/);
   assert.ok(html.includes(escape(message('settings:phones.title'))));
   assert.ok(html.includes(escape(message('settings:phones.intro'))));
   // The two groups, phones first, each with its explaining line.
@@ -193,6 +195,10 @@ function createSteppedReact() {
     return slots[i];
   };
   h.React = {
+    // The shared row (@/components/ui/grouped-list) is made with forwardRef
+    // when the pane loads. Nothing here renders it: the pane's own DeviceRow
+    // elements are what these tests read.
+    forwardRef: (render) => render,
     useRef: (current) => slot(() => ({ current })),
     useState(initial) {
       const s = slot(() => {

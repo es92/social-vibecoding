@@ -86,7 +86,8 @@ test('friends lead a picker the page already has, each group in its own order', 
   assert.deepEqual(orderFriendsFirst(members, new Set()).map((m) => m.id), [1, 2, 3, 4]);
   const composer = read('frontend/src/features/messages/composer.tsx');
   assert.match(composer, /import \{ orderFriendsFirst, useFriendIds \} from '\.\.\/friends\/store';/);
-  assert.match(composer, /orderFriendsFirst\(\(active\?\.members \|\| \[\]\)\.filter\([\s\S]*?\), friendIds\)\.slice\(0, 6\)/,
+  // One message box (27 Nov 2026): the roster is the place's.
+  assert.match(composer, /orderFriendsFirst\(\(roster \|\| \[\]\)\.filter\([\s\S]*?\), friendIds\)\.slice\(0, 6\)/,
     'the order is applied BEFORE the six-row cap, so a friend is never cut off by a stranger');
   const store = read('frontend/src/features/friends/store.ts');
   assert.match(store, /useEffect\(\(\) => \{ void loadFriendIds\(\); \}/, 'loaded from an effect, never a render');

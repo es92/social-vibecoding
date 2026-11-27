@@ -1830,7 +1830,7 @@ test('beside the bot page the column\'s heading carries the page\'s own status p
   // The heading draws the page's own pill, only while it is THAT page's.
   assert.match(SRC, /const pill = head && head\.pill && samePage\(head\.route, route\) \? head\.pill : null;/);
   assert.match(SRC, /data-side-panel-status=\{pill\.key\}/);
-  assert.match(SRC, /<StatusPill s=\{pill\} inline \/>/, 'the page\'s own pill, at its own size');
+  assert.match(SRC, /<ChangeTag s=\{pill\} \/>/, 'the page\'s own pill, the one tag it wears there');
 
   // A request open beside it: its pill follows "Request #6431".
   besideBot('app/x/dev/issues/6431', { kind: 'request', pill: PILL_BUILDING, menuKey: 'request:6431' });

@@ -204,9 +204,15 @@ test('the global the classic scripts read is the measuring above', () => {
   assert.match(source, /UsernodeAutoGrow/, 'published as a window global');
 });
 
-// ── The group chat's composers, in a sandbox ────────────────────────────
+// ── A project chat's thread, in a sandbox ───────────────────────────────
+//
+// One message box (27 Nov 2026): a request's, a change's or a decision's
+// thread box is Messages' own (features/group-chat/composer.tsx renders
+// MessageBox with the thread's scroller), which measures through
+// useAutoGrow, that is `fitToContent` with the scroller. The following is
+// still the module's (`_attachThreadFollow`), so the two are driven together.
 
-function bootGroupChat({ withGlobal = true } = {}) {
+function bootGroupChat() {
   const input = composer({ id: 'gc-thread-input' });
   const scroll = transcript(input);
   const sandbox = {
@@ -226,29 +232,35 @@ function bootGroupChat({ withGlobal = true } = {}) {
   vm.createContext(sandbox);
   vm.runInContext(read('public/js/group-chat.js'), sandbox);
   const gc = sandbox.window.GroupChat;
-  if (withGlobal) sandbox.window.UsernodeAutoGrow = { fit: fitToContent, onlyInserted };
   gc._attachThreadFollow(scroll.el);
   // The reader is at the newest line.
   scroll.el.scrollTo(scroll.el.scrollHeight);
-  return { gc, input, scroll };
+  // What the box does on every change of its words.
+  const grow = () => fitToContent(input.el, input.el.value, { scroller: scroll.el });
+  return { gc, input, scroll, grow };
 }
+
+test('the thread box measures with its transcript\'s scroller', () => {
+  assert.match(read('frontend/src/features/group-chat/composer.tsx'), /return <MessageBox place=\{place\} scroller=\{scroller\} \/>;/);
+  assert.match(read('frontend/src/features/group-chat/thread-shell.tsx'), /<Composer \{\.\.\.props\} scroller=\{scroll\} \/>/);
+  assert.match(read('frontend/src/features/messages/composer.tsx'), /useAutoGrow\(inputRef, value, scroller\);/);
+});
 
 test('#6810: typing a long reply leaves the thread following its newest line', () => {
   const h = bootGroupChat();
   assert.equal(h.gc._threadPinned, true, 'starts at the newest line');
   let text = 'the plan is right';
   h.input.set(text);
-  h.gc._autoGrowTextarea(h.input.el);
+  h.grow();
   h.scroll.frame();
   for (let i = 0; i < 10; i += 1) {
     text += '\nand one more line';
     h.input.set(text);
-    h.gc._autoGrowTextarea(h.input.el);
+    h.grow();
     h.scroll.frame();
     assert.equal(h.scroll.el.gap(), 0, `line ${i + 1}: the newest message stays above the box`);
     assert.equal(h.gc._threadPinned, true, `line ${i + 1}: still following`);
   }
-  assert.equal(h.input.el.style.height, `${CAP}px`, 'the box reached its cap, not past it');
   // A message that arrives while typing is still followed.
   h.scroll.el.grow(LINE * 3);
   h.scroll.frame();
@@ -258,23 +270,11 @@ test('#6810: typing a long reply leaves the thread following its newest line', (
 test('#6810: a backspace in a thread keeps the newest message in view', () => {
   const h = bootGroupChat();
   h.input.set('one\ntwo\nthree');
-  h.gc._autoGrowTextarea(h.input.el);
+  h.grow();
   h.scroll.frame();
   h.input.set('one\ntwo\nthre');
-  h.gc._autoGrowTextarea(h.input.el);
+  h.grow();
   h.scroll.frame();
   assert.equal(h.scroll.el.gap(), 0);
-  assert.equal(h.gc._threadPinned, true);
-});
-
-test('#6810: without the global, the fallback collapse keeps the bottom too', () => {
-  const h = bootGroupChat({ withGlobal: false });
-  h.input.set('one\ntwo');
-  h.gc._autoGrowTextarea(h.input.el);
-  h.scroll.frame();
-  h.input.set('one\ntw');
-  h.gc._autoGrowTextarea(h.input.el);
-  h.scroll.frame();
-  assert.equal(h.scroll.el.gap(), 0, 'the fallback reads the gap and restores it');
   assert.equal(h.gc._threadPinned, true);
 });

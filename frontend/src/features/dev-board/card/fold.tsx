@@ -56,7 +56,7 @@ import { FoldMarkIcon } from '@/components/ui/icons';
 import { useMessages } from '../../../lib/i18n/react';
 import { t } from '../../../lib/i18n/runtime';
 
-import { Badge, CardIcon, DevCard, edgeFor, metaLineNodes, VoteButton, useSavedVote } from './dev-card';
+import { Badge, CardIcon, ChangeTag, DevCard, edgeFor, metaLineNodes, VoteButton, useSavedVote } from './dev-card';
 import { FeedThread } from './feed-thread';
 import type { ActionSpec, BadgeSpec, DevCardModel, ListRow, StatusPillState } from './model';
 import { pillWithSavedVote, shownPill, votedSide } from './model';
@@ -149,20 +149,6 @@ export function tagsOf(card: DevCardModel): BadgeSpec[] {
 }
 
 /**
- * The card's status pill as the row draws it: the bar's own words in the
- * bar's own tone ("0 of 1 approval", "✓ Live", "Merge conflict"), from the
- * card's `statusPillState`, so its words and tones follow the card's
- * precedence unchanged. The board's row draws it across the row in
- * `RowBand`; the Workshop tab's row and a live row draw it on their tags
- * line at its words' width (#4486, workshop/work-row.tsx).
- */
-export function StatePill({ s, className }: { s: StatusPillState; className?: string }): ReactNode {
-  return (
-    <span className={`dev-ws-row-state dev-ws-row-state-${s.tone}${className ? ` ${className}` : ''}`} title={s.title}>{s.label}</span>
-  );
-}
-
-/**
  * The final counted vote of a change that is live (#6075): "3 yes · 1 no" (or "1/2 yes"
  * when it went live short of its threshold), read beside its "✓ Live" pill. The yes count is compared with the
  * threshold snapshotted at merge time (`StatusPillState.majority`, which
@@ -228,7 +214,7 @@ export function RowBand({ card, trailing, chips: withChips = true }: {
   if (!afterVote && !chips.length && !trailing) return null;
   return (
     <span className="dev-ws-row-band">
-      {afterVote ? <StatePill s={afterVote} /> : null}
+      {afterVote ? <ChangeTag s={afterVote} detail={false} /> : null}
       {chips.map((b) => <Badge key={b.key} b={flatBadge(b)} />)}
       {trailing ? <span className="dev-ws-row-trailing" onClick={(e) => e.stopPropagation()}>{trailing}</span> : null}
     </span>

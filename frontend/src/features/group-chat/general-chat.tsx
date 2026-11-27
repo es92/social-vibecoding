@@ -9,8 +9,9 @@
  * the viewer is read-only, whether the first-arrival banner is due. It changes
  * only when `AppView.renderGroupChatTab` runs again, and `mountLegacyPortal`
  * re-renders with a new node and commits synchronously — so the props ARE the
- * publish. The parts that move while the pane is open (the staged reply, the
- * uploads, the error line, the typing text) go through ./composer-store.ts.
+ * publish. The parts that move while the pane is open (the staged reply and
+ * the typing text) go through ./composer-store.ts; the box's own words,
+ * files and menus are Messages' box's (./composer.tsx ChatComposer).
  *
  * ── The layout ────────────────────────────────────────────────────────
  *
@@ -35,6 +36,8 @@
 import { useMemo, useRef, useState, type RefObject } from 'react';
 
 import { ChatComposerBar, NewMessagesBanner, TranscriptOverlay } from '@/components/ui/chat';
+import { DropOverlay } from '../attachments/file-drag';
+import { usePaneDrop } from '../messages/pane-drop';
 import { useMessages } from '../../lib/i18n/react';
 import { DetailSlot } from '../detail/detail-slot';
 import { useStoreState } from '../../lib/use-store-state';
@@ -42,7 +45,7 @@ import { JumpToLatest } from '../messages/jump-to-latest';
 import {
   firstUnreadId, newMessagesLabel, transcriptRow, useUnreadAffordances, type UnreadRow,
 } from '../messages/unread-anchor';
-import { ComposerForm, ComposerSlots, StatusLine } from './composer';
+import { ChatComposer, StatusLine, chatScopeKey, type ChatThreadRef } from './composer';
 import { ReplyStarters } from './reply-starters';
 import { transcriptStore, unreadOpenings } from './transcript-store';
 
@@ -107,6 +110,10 @@ function ChannelJumpToLatest({ scroller }: { scroller: RefObject<HTMLElement | n
 }
 
 export interface GeneralChatProps {
+  /** The project the chat is; the box posts to it. */
+  slug: string;
+  /** #4417 follow-up: the topic's channel the pane shows; null for the project's own stream. */
+  channel?: ChatThreadRef | null;
   readOnly: boolean;
   /**
    * What the read-only bar says, when it is not the usual "only
@@ -114,8 +121,6 @@ export interface GeneralChatProps {
    * history since #general became the Homeroom community's channel.
    */
   notice?: string | null;
-  /** GC_MAX_MESSAGE_LEN, passed through so the module owns the number. */
-  maxLength: number;
   /**
    * #4417 follow-up: what the empty box says, when it is not the app's own
    * stream: a topic's channel says "Message #handle".
@@ -123,16 +128,19 @@ export interface GeneralChatProps {
   placeholder?: string;
 }
 
-export function GeneralChat({ readOnly, notice, maxLength, placeholder }: GeneralChatProps) {
+export function GeneralChat({ slug, channel = null, readOnly, notice, placeholder }: GeneralChatProps) {
   const t = useMessages('chat');
   const messages = useRef<HTMLDivElement>(null);
+  // #6254: the pane takes a dropped file as Messages' thread pane does: the
+  // box at its foot uploads it (../messages/pane-drop.ts).
+  const drop = usePaneDrop(chatScopeKey(slug, channel));
   return (
     <div className="flex flex-col h-full min-h-0 dc-lift dc-lift-session">
       <div className="gc-tab-body flex-1 flex min-h-0">
         {/* `platform-kb-column` (app.css): same shape as the topic thread —
             #gc-messages scrolls and the composer bar is a shrink-0 sibling
             below it — so the keyboard inset is reserved here, on the column. */}
-        <div className="gc-chat-pane platform-kb-column flex-1 flex flex-col min-h-0">
+        <div className="gc-chat-pane platform-kb-column relative flex-1 flex flex-col min-h-0" {...drop.handlers}>
           {/* Over the stream's top and its foot: siblings of #gc-messages,
               which stays the transcript's alone. The foot under it is the
               one every chat draws, Messages' included (@/components/ui/chat,
@@ -146,32 +154,30 @@ export function GeneralChat({ readOnly, notice, maxLength, placeholder }: Genera
           {/*
               The bar (ChatComposerBar) is padded 0 12px 8px, and
               `platform-safe-bar` (app.css) adds the home-indicator inset
-              under it. It wraps BOTH the composer and the read-only notice,
-              so both clear the indicator, which is why #621's notice sits
-              inside the bar here rather than replacing it the way the
-              thread panel's does.
+              under it. Messages' box draws its own (./composer.tsx); the
+              read-only notice sits inside one too, so it clears the
+              indicator as the box does.
           */}
-          <ChatComposerBar>
-            {readOnly ? (
+          {readOnly ? (
+            <ChatComposerBar>
               <div className="px-3 py-2 text-xs text-zinc-500 dark:text-zinc-400 text-center" data-gc-readonly-notice="">
                 {notice || t('chat:group.readOnly.devSpace')}
               </div>
-            ) : (
-              <>
-                {/* Reply chips for somebody who has not said anything here
-                    yet, once someone else has (./reply-starters.tsx). A tap
-                    fills the box below; it does not send. */}
-                <ReplyStarters />
-                <ComposerSlots scope="general" />
-                <ComposerForm
-                  scope="general"
-                  fill
-                  placeholder={placeholder || t('chat:group.composer.placeholder')}
-                  maxLength={maxLength}
-                />
-              </>
-            )}
-          </ChatComposerBar>
+            </ChatComposerBar>
+          ) : (
+            <ChatComposer
+              scope="general"
+              slug={slug}
+              thread={channel}
+              placeholder={placeholder || t('chat:group.composer.placeholder')}
+              scroller={messages}
+              // Reply chips for somebody who has not said anything here yet,
+              // once someone else has (./reply-starters.tsx). A tap fills the
+              // box below; it does not send.
+              above={<ReplyStarters />}
+            />
+          )}
+          {drop.dragging ? <DropOverlay className="messages-drop-overlay" /> : null}
         </div>
         <DetailSlot surface="chat" resizerLabel={t('chat:group.specPanel.resize')} />
       </div>

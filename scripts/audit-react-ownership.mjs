@@ -156,9 +156,6 @@ const OWNED = [
   // INSIDE a host, so scoping to the scroller states the boundary where it
   // actually is.
   { sel: '#switcher-nav' },
-  { sel: '#gc-mention-menu' },               // features/group-chat/autocomplete.tsx
-  { sel: '#gc-ref-menu' },                   // ditto
-  { sel: '#gc-emoji-menu' },                 // ditto
   { sel: '#gc-spec-side-panel' },            // features/detail/detail-slot.tsx (#6230)
   { sel: '#gc-spec-resizer' },               // ditto: the drag is React's now
   // The card metadata picker (features/dev-board/attr-popover.tsx). Its host

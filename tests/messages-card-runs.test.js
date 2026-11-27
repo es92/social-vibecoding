@@ -89,7 +89,9 @@ function rule(selector, from = 0) {
 }
 
 test('#2882: neither composer field draws an edge of its own; the card keeps its ring', () => {
-  for (const selector of ['.messages-composer-input', '.gc-composer-card .gc-composer-input']) {
+  // One message box (27 Nov 2026): the group chat's card and field
+  // (`.gc-composer-card .gc-composer-input`) are Messages' own now.
+  for (const selector of ['.messages-composer-input']) {
     const body = rule(selector);
     assert.match(body, /-webkit-appearance: none;\s*\n\s*appearance: none;\s*\n\s*box-shadow: none;/, `${selector} resets the native box`);
     assert.match(body, /-webkit-tap-highlight-color: transparent;/);

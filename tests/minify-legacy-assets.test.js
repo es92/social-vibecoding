@@ -1,6 +1,6 @@
 'use strict';
 
-// #6798: an image serves the legacy scripts and app.css without their
+// #6798, #7165: an image serves the legacy scripts, app.css and the kit without their
 // comments and indentation (scripts/minify-legacy-assets.js). Pinned here:
 // what the step may not change (names, strings, files, the order of CSS
 // rules), that it refuses a file it cannot shrink, and that a checkout's
@@ -16,7 +16,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const ROOT = path.join(__dirname, '..');
-const { minifyLegacyAssets, minifyScript, minifyStylesheet, loadEsbuild, STYLESHEETS } = require('../scripts/minify-legacy-assets');
+const { minifyLegacyAssets, minifyScript, minifyStylesheet, loadEsbuild, STYLESHEETS, KIT_SCRIPTS } = require('../scripts/minify-legacy-assets');
 
 const esbuild = loadEsbuild();
 
@@ -110,8 +110,45 @@ test('a file that cannot be minified fails the build rather than shipping half a
   }
 });
 
-test('only the image build runs it, on app.css and public/js alone', () => {
-  assert.deepEqual(STYLESHEETS, ['css/app.css'], 'not the kit apps load, and not the compiled Tailwind');
+// #7165, point 3: the kit the shell loads on every first visit, and every app
+// with it, was still served as written (687 KB, 152 KB compressed).
+test('the kit comes out smaller, at the same addresses, and still does what it did', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'minify-kit-'));
+  const kit = [...KIT_SCRIPTS, 'usernode-native/v1/native.css'];
+  const left = ['usernode-bridge/v1/snapdom.js', 'usernode-tailwind/v1/tailwind.js'];
+  try {
+    for (const rel of [...kit, ...left]) {
+      fs.mkdirSync(path.dirname(path.join(tmp, rel)), { recursive: true });
+      fs.copyFileSync(path.join(ROOT, 'public', rel), path.join(tmp, rel));
+    }
+    const source = (rel) => fs.readFileSync(path.join(ROOT, 'public', rel), 'utf8');
+    const served = (rel) => fs.readFileSync(path.join(tmp, rel), 'utf8');
+    const results = minifyLegacyAssets({ publicDir: tmp, esbuild });
+    assert.deepEqual(results.map((r) => r.file.split(path.sep).join('/')).sort(), [...kit].sort(),
+      'the three kit scripts and the kit sheet, and nothing beside them');
+    for (const r of results) assert.ok(r.after < r.before * 0.7, `${r.file} loses at least 30%`);
+    for (const rel of KIT_SCRIPTS) new vm.Script(served(rel), { filename: rel });
+    for (const rel of left) assert.equal(served(rel), source(rel), `${rel} is a vendored build and is not rewritten`);
+    assert.equal(served('usernode-bridge.js'), served('usernode-bridge/v1/bridge.js'),
+      'the bridge is still one file at its two addresses');
+    // The bridge asks which of its addresses loaded it, and the kit publishes
+    // one global: both are still there by name.
+    assert.match(served('usernode-bridge.js'), /document\.currentScript/);
+    assert.match(served('usernode-native/v1/native.js'), /\.unNative=\{/);
+    // The sheet loses comments and whitespace only: every selector and every
+    // custom property the source declares is still declared, in order.
+    const names = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '').match(/--[a-z0-9-]+(?=\s*:)/gi) || [];
+    assert.deepEqual(names(served('usernode-native/v1/native.css')), names(source('usernode-native/v1/native.css')));
+    assert.doesNotMatch(served('usernode-native/v1/native.css'), /\/\*/, 'no comment is served');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('only the image build runs it, on the hand-written sheets and scripts alone', () => {
+  assert.deepEqual(STYLESHEETS, ['css/app.css', 'usernode-native/v1/native.css'], 'not the compiled Tailwind');
+  assert.deepEqual(KIT_SCRIPTS, ['usernode-bridge.js', 'usernode-bridge/v1/bridge.js', 'usernode-native/v1/native.js'],
+    'not snapdom or the Tailwind runtime, which arrive minified');
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
   for (const [name, script] of Object.entries(pkg.scripts)) {
     assert.ok(!String(script).includes('minify-legacy-assets'), `npm run ${name} leaves the checkout readable`);

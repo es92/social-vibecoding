@@ -377,7 +377,9 @@ test('B6: which bot messages draw a plan or two questions, and what state a plan
   // One request, one story: a first version's plan is answered to the bot
   // alone (its next look reads the reply), so its note stays private; a
   // request's plan's reply is posted on the request, and its note says so.
-  assert.match(composer, /\{planReply\.firstVersion \? t\('messages:composer\.planReplyNote'\) : t\('messages:composer\.planReplyNotePublic'\)\}/);
+  // One message box (27 Nov 2026): a note of the reply chip, worded by
+  // MessageComposer and drawn by the box.
+  assert.match(composer, /\[planReply\.firstVersion \? t\('messages:composer\.planReplyNote'\) : t\('messages:composer\.planReplyNotePublic'\)\]/);
   assert.equal(message('messages:composer.planReplyNote'), 'Say what to change, and Homeroom bot sends a new plan. Only you see this.');
   assert.equal(message('messages:composer.planReplyNotePublic'), 'What you write is drafted for you to post on the request, where the group can see it. Nothing is posted until you tap Post it.');
 });

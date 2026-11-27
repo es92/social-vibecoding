@@ -88,17 +88,22 @@ function foot(html, { overlay, typing, bar }) {
 
 test('a project\'s channel: the chat foot, under the composer and under the read-only notice alike', () => {
   for (const readOnly of [false, true]) {
-    const html = renderComponent(GENERAL, 'GeneralChat', { readOnly, notice: null, maxLength: 4000 });
-    foot(html, { overlay: true, typing: 'gc-typing', bar: /^<div class="chat-composer-bar platform-safe-bar">/ });
+    const html = renderComponent(GENERAL, 'GeneralChat', { slug: 'demo', readOnly, notice: null });
+    // One message box (27 Nov 2026): the box is Messages', whose bar is
+    // ChatComposerBar with `messages-composer` leading its class.
+    foot(html, { overlay: true, typing: 'gc-typing', bar: readOnly ? /^<div class="chat-composer-bar platform-safe-bar">/ : /^<div class="messages-composer chat-composer-bar platform-safe-bar"><div class="messages-composer-card" id="gc-form">/ });
   }
 });
 
 test('a topic\'s thread, a request\'s page, a change\'s page and the boxed thread: the chat foot', () => {
-  const props = { withHeader: true, readOnly: false, notice: 'Read only.', placeholder: 'Reply', maxLength: 4000 };
+  const props = { slug: 'demo', thread: { type: 'issue', ref: 1 }, withHeader: true, readOnly: false, notice: 'Read only.', placeholder: 'Reply' };
+  // One message box (27 Nov 2026): every layout's box is Messages' reply
+  // thread box.
+  const BOX = /^<div class="messages-composer messages-composer-thread chat-composer-bar platform-safe-bar"><div class="messages-composer-card" id="gc-thread-form">/;
   const layouts = [
-    [{ fill: true }, /^<div class="chat-composer-bar platform-safe-bar"><div id="gc-thread-reply-preview"/],
-    [{ fill: true, request: true }, /^<div class="messages-composer messages-composer-thread chat-composer-bar platform-safe-bar"><div id="gc-thread-reply-preview"/],
-    [{ fill: true, change: true }, /^<div class="messages-composer messages-composer-thread chat-composer-bar platform-safe-bar"><div id="gc-thread-reply-preview"/],
+    [{ fill: true }, BOX],
+    [{ fill: true, request: true }, BOX],
+    [{ fill: true, change: true }, BOX],
   ];
   for (const [layout, bar] of layouts) {
     foot(renderComponent(SHELL, 'ThreadShell', { ...props, ...layout }), { overlay: true, typing: 'gc-thread-typing', bar });
@@ -109,7 +114,7 @@ test('a topic\'s thread, a request\'s page, a change\'s page and the boxed threa
   }
   // The boxed layout is a small inline box with no floating control.
   foot(renderComponent(SHELL, 'ThreadShell', { ...props, fill: false }), {
-    overlay: false, typing: 'gc-thread-typing', bar: /^<div class="chat-composer-bar platform-safe-bar">/,
+    overlay: false, typing: 'gc-thread-typing', bar: BOX,
   });
 });
 
@@ -164,7 +169,10 @@ test('a conversation, its reply threads and a blank thread with Homeroom bot: th
   // can't send here", a line in the card's place, names the clearance itself.
   const composer = read(MESSAGES_COMPOSER);
   assert.match(composer, /<ChatComposerBar className="messages-composer messages-composer-awaiting" data-awaiting-acceptance="">/);
-  assert.match(composer, /<ChatComposerBar className=\{`messages-composer \$\{inThread \? 'messages-composer-thread' : ''\}/);
+  // One message box (27 Nov 2026): ChatComposerBar at a screen's foot, a
+  // plain block only inside a card (`bare`).
+  assert.match(composer, /const Bar = place\.bare \? 'div' : ChatComposerBar;/);
+  assert.match(composer, /<Bar className=\{`messages-composer \$\{inThread \? 'messages-composer-thread' : ''\}/);
   assert.equal((composer.match(/platform-safe-bar/g) || []).length - (composer.match(/`platform-safe-bar`/g) || []).length, 1,
     'one hand-written clearance: the notice');
   assert.match(composer, /<div className="messages-composer-disabled platform-safe-bar">/);
@@ -185,12 +193,17 @@ function sources(dir) {
 test('every chat that renders a composer is one of the chats on the foot, so a new one is caught', () => {
   // The pieces a chat's foot is built round: either composer, the group
   // chat's status line, the typing line's words, either composer's card.
-  const PIECES = /<MessageComposer\b|<ComposerForm\b|<StatusLine scope=|typingLine\(|className="messages-composer-card|className="gc-composer-card/;
+  // One message box (27 Nov 2026): the group chat's box is Messages' (its
+  // ChatComposer draws MessageBox), and the comments under a change draw
+  // MessageBox inside a card, where there is no chat's foot.
+  const PIECES = /<MessageComposer\b|<ChatComposer\b|<MessageBox\b|<StatusLine scope=|typingLine\(|className="messages-composer-card/;
   const ON_THE_FOOT = new Set([MESSAGES, MESSAGES_COMPOSER, NEW_THREAD, GENERAL, SHELL, GC_COMPOSER]);
   // Drawn like a composer and not a chat's foot: the Homeroom bot tab's
   // "Ask Homeroom bot" bar is a link to Main, over the tab bar, with no
   // transcript above it.
-  const NOT_A_FOOT = new Set(['frontend/src/features/ai/index.tsx']);
+  // The comments under a change draw the box inside a card, with no
+  // transcript scrolling above it (dev-board/card/feed-thread.tsx, `bare`).
+  const NOT_A_FOOT = new Set(['frontend/src/features/ai/index.tsx', 'frontend/src/features/dev-board/card/feed-thread.tsx']);
   const found = sources('frontend/src').filter((file) => PIECES.test(read(file)) && !NOT_A_FOOT.has(file));
   for (const file of found) {
     assert.ok(ON_THE_FOOT.has(file),

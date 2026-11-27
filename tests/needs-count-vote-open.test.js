@@ -292,7 +292,7 @@ test('only a project\'s own run grows', () => {
   assert.match(project, /useEffect\(\(\) => watchProjectFeed\(slug, \{/);
   assert.match(project, /\s+grows\n/, 'the project\'s flow takes in later reads');
   assert.match(FLOW_SRC, /header = 'communities', project, grows = false \}/, 'Needs you\'s own run stays what its first read held');
-  assert.match(FLOW_SRC, /if \(!grows\) return;\s+const took = takeRead\(\{ list, index, done, votes, skipped \}, shaped, \(all\) => filterByVoteType\(all, filter, reviewVoteType\)\);\s+if \(took\.list === list\) return;\s+setList\(took\.list\);/);
+  assert.match(FLOW_SRC, /if \(!grows\) return;\s+const took = takeRead\(\{ list, index, done, votes, skipped \}, shaped, \(all\) => filterByVoteType\(all, filter, voteTypeOf\)\);\s+if \(took\.list === list\) return;\s+setList\(took\.list\);/);
   assert.match(FLOW_SRC, /if \(took\.open == null\) return;\s+setSheet\('ask'\);\s+setIndex\(took\.open\);\s+setDone\(false\);/);
 });
 

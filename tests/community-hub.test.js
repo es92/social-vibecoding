@@ -199,11 +199,11 @@ test('For you\'s Discussion row: the channel\'s name, its last line, what is new
   assert.match(html, /<button type="button" class="[^"]*dev-ws-foryou-row[^"]*" data-ws-channel="preview" data-ws-channel-open="">/,
     'one door, to the Discussion place');
   // Phone review #91: the count rides the title line, so the line under it has the row's width.
-  assert.match(html, /<div class="[^"]*ui-lrow-t[^"]*dev-ws-foryou-title[^"]*"><span class="dev-ws-foryou-name">Discussion <span class="dev-ws-foryou-handle">#general<\/span><\/span><span class="dev-ws-foryou-pill one-tag one-tag-grey" data-ws-channel-unread="2">2 new<\/span><\/div>/, 'the project\'s channel is its #general (one look, 25 Nov 2026: what is new is the grey tag)');
+  assert.match(html, /<div class="[^"]*ui-lrow-t[^"]*dev-ws-foryou-title[^"]*"><span class="dev-ws-foryou-name">Discussion <span class="dev-ws-foryou-handle">#general<\/span><\/span><span data-state-tag="plain" class="one-tag one-tag-plain" data-ws-channel-unread="2">2 new<\/span><\/div>/, 'the project\'s channel is its #general (what is new is the one tag, plain)');
   assert.match(html, /<span data-ws-channel-last=""><span data-ws-channel-said="">@lin: See you Sunday<\/span><span data-ws-channel-ago=""> · [^<]+<\/span><\/span>/,
     'the newest line, who said it and when: the words give way, the time stays whole (audit P04)');
   assert.doesNotMatch(html, /Who has seeds/, 'the rest are the Discussion\'s');
-  assert.match(html, /<span class="dev-ws-foryou-pill one-tag one-tag-grey" data-ws-channel-unread="2">2 new<\/span>/, 'what is new since you last read it, its one pill (one look: the grey tag)');
+  assert.match(html, /<span data-state-tag="plain" class="one-tag one-tag-plain" data-ws-channel-unread="2">2 new<\/span>/, 'what is new since you last read it, its one tag, plain');
   assert.doesNotMatch(html, /data-ws-channel-compose|<form/, 'no composer on the hub');
   // Homeroom's: #general by its own handle.
   const homeroom = card(community({ channel: { ...community().channel, href: '#messages/1', handle: 'general', unread_count: 0 } }));
@@ -215,8 +215,8 @@ test('For you\'s Discussion row: the channel\'s name, its last line, what is new
   const css = read('public/css/app.css');
   assert.match(css, /\[data-ws-channel-last\] > \[data-ws-channel-said\] \{ min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; \}/);
   assert.match(css, /\[data-ws-channel-last\] > \[data-ws-channel-ago\] \{ flex: none;/);
-  // The count is new to read, grey as the sidebar's beside it; the accent is a vote's (audit N04).
-  assert.match(css, /\.dev-ws-foryou-pill\[data-ws-channel-unread\] \{ background: var\(--text-faint, #8e8e93\); \}/);
+  // The count is new to read, the one tag plain; the strong state is a vote's (audit N04).
+  assert.doesNotMatch(read(HUB), /state="needs" data-ws-channel-unread/);
   // Nothing to draw for a viewer who may not talk here. A project that is
   // just yours has its room from the first day (15 Oct 2026), saying so
   // while nothing is said in it.
@@ -239,9 +239,9 @@ test('For you\'s Needs you opens the queue and counts the votes owed', () => {
   assert.match(needs, /^<section class="dev-ws-hub-section" data-ws-hub-for-you="" aria-labelledby="([^"]+)"><h2 class="[^"]*uppercase[^"]*" id="\1">For you<\/h2><div class="dev-ws-strip dev-ws-foryou">/,
     'the small-caps label over one card');
   assert.match(needs, /<div class="dev-ws-foryou-item" data-ws-hub-needs="" data-ws-hub-needs-votes="3"><button type="button" class="[^"]*" data-ws-hub-needs-open="">/);
-  assert.match(needs, /dev-ws-foryou-title[^"]*"><span class="dev-ws-foryou-name">Needs you<\/span><span class="dev-ws-foryou-pill one-tag one-tag-strong">3 to vote<\/span><\/div><div class="[^"]*"><span data-ws-hub-needs-first="">Dark mode, and 2 more<\/span><\/div>/,
+  assert.match(needs, /dev-ws-foryou-title[^"]*"><span class="dev-ws-foryou-name">Needs you<\/span><span data-state-tag="needs" class="one-tag one-tag-strong">3 to vote<\/span><\/div><div class="[^"]*"><span data-ws-hub-needs-first="">Dark mode, and 2 more<\/span><\/div>/,
     'the count on the title line, the first vote on the whole line under it (phone review #91); one look (25 Nov 2026): the strong tag');
-  assert.equal((needs.match(/dev-ws-foryou-pill/g) || []).length, 1, 'one pill on the row');
+  assert.equal((needs.match(/data-state-tag=/g) || []).length, 1, 'one tag on the row');
   assert.doesNotMatch(needs, /Join to vote/);
   assert.match(card([row('a', 'Dark mode', 'ada')]), /<span data-ws-hub-needs-first="">Dark mode<\/span>/, 'one vote: its title alone');
   const outsider = card([row('a', 'Dark mode', 'ada')], false);

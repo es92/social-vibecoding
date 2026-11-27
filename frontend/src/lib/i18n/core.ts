@@ -77,6 +77,26 @@ export function deviceLanguages(): readonly string[] {
   return navigator.languages?.length ? navigator.languages : [navigator.language].filter(Boolean);
 }
 
+/** English in any region ("en", "en-GB"): the language the bundle holds. */
+function isEnglish(tag: unknown): boolean {
+  return typeof tag === 'string' && /^en(?:[-_]|$)/i.test(tag.trim());
+}
+
+/**
+ * Whether a page should ask for the server's list (GET /api/languages) as it
+ * boots (request 7165). The list adds languages and newer packs, and English
+ * needs neither: it is in the bundle. So a device whose languages, saved
+ * choice and last language shown are all English boots without it, and it is
+ * asked for when it is first wanted (`ensureLive`): Settings opening, or a
+ * session whose account picked another language. Anything that is not
+ * English, or a device that names no language, asks at boot as before.
+ */
+export function bootWantsLive(): boolean {
+  const device = deviceLanguages();
+  if (!device.length || device.some((tag) => !isEnglish(tag))) return true;
+  return [readStored(DEVICE_KEY), readStored(SHOWN_KEY)].some((tag) => !!tag && !isEnglish(tag));
+}
+
 export function createLanguageRuntime(catalogs: Catalogs) {
   // What is offered: the build's catalogs, until the server's translation
   // cache says what it has now (setLiveCatalogs).
@@ -90,6 +110,11 @@ export function createLanguageRuntime(catalogs: Catalogs) {
   // The server's list on its way: a language only it has is waited for, briefly.
   let liveWait: Promise<void> | null = null;
   let liveSettled = true;
+  // A page that booted in English put the list off (`deferLive`). Whether it
+  // has been asked for since, and whether an answer could be used.
+  let liveDeferred = false;
+  let liveAsked = false;
+  let liveUsed = false;
   // The last session answer, so a list that arrives late can show what it adds.
   let lastSession: { id?: string | number; locale?: string | null } | null | undefined;
   const i18n = createInstance();
@@ -166,6 +191,21 @@ export function createLanguageRuntime(catalogs: Catalogs) {
       })().finally(() => { liveRefreshing = null; });
     }
     return liveRefreshing;
+  }
+
+  /**
+   * Ask for the server's list if this page put it off at boot and has not
+   * asked since (`bootWantsLive`). `retry` asks whenever no usable list is
+   * in hand, also after an answer that could not be used: Settings opening
+   * does, a session does not, so a server without the list is asked once a
+   * page and not once a navigation. Returns true when this call started
+   * the ask.
+   */
+  function ensureLive(retry = false): boolean {
+    if (!liveRefresh || liveUsed || !liveSettled) return false;
+    if (!retry && (liveAsked || !liveDeferred)) return false;
+    waitForLive(refreshLive());
+    return true;
   }
 
   /**
@@ -353,7 +393,13 @@ export function createLanguageRuntime(catalogs: Catalogs) {
     // wait for it a moment rather than show another and switch. Somebody
     // whose first language ships never waits.
     const wanted = typeof value === 'string' && value ? value : deviceLanguages()[0];
-    if (wanted && !matchLanguage(wanted, shipped) && liveWait && !liveSettled) {
+    // A page that booted in English has not asked for the list. This is the
+    // first time it matters: the language to show is not English, so the
+    // list may name newer packs for it, or may be the only place it is. Ask
+    // now, and wait the same moment for it.
+    const unlisted = !!wanted && !matchLanguage(wanted, shipped);
+    const asked = (resolved.language !== 'en' || unlisted) && ensureLive();
+    if ((unlisted || asked) && liveWait && !liveSettled) {
       await Promise.race([liveWait, new Promise((resolve) => { setTimeout(resolve, LIVE_WAIT_MS); })]);
       resolved = resolveLanguage(value, deviceLanguages(), shipped);
     }
@@ -515,6 +561,7 @@ export function createLanguageRuntime(catalogs: Catalogs) {
     manifest = live.manifest;
     shipped = Object.keys(languages);
     languageList = Object.freeze(Object.entries(languages).map(([tag, name]) => ({ tag, name })));
+    liveUsed = true;
     for (const listener of languageListeners) listener();
     if (typeof document !== 'undefined') document.dispatchEvent(new CustomEvent('homeroom:languages-changed'));
     if (lastSession !== undefined) {
@@ -526,6 +573,7 @@ export function createLanguageRuntime(catalogs: Catalogs) {
 
   /** The server's list is on its way (`request` settles once it is used or given up). */
   function waitForLive(request: Promise<unknown>): void {
+    liveAsked = true;
     liveSettled = false;
     liveWait = request.then(() => {}, () => {}).finally(() => { liveSettled = true; });
   }
@@ -570,6 +618,9 @@ export function createLanguageRuntime(catalogs: Catalogs) {
     dismissNotice: () => setNotice(null),
     setLiveCatalogs,
     waitForLive,
+    /** The boot did not ask for the list (`bootWantsLive`): `ensureLive` asks when it is first wanted. */
+    deferLive(): void { liveDeferred = true; },
+    ensureLive,
     /** runtime.ts installs this: its list fetch, asked again on a moved pack. */
     setLiveRefresh(refresh: () => Promise<boolean>): void { liveRefresh = refresh; },
     /** The languages offered now, English first, each under its own name. */

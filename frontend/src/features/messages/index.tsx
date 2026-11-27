@@ -51,8 +51,8 @@ import { ThreadDoneMenu } from './private-thread-done';
 import { MessageComposer } from './composer';
 import { InboxToEnd } from './inbox-to-end';
 import { ListDivider } from './list-divider';
-import { dropOnComposer, useComposerDropReady } from './pane-drop';
-import { DropOverlay, useFileDrag } from '../attachments/file-drag';
+import { usePaneDrop } from './pane-drop';
+import { DropOverlay } from '../attachments/file-drag';
 import { useMessagesDrawer } from './phone-drawer';
 import { CreateConversationDialog } from './create-dialog';
 import { ConversationMembersDialog } from './members-dialog';
@@ -141,17 +141,6 @@ import type { ConversationMessage, ConversationSummary, DiscussionMessage } from
 
 function openDialog(name: 'messagesCreate' | 'messagesMembers' | 'messagesShare', payload?: unknown) {
   window.UsernodeReact?.dialogs?.[name]?.open(payload);
-}
-
-/**
- * #6254: the whole thread pane takes a dropped file, not only the box at its
- * foot. The composer for this pane's scope owns the upload (./pane-drop), so
- * the pane asks whether one is drawn — an awaiting or cannot-send thread
- * shows no outline and drops nothing — and hands the files over.
- */
-function usePaneDrop(scope: ComposerScope) {
-  const ready = useComposerDropReady(scope);
-  return useFileDrag({ disabled: !ready, onFiles: (files) => { dropOnComposer(scope, files); } });
 }
 
 function conversationPeer(conversation: ConversationSummary) {
@@ -1198,12 +1187,11 @@ function AppDiscussionThread({ slug }: { slug: string }) {
     const view = (window as any).AppView;
     const chat = (window as any).UsernodeReact?.groupChat;
     // OUT OF REACT'S COMMIT (#2783). renderGroupChatTab mounts the chat as a
-    // portal and then, on its next line, looks up `#gc-input` to wire the
-    // composer — send on Enter, drafts, the @ and # menus. The portal is
-    // published inside flushSync, which cannot flush while React is still
-    // committing this effect, so the input did not exist yet and the
-    // composer of a channel opened here was never wired: nothing typed in it
-    // sent. A macrotask later the commit is over and the portal lands at once.
+    // portal published inside flushSync, which cannot flush while React is
+    // still committing this effect: the pane, its box included, did not
+    // exist yet when the lines after the mount ran (they wired the old
+    // composer once). A macrotask later the commit is over and the portal
+    // lands at once.
     let live = true;
     const timer = window.setTimeout(() => {
       if (live) view?.renderGroupChatTab?.({ host: el, slug, name, readOnly, archived });

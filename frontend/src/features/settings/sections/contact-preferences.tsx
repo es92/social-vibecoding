@@ -28,6 +28,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { SectionHeading } from '@/components/ui/field';
+import { GroupedList } from '@/components/ui/grouped-list';
 
 import { useMessages } from '../../../lib/i18n/react';
 import { useWindowEvent } from '../../../lib/legacy-dom';
@@ -111,46 +112,40 @@ export function ContactPreferencesSection() {
       <SectionHeading title={t('settings:privacy.contact.title')} blurbClassName="dark:text-zinc-400">
         {t('settings:privacy.contact.intro')}
       </SectionHeading>
-      {/* ui-card: a name only (looks v2), the kit's card of switch rows under a look. */}
-      <div className="ui-card space-y-4">
-        <div>
-          <PrivacySwitch
-            id="settings-contact-marketing-email"
-            label={t('settings:privacy.contact.marketingEmail.label')}
-            checked={prefs.marketingEmail}
-            disabled={!loaded || saving !== null || (!prefs.email && !prefs.marketingEmail)}
-            describedBy="settings-contact-marketing-email-help"
-            description={loaded && !prefs.email
-              ? t('settings:privacy.contact.marketingEmail.noEmail')
-              : t('settings:privacy.contact.marketingEmail.help')}
-            onChange={(e) => void change('marketingEmail', e.currentTarget.checked)}
-          />
-        </div>
-        <div>
-          <PrivacySwitch
-            id="settings-contact-activity-email"
-            label={t('settings:privacy.contact.activityEmail.label')}
-            checked={prefs.activityEmail}
-            disabled={!loaded || saving !== null}
-            describedBy="settings-contact-activity-email-help"
-            description={t('settings:privacy.contact.activityEmail.help')}
-            onChange={(e) => void change('activityEmail', e.currentTarget.checked)}
-          />
-        </div>
+      {/* The shared rows, one a switch (./privacy-text.tsx's PrivacySwitch). */}
+      <GroupedList className="mx-0">
+        <PrivacySwitch
+          id="settings-contact-marketing-email"
+          label={t('settings:privacy.contact.marketingEmail.label')}
+          checked={prefs.marketingEmail}
+          disabled={!loaded || saving !== null || (!prefs.email && !prefs.marketingEmail)}
+          describedBy="settings-contact-marketing-email-help"
+          description={loaded && !prefs.email
+            ? t('settings:privacy.contact.marketingEmail.noEmail')
+            : t('settings:privacy.contact.marketingEmail.help')}
+          onChange={(e) => void change('marketingEmail', e.currentTarget.checked)}
+        />
+        <PrivacySwitch
+          id="settings-contact-activity-email"
+          label={t('settings:privacy.contact.activityEmail.label')}
+          checked={prefs.activityEmail}
+          disabled={!loaded || saving !== null}
+          describedBy="settings-contact-activity-email-help"
+          description={t('settings:privacy.contact.activityEmail.help')}
+          onChange={(e) => void change('activityEmail', e.currentTarget.checked)}
+        />
         {prefs.phone ? (
-          <div>
-            <PrivacySwitch
-              id="settings-contact-marketing-sms"
-              label={t('settings:privacy.contact.marketingSms.label')}
-              checked={prefs.marketingSms}
-              disabled={!loaded || saving !== null}
-              describedBy="settings-contact-marketing-sms-help"
-              description={t('settings:privacy.contact.marketingSms.help', { phone: prefs.phone })}
-              onChange={(e) => void change('marketingSms', e.currentTarget.checked)}
-            />
-          </div>
+          <PrivacySwitch
+            id="settings-contact-marketing-sms"
+            label={t('settings:privacy.contact.marketingSms.label')}
+            checked={prefs.marketingSms}
+            disabled={!loaded || saving !== null}
+            describedBy="settings-contact-marketing-sms-help"
+            description={t('settings:privacy.contact.marketingSms.help', { phone: prefs.phone })}
+            onChange={(e) => void change('marketingSms', e.currentTarget.checked)}
+          />
         ) : null}
-      </div>
+      </GroupedList>
       {/* Under the switches, not among them: the same 16px in the standard
           look, and a note under the card under one of the frame's looks. */}
       {!prefs.phone && loaded ? (

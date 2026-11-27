@@ -6766,5 +6766,13 @@
   "newThread.live.pane.openingBody": {
     "text": "Homeroom bot is starting it. The preview shows here in a moment.",
     "description": "Under \"Opening a draft of …\" in the live preview column, while the draft is starting."
+  },
+  "newThread.live.showLabel": {
+    "text": "Show the live preview column",
+    "description": "Accessible name and tooltip of the Live preview button in a new chat's title card on a wide window, after the live preview column beside the chat was closed: pressing it brings the column back and starts nothing."
+  },
+  "newThread.live.pane.close": {
+    "text": "Close",
+    "description": "Accessible name and tooltip of the × button on the title card of the live preview column beside a new chat with Homeroom bot: closes that column. It stays closed on this device until the Live preview button in the chat's title card brings it back."
   }
 }

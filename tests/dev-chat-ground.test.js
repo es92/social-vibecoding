@@ -299,7 +299,9 @@ test('the standard look: the pane is the page and a sheet is the kit\'s card (WH
   const messages = ruleIn('html:root :is(.messages-layout, .dev-ws-discussion, .side-panel-head, #ai-screen .ai-askbar)');
   assert.match(messages, /--messages-selected: var\(--wip-item-hover\);/);
   assert.match(messages, /--messages-disc-shadow: inset 0 0 0 1px var\(--wip-card-line\);/);
-  assert.match(ruleIn('html:root .gc-composer-card,\nhtml:root #settings-root .ui-card.bg-white'),
+  // One message box (27 Nov 2026): the group chat's own card is gone, and
+  // its box is Messages' card, which reads --messages-disc-shadow above.
+  assert.match(ruleIn('html:root #settings-root .ui-card.bg-white'),
     /box-shadow: inset 0 0 0 1px var\(--wip-card-line\);/);
   assert.match(ruleIn('html:root .messages-layout.messages-drawer'), /background-color: var\(--wip-card-bg\);/);
 });

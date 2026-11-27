@@ -191,8 +191,11 @@ test('#2907: no loading row over a visible thread, no "sending…", no busy send
   assert.doesNotMatch(ROW, /<span>sending…<\/span>/);
   assert.doesNotMatch(COMPOSER, /setSending|sending \? '…'/);
   // #2387: the send names the thread it goes into, when the composer is a thread's.
-  assert.match(COMPOSER, /setValue\(''\); setAttachments\(\[\]\); setObject\(null\);\s*requestAnimationFrame[^\n]*\n\s*send\(\{ \.\.\.input, threadRootId \}\)/,
+  // One message box (27 Nov 2026): the box sends through its place, whose
+  // send in a conversation is the store's, naming the thread.
+  assert.match(COMPOSER, /setValue\(''\); setAttachments\(\[\]\); setObject\(null\);\s*requestAnimationFrame[^\n]*\n\s*Promise\.resolve\(place\.send\(input\)\)/,
     'the box empties at once, before the round trip');
+  assert.match(COMPOSER, /send: \(input\) => send\(\{ \.\.\.input, threadRootId \}\),/);
   assert.match(ROW, /className="messages-retry" onClick=\{\(\) => void retrySend\(/);
   assert.match(ROW, /messages-message-actions-reserved/, 'an in-flight row keeps its tray\'s place');
   assert.match(CSS, /\.messages-message-actions\.messages-message-actions-reserved \{ visibility: hidden; \}/);

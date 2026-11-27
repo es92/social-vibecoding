@@ -151,8 +151,14 @@ export interface ListRowProps
    * A row that WRAPS its own controls cannot be one (nested interactives are
    * invalid inside an anchor); features/apps/browse-list.tsx is that case, and
    * it keeps `div` plus NavLink's modified-click interception instead.
+   *
+   * `label` for a row that IS one setting: a switch or a checkbox in
+   * `trailing`, and the whole row its label, so pressing the name or the
+   * sentence under it toggles it as pressing the switch does (Settings'
+   * notification and privacy switches). A label holds no block elements, so
+   * the row's own lines are spans there.
    */
-  as?: 'div' | 'button' | 'a';
+  as?: 'div' | 'button' | 'a' | 'label';
   /**
    * For `as="button"` only. Anchor attributes have no `disabled`, so it is
    * named here rather than smuggled through a cast: a ?demo= fixture renders
@@ -186,6 +192,13 @@ export interface ListRowProps
   chevron?: boolean;
   /** Anything else on the trailing edge (a count pill, a switch, a state circle). */
   trailing?: React.ReactNode;
+  /**
+   * What sits UNDER the title and the subtitle, in the text column: a meter,
+   * a line of controls, a short list (Settings' AI grants: the day's spend
+   * bar and the cap field under the app's name). Nothing when absent, so the
+   * row is the standard one or two lines.
+   */
+  children?: React.ReactNode;
   /**
    * Extra classes for the title line, merged over its defaults.
    *
@@ -221,15 +234,18 @@ function ownSize(extra?: string): boolean {
  */
 export const ListRow = React.forwardRef<HTMLElement, ListRowProps>(function ListRow({
   className, leading, title, subtitle, dot, chevron = true, trailing, inset, as = 'div',
-  titleClassName, contentClassName, subtitleClassName, tooltip, ...props
+  titleClassName, contentClassName, subtitleClassName, tooltip, children, ...props
 }, ref) {
   const Tag = as;
+  // Inside a <label> the lines are spans (a label holds phrasing content
+  // only); `block` keeps them the lines they are everywhere else.
+  const Line = as === 'label' ? 'span' : 'div';
   // A row with no tile has nothing to inset the hairline PAST, so it falls back
   // to the text inset rather than leaving a gap the eye reads as a broken rule.
   const depth = inset ?? (leading ? 'tile' : 'text');
   return (
     <Tag
-      ref={ref as React.Ref<HTMLDivElement & HTMLButtonElement & HTMLAnchorElement>}
+      ref={ref as React.Ref<HTMLDivElement & HTMLButtonElement & HTMLAnchorElement & HTMLLabelElement>}
       // `text-start w-full` only matter on a button — a button centres its
       // content and shrinks to it, which would break the row's layout the
       // moment `as` changed. Harmless on a div, so they are unconditional
@@ -238,7 +254,7 @@ export const ListRow = React.forwardRef<HTMLElement, ListRowProps>(function List
       {...(as === 'button' ? { type: 'button' as const } : null)}
       className={cn(
         'ui-lrow relative flex w-full items-center gap-4 px-4 py-3.5 text-start',
-        (props.onClick || as === 'button' || as === 'a') && 'cursor-pointer active:bg-zinc-50 dark:active:bg-zinc-800',
+        (props.onClick || as === 'button' || as === 'a' || as === 'label') && 'cursor-pointer active:bg-zinc-50 dark:active:bg-zinc-800',
         // A row that names the page open beside its list (a conversation in
         // the Messages column) is lit in the "where you are" tint, as the
         // sidebar's current row is (AGENTS.md, "One accent"). Only `page`:
@@ -251,7 +267,7 @@ export const ListRow = React.forwardRef<HTMLElement, ListRowProps>(function List
       {...props}
     >
       {leading}
-      <div className={cn('ui-lrow-tx min-w-0 flex-1', contentClassName)}>
+      <Line className={cn('ui-lrow-tx min-w-0 flex-1', as === 'label' && 'block', contentClassName)}>
         {/* 16 OVER 14 ON A PHONE, 15 OVER 13 FROM 768px (AGENTS.md, "Type
             and colour"; the design review of 25 Nov 2026). The title was 17px
             bold over a 15px subtitle: the size of a heading, on every row,
@@ -261,23 +277,26 @@ export const ListRow = React.forwardRef<HTMLElement, ListRowProps>(function List
             the system's own lists. Now the row's subject is 16px at 600 and
             the fact under it 14px grey on a phone, a step down each at a
             desktop's reading distance. */}
-        <div className={cn(
+        <Line className={cn(
           'ui-lrow-t truncate text-base font-semibold leading-[1.3125rem] text-zinc-900 dark:text-zinc-100',
           ownSize(titleClassName) ? null : 'md:text-[0.9375rem] md:leading-5',
+          as === 'label' && 'block',
           titleClassName,
-        )}>{title}</div>
+        )}>{title}</Line>
         {/* dark:text-zinc-400, not -500 (QA 2026-09-24 Q20): zinc-500 is
             3.54:1 on the #0b0b0c page and 3.06 on a zinc-900 card, the
             Discover rows' and the Me screen's meta lines. zinc-400 is 6.0 and
             5.2, and is still the quiet line under a bold title. */}
         {subtitle ? (
-          <div className={cn(
+          <Line className={cn(
             'ui-lrow-s mt-0.5 truncate text-sm leading-[1.1875rem] text-zinc-500 dark:text-zinc-400',
             ownSize(subtitleClassName) ? null : 'md:text-[0.8125rem] md:leading-[1.125rem]',
+            as === 'label' && 'block',
             subtitleClassName,
-          )}>{subtitle}</div>
+          )}>{subtitle}</Line>
         ) : null}
-      </div>
+        {children}
+      </Line>
       {dot ? (
         <span className="h-2 w-2 shrink-0 rounded-full bg-zinc-900 dark:bg-zinc-100" aria-hidden="true" />
       ) : null}

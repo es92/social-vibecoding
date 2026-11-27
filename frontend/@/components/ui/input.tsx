@@ -58,12 +58,11 @@ const inputVariants = cva('', {
      * this table draws. It is a variant rather than a `className` for the one
      * reason every group here exists: className lands LAST, and this does not.
      *
-     * `composer` is `.gc-composer-input` — the group chat's two composers,
-     * whose only rule is `line-height: 1.5`, tuned against the wrapped
-     * multi-line box the auto-grow produces. Call site:
-     * features/group-chat/composer.tsx.
+     * None leads today: the group chat's composer that did
+     * (`.gc-composer-input`) is Messages' message box now (one message box,
+     * 27 Nov 2026).
      */
-    lead: { composer: 'gc-composer-input', none: '' },
+    lead: { none: '' },
     // Leads the string on the three waitlist-survey fields that follow a
     // sibling rather than a label: #more-made-note under #more-made-url,
     // #more-group-need under the tools chip row, and the bottom margin's
@@ -154,36 +153,13 @@ const inputVariants = cva('', {
       // in features/profile/profile-edit-sheet.tsx.
       groupRow:
         'bg-transparent border-0 px-0 py-2 text-sm text-zinc-900 dark:text-zinc-100',
-      // The group chat composer. `auth`'s darker dark-mode fill (the composer
-      // sits on the chat pane, not on a card) with the settings box's
-      // `text-sm`, and the two shape utilities the field needs BEFORE its
-      // radius — a composer never shows a resize grip, and it scrolls inside
-      // its own height cap rather than growing past it.
-      //
-      // Two values, not one plus padding through className, because className
-      // lands after the focus ring and the padding is part of the box.
-      // `composer` is the general composer and the topic thread's; `composerTight`
-      // is the boxed inline thread layout. Both in
-      // features/group-chat/composer.tsx.
-      composer:
-        'resize-none overflow-y-auto rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100',
-      // The Discussion and topic-thread composers' field inside the card
-      // (features/group-chat/composer.tsx): no box of its own, at reading size.
+      // The group chat's and the Activity feed's message fields lived here
+      // (`composer`, `composerCard`, `composerTight`, `activityReply`): every
+      // message box is Messages' own now (one message box, 27 Nov 2026).
       // A field that is a ROW of a white card (settings, sign-in): the card
       // is the box, so the field draws none and reads at 17px.
       card:
         'border-0 bg-transparent px-0 py-1 text-[17px] text-zinc-900 dark:text-zinc-100',
-      composerCard:
-        'resize-none overflow-y-auto border-0 bg-transparent px-1 py-2 text-[17px] leading-[22px] text-zinc-900 dark:text-zinc-100',
-      composerTight:
-        'resize-none overflow-y-auto rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 text-sm text-zinc-900 dark:text-zinc-100',
-      // The Activity feed's inline reply field. It sits directly on the page
-      // ground, so it takes the white card surface rather than the zinc-100
-      // ground itself. The rounded one-row field opens into a compact
-      // multi-line box, capped at four lines before its own scrollbar takes
-      // over. Call site: features/dev-board/card/feed-thread.tsx.
-      activityReply:
-        'resize-none overflow-y-auto max-h-24 rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-1 text-xs leading-5 text-zinc-900 dark:text-zinc-100',
     },
     // The placeholder colour, written between the box and the focus ring in
     // every string that has it. Named `hint`, not `placeholder`, because

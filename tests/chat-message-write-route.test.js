@@ -40,6 +40,8 @@ require.cache[appAccessId] = {
 const wsId = require.resolve('../src/services/ws');
 let handleCalls = [];
 let handleResult;
+let reactionReads = [];
+let reactionsById = {};
 require.cache[wsId] = {
   id: wsId,
   filename: wsId,
@@ -50,7 +52,10 @@ require.cache[wsId] = {
       handleCalls.push(args);
       return handleResult;
     },
-    getReactionsForMessages: async () => ({}),
+    getReactionsForMessages: async (...args) => {
+      reactionReads.push(args);
+      return reactionsById;
+    },
   },
 };
 
@@ -60,6 +65,8 @@ function reset() {
   grantedApp = { id: 7, slug: 'demo' };
   lastAccessLevel = null;
   handleCalls = [];
+  reactionReads = [];
+  reactionsById = {};
   poolQueryHandler = async () => ({ rows: [] });
   handleResult = {
     ok: true,
@@ -402,6 +409,79 @@ test('POST maps canonical race-time access and thread failures safely', async ()
       assert.equal(res.status, status);
       assert.deepEqual(await res.json(), { error });
     }
+  } finally {
+    server.close();
+  }
+});
+
+// #7225: with `on`, the reactions route answers from a short path before the
+// canonical handler runs. That path must make the handler's check itself:
+// the message is a live one of the project in the address.
+function reactTo(server, messageId, body) {
+  return fetch(urlFor(server, `/api/apps/demo/messages/${messageId}/reactions`), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+test('a reaction on another project\'s message answers 404, with and without `on` (#7225)', async () => {
+  reset();
+  // Message 99 lives in project 8; the caller collaborates on `demo` (7) and
+  // has already reacted to it there, so both `on` states would match.
+  const queries = [];
+  poolQueryHandler = async (sql, params) => {
+    queries.push([sql, params]);
+    if (/FROM chat_messages m/.test(sql)) return { rows: params[1] === 8 ? [{ '?column?': 1 }] : [] };
+    if (/FROM message_reactions/.test(sql)) return { rows: [{ '?column?': 1 }] };
+    return { rows: [] };
+  };
+  reactionsById = { 99: [{ emoji: '👍', count: 1, users: ['mallory'] }] };
+  const server = await startServer();
+  try {
+    for (const on of [true, false]) {
+      const res = await reactTo(server, 99, { emoji: '👍', on });
+      assert.equal(res.status, 404, `on: ${on}`);
+      assert.deepEqual(await res.json(), { error: 'Message not found' });
+    }
+    assert.equal(reactionReads.length, 0, 'no reactions are read for a message outside the project');
+    assert.equal(handleCalls.length, 0);
+    assert.equal(queries.length, 2, 'the membership lookup is the only read');
+    for (const [sql, params] of queries) {
+      assert.match(sql, /FROM chat_messages m\s+WHERE m\.id = \$1 AND m\.app_id = \$2\s+AND m\.deleted_at IS NULL/);
+      assert.match(sql, /blocked\.blocker_id = \$3 AND blocked\.blocked_user_id = m\.user_id/);
+      assert.deepEqual(params, [99, 7, 5]);
+    }
+
+    // Without `on` the canonical handler decides, scoped to this project.
+    handleResult = { ok: false, code: 'message_unavailable' };
+    const res = await reactTo(server, 99, { emoji: '👍' });
+    assert.equal(res.status, 404);
+    assert.deepEqual(await res.json(), { error: 'Message not found' });
+    assert.equal(handleCalls.length, 1);
+    assert.deepEqual(handleCalls[0][1], { user: { id: 5, username: 'alice' }, appId: 7, appSlug: 'demo' });
+    assert.deepEqual(handleCalls[0][2], { type: 'react', messageId: 99, emoji: '👍' });
+    assert.equal(reactionReads.length, 0);
+  } finally {
+    server.close();
+  }
+});
+
+test('a repeated reaction on the project\'s own message still answers from the short path', async () => {
+  reset();
+  poolQueryHandler = async (sql) => {
+    if (/FROM chat_messages m/.test(sql)) return { rows: [{ '?column?': 1 }] };
+    if (/FROM message_reactions/.test(sql)) return { rows: [{ '?column?': 1 }] };
+    return { rows: [] };
+  };
+  reactionsById = { 31: [{ emoji: '👍', count: 1, users: ['alice'] }] };
+  const server = await startServer();
+  try {
+    const res = await reactTo(server, 31, { emoji: '👍', on: true });
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { reactions: [{ emoji: '👍', count: 1, users: ['alice'], reacted: true }] });
+    assert.equal(handleCalls.length, 0, 'already in the wanted state: nothing is toggled');
+    assert.equal(reactionReads.length, 1);
   } finally {
     server.close();
   }

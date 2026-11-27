@@ -125,8 +125,10 @@ test('a board column draws the board variant: no tile, the line in words, the ca
   assert.match(under, /<div class="dev-ws-wrow dev-ws-brow" data-ws-row="issue:1575" data-ws-kind="request" data-ws-open="issue:1575" data-issue-row="1575" data-ws-noun="request" data-ws-num="1575">/,
     'the item’s hook rides on the row, as on the folded card it replaces');
   assert.match(under, /<a class="dev-ws-wrow-link" href="#app\/demo-app\/dev\/issues\/1575"[^>]*>Replace the oversized Game Corner header with bottom tabs<\/a><span class="dev-ws-wrow-sub">sam · 4d ago · R#1575<\/span>/);
-  assert.match(under, /<span class="dev-ws-wrow-status"><button type="button" class="attr-chip dev-badge [^"]*" data-attr-chip="" data-attr-field="category"[^>]*>[\s\S]*?Bug[\s\S]*?<\/button><span class="dev-chat-badge dev-badge [^"]*" data-count="3"[^>]*>💬 3<\/span><span class="dev-ws-tag" data-tone="plain">Picked up · zura<\/span><\/span>/,
+  assert.match(under, /<span class="dev-ws-wrow-status"><button type="button" class="attr-chip dev-badge [^"]*" data-attr-chip="" data-attr-field="category"[^>]*>[\s\S]*?Bug[\s\S]*?<\/button><span class="dev-chat-badge dev-badge [^"]*" data-count="3"[^>]*>💬 3<\/span><span data-state-tag="plain" class="one-tag one-tag-plain dev-ws-tag">Picked up · zura<\/span><\/span>/,
     'category chip, then 💬, then who is on it');
+  // (The tags are the one tag now, @/components/ui/state-tag: plain, or
+  // working with its turning mark. `dev-ws-tag` stays for the declared checks.)
   assert.ok(!/data-attr-field="assignee"/.test(under), 'no @ chip: the tag says who');
   assert.match(under, /<span class="dev-ws-wrow-menu"><button type="button" class="gc-vote-btn gc-vote-btn-icon dev-card-menu-btn" data-card-menu="issue:1575"/,
     '☰ is the card’s own trigger with the card’s own key');
@@ -135,18 +137,20 @@ test('a board column draws the board variant: no tile, the line in words, the ca
   // card's bar with Vote across the row.
   const wait = column(html, 'inreview');
   assert.match(wait, /<span class="dev-ws-wrow-sub">evan · 1d ago · PR#1540 · for #1574<\/span>/);
-  assert.match(wait, /<span class="dev-ws-tag" data-tone="ok"><svg[^>]*>[\s\S]*?<\/svg>Checks passed<\/span>/);
-  assert.match(wait, /<span class="dev-ws-row-band"><span class="dev-ws-row-state dev-ws-row-state-[a-z]+"[^>]*>Vote · 0\/1<\/span><span class="dev-ws-row-trailing"><button type="button" class="dev-vote-btn"/,
-    'the bar with its own words, then Vote, and none of the band’s chips');
+  assert.match(wait, /<span data-state-tag="plain" class="one-tag one-tag-plain dev-ws-tag"><svg[^>]*>[\s\S]*?<\/svg>Checks passed<\/span>/);
+  // The change's state is the one tag (dev-card.tsx ChangeTag): a vote that
+  // waits on the viewer is its needs-you state, in the server's words.
+  assert.match(wait, /<span class="dev-ws-row-band"><span data-state-tag="needs" class="one-tag one-tag-strong" data-pill-key="needs_vote"[^>]*><span class="one-tag-words">Vote · 0\/1<\/span><\/span><span class="dev-ws-row-trailing"><button type="button" class="dev-vote-btn"/,
+    'the state with its own words, then Vote, and none of the band’s chips');
   assert.ok(!/imported from|built with/.test(wait), 'no provenance on the row');
 
   // Done: every row is live, so the bar leads the tags at its words' width,
   // and there is no band.
   const done = column(html, 'done');
-  assert.match(done, /<span class="dev-ws-wrow-sub">alice · 2d ago · PR#1572 · closed #1500<\/span><span class="dev-ws-wrow-status"><span class="dev-ws-row-state dev-ws-row-state-ok dev-ws-wrow-live"[^>]*>✓ Live<\/span><span class="dev-ws-wrow-tally" title="3 yes and 1 no\. It needed 3 yes to pass\.">3 yes · 1 no<\/span>/,
+  assert.match(done, /<span class="dev-ws-wrow-sub">alice · 2d ago · PR#1572 · closed #1500<\/span><span class="dev-ws-wrow-status"><span data-state-tag="plain" class="one-tag one-tag-plain dev-ws-wrow-live"[^>]*><span class="one-tag-words">✓ Live<\/span><\/span><span class="dev-ws-wrow-tally" title="3 yes and 1 no\. It needed 3 yes to pass\.">3 yes · 1 no<\/span>/,
     '#6075: the final counted vote sits beside the live pill');
   assert.ok(!done.includes('dev-ws-row-band'), 'no bar across a live row');
-  assert.ok(!/data-tone="ok"[^>]*>(?:<svg[^>]*>[\s\S]*?<\/svg>)?Live</.test(done), 'and no second, small Live tag');
+  assert.ok(!/dev-ws-tag"[^>]*>(?:<svg[^>]*>[\s\S]*?<\/svg>)?Live</.test(done), 'and no second, small Live tag');
 
   // #4718: the board's rows carry no votes line — the bar and Vote stay on
   // the band under the row, and live rows keep their one tags line.
@@ -162,7 +166,7 @@ test('#6075: a live row with no counted votes shows no tally', () => {
     username: 'dependabot', created_at: at(2), merged_at: at(2), last_message_at: at(2), row_type: 'pr',
   }];
   const done = column(kanbanHtml(AppView), 'done');
-  assert.match(done, /dev-ws-wrow-live">✓ Live<\/span><\/span>/,
+  assert.match(done, /dev-ws-wrow-live"[^>]*><span class="one-tag-words">✓ Live<\/span><\/span><\/span>/,
     'the live pill is the tags line’s only state');
   assert.ok(!done.includes('dev-ws-wrow-tally'), 'no counted votes, no tally');
 });
@@ -182,10 +186,10 @@ test('#6835: a deploying row in Done says "Going live" once', () => {
   const next = done.indexOf('class="dev-ws-wrow dev-ws-brow"', from);
   const row = done.slice(from, next > 0 ? next : done.length);
   const goingLive = message('changes:badge.pill.goingLive');
-  assert.match(row, /<span class="dev-ws-row-state dev-ws-row-state-progress dev-ws-wrow-live" title="[^"]+">/,
-    'the deploying pill leads the row, with its release sentence as its hover text');
+  assert.match(row, /<span data-state-tag="working" class="one-tag one-tag-plain one-tag-working dev-ws-wrow-live" data-pill-key="deploying" title="[^"]+"><span class="dc-status-spinner-arc" aria-hidden="true"><\/span>/,
+    'the deploying pill leads the row, turning, with its release sentence as its hover text');
   assert.equal(row.split(goingLive).length - 1, 1, 'it is said once on the row');
-  assert.ok(!/class="dev-ws-tag" data-tone="run"/.test(row), 'and no second, spinning Going live tag');
+  assert.ok(!/one-tag-working dev-ws-tag"/.test(row), 'and no second, spinning Going live tag');
 });
 
 test('the row’s parts: its source', () => {
@@ -235,7 +239,7 @@ test('a private session on a request folds into that request’s row; one on no 
   assert.equal(loose.brief.tags[0].glyph, 'lock');
 
   const html = kanbanHtml(AppView);
-  assert.match(html, /<span class="dev-ws-tag" data-tone="plain" title="[^"]*"><svg[^>]*>[\s\S]*?<\/svg>Spec draft · only you<\/span>/,
+  assert.match(html, /<span data-state-tag="plain" class="one-tag one-tag-plain dev-ws-tag" title="[^"]*"><svg[^>]*>[\s\S]*?<\/svg>Spec draft · only you<\/span>/,
     'drawn with its lock');
   assert.ok(!html.includes('Yours · not shared'));
 });

@@ -549,13 +549,11 @@ function openingTag(file, anchor) {
 }
 
 const SENDS = [
-  // The Discussion's composer and a topic thread's, then the boxed thread's.
-  ['frontend/src/features/group-chat/composer.tsx', 'className="gc-send shrink-0"'],
-  ['frontend/src/features/group-chat/composer.tsx', '<Button type="submit" size="sm" className="shrink-0"'],
+  // One message box (27 Nov 2026): Messages' box is every chat's, a project
+  // chat's channel and threads and the comments under a change included.
   ['frontend/src/features/messages/composer.tsx', 'className="messages-send"'],
   // The Workshop's own Ask composer went with the reel (#6276); questions
   // about a change are asked in the AI chat now.
-  ['frontend/src/features/dev-board/card/feed-thread.tsx', 'className="dev-feed-send shrink-0'],
   ['frontend/src/features/dev-board/card/dev-card.tsx', 'className={`dev-vote-reason-send dev-vote-reason-send-${side}`}'],
 ];
 
@@ -569,8 +567,11 @@ test('a press on Send still closes the suggestion lists, as the blur did', () =>
   // The hub's own composer went with its channel card: the hub's Discussion
   // row opens the Discussion place, whose composer is the group chat's.
   assert.doesNotMatch(read('frontend/src/features/dev-board/workshop/hub-cards.tsx'), /dev-ws-hub-compose-send/);
-  assert.match(openingTag('frontend/src/features/dev-board/card/feed-thread.tsx', 'className="dev-feed-send shrink-0'),
-    /onMouseDown=\{\(event\) => \{ event\.preventDefault\(\); mention\.close\(\); refs\.close\(\); \}\}/);
+  // One message box (27 Nov 2026): the comments' box is Messages' box, whose
+  // lists belong to the field, which keeps focus through the press; a send
+  // closes them by emptying it.
+  assert.match(read('frontend/src/features/dev-board/card/feed-thread.tsx'), /<MessageBox place=\{place\} \/>/);
+  assert.match(openingTag('frontend/src/features/messages/composer.tsx', 'className="messages-send"'), KEEPS_FOCUS);
 });
 
 test('every button labelled Send in the shell keeps focus (a new composer is caught here)', () => {
@@ -580,7 +581,6 @@ test('every button labelled Send in the shell keeps focus (a new composer is cau
     return /\.(tsx|jsx)$/.test(d.name) ? [rel] : [];
   });
   assert.equal(message('messages:composer.send'), 'Send message');
-  assert.equal(message('project:feedThread.reply.send'), 'Send reply');
   let seen = 0;
   for (const file of walk('frontend/src')) {
     const src = read(file);
@@ -598,7 +598,9 @@ test('every button labelled Send in the shell keeps focus (a new composer is cau
       assert.ok(KEEPS_FOCUS.test(tag), `${file}: ${tag.slice(0, 80)}`);
     }
   }
-  assert.ok(seen >= 6, `found ${seen}`);
+  // One message box (27 Nov 2026): three of the six were the group chat's
+  // and the comments' own Sends, which are Messages' now.
+  assert.ok(seen >= 3, `found ${seen}`);
 });
 
 // ── 3. The keys leave a short page (overnight audit K01, L03) ──────────────

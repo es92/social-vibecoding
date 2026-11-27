@@ -253,7 +253,11 @@ test('Messages insets both of its independent scrollers and its composer', () =>
   assert.ok(!/messages-thread-scroll[^"]*un-kb-avoid/.test(source),
     'the Messages scroller must not reserve the inset a second time');
   // 1 November 2026: the bar is the chat foot's, which names the class.
-  assert.match(composer, /<ChatComposerBar className=\{`messages-composer \$\{inThread/,
+  // One message box (27 Nov 2026): the box draws the chat foot's bar at a
+  // screen's foot, and a plain block only inside a card (`bare`, the
+  // comments under a change), where there is no inset to clear.
+  assert.match(composer, /const Bar = place\.bare \? 'div' : ChatComposerBar;/);
+  assert.match(composer, /<Bar className=\{`messages-composer \$\{inThread/,
     'the pinned Messages composer must carry the inset itself');
   assert.match(read('frontend/@/components/ui/chat.tsx'), /className=\{cn\(className, 'chat-composer-bar platform-safe-bar'\)\}/);
 });
@@ -279,7 +283,7 @@ test('the Messages history reserves no band above a composer that clears the bar
   // Every composer the history can have below it is a `.platform-safe-bar`:
   // the two bars through ChatComposerBar, which adds the class, and the
   // notice that stands in for a bar, which names it itself.
-  for (const root of ['<ChatComposerBar className="messages-composer messages-composer-awaiting"', 'messages-composer-disabled platform-safe-bar', '<ChatComposerBar className={`messages-composer ']) {
+  for (const root of ['<ChatComposerBar className="messages-composer messages-composer-awaiting"', 'messages-composer-disabled platform-safe-bar', '<Bar className={`messages-composer ']) {
     assert.ok(composer.includes(root), root);
   }
   // And it is the pane's next element after the history, in both panes.
@@ -357,19 +361,21 @@ test('the general-chat composer bar carries platform-safe-bar, on both branches'
   // a refactor that lifted the notice out would take the inset with it.
   const pane = (readOnly) => renderComponent(
     'frontend/src/features/group-chat/general-chat.tsx', 'GeneralChat',
-    { introAppName: null, readOnly, maxLength: 8000 },
+    { slug: 'demo', readOnly },
   );
   // 1 November 2026: the bar is the chat foot's (ChatComposerBar), whose
   // padding is app.css's `.chat-composer-bar` rather than Tailwind here.
+  // One message box (27 Nov 2026): the box is Messages', which draws that
+  // bar round its own card (`messages-composer` leads its class).
   for (const readOnly of [false, true]) {
     const html = pane(readOnly);
-    const bar = /<div class="chat-composer-bar[^"]*"/.exec(html);
+    const bar = /<div class="(?:messages-composer )?chat-composer-bar[^"]*"/.exec(html);
     assert.ok(bar, `readOnly=${readOnly}: the composer's bar wrapper moved — re-anchor this test`);
     assert.match(bar[0], /platform-safe-bar/,
       `readOnly=${readOnly}: the general-chat composer must sit above the home indicator`);
   }
   // The composer is inside that bar, not a sibling of it.
-  assert.match(pane(false), /platform-safe-bar[^>]*><div id="gc-reply-preview"/);
+  assert.match(pane(false), /platform-safe-bar[^>]*><div class="messages-composer-card" id="gc-form"/);
   assert.match(pane(true), /platform-safe-bar[^>]*><div class="px-3 py-2 text-xs/);
 });
 
@@ -383,16 +389,17 @@ test('the thread composer AND its read-only notice both carry the bar class', ()
   const shell = (readOnly) => renderComponent(
     'frontend/src/features/group-chat/thread-shell.tsx', 'ThreadShell',
     {
+      slug: 'demo',
+      thread: { type: 'session', ref: 1 },
       fill: true,
       withHeader: false,
       readOnly,
       notice: 'This thread is read-only.',
       placeholder: 'Reply in thread…',
-      maxLength: 8000,
     },
   );
   const composer = shell(false);
-  assert.match(composer, /class="chat-composer-bar platform-safe-bar"/,
+  assert.match(composer, /class="messages-composer messages-composer-thread chat-composer-bar platform-safe-bar"/,
     'the thread composer must sit above the home indicator');
   const notice = shell(true);
   assert.match(notice, /class="px-3 py-2[^"]*platform-safe-bar">This thread is read-only\./,

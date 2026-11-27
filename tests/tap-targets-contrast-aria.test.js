@@ -272,6 +272,75 @@ test('Q20: the app frame is titled with the app\'s name, and keeps it when kept 
     /frame\.mount\(\{ slug: appData\.slug, faded: false, title: appData\.name \|\| '' \}\)/);
 });
 
+// ── Phone audit, request 7164, page by page: five small controls ────────
+// Challenges' tabs, a thread's reaction chips, the Workshop's head links and
+// All items' menu button and category chip were 22 to 32px tall on a phone.
+// Each keeps its drawn size and is pressed at 44px or more.
+
+/** The phone block those five live in. */
+const PHONE_TAPS = (() => {
+  const i = CSS.indexOf('PHONE AUDIT (request 7164, page by page): FIVE SMALL CONTROLS PRESSED AT 44PX');
+  assert.ok(i >= 0, 'expected the five controls\' block in app.css');
+  const open = CSS.indexOf('@media (max-width: 767.98px) {', i);
+  assert.ok(open > i, 'the block is for phone widths only');
+  return CSS.slice(open, CSS.indexOf('\n}', open));
+})();
+const ALL_ITEMS = 'html:root #dev-workshop \\.dev-ws\\[data-ws-tab="all"\\] #dev-kanban';
+
+test('7164: Challenges\' tabs are pressed at 44px and the track is drawn where it was', () => {
+  const tab = CSS.match(/html:root #leaderboard-screen #standings-tabs\.one-seg > button \{ height: (\d+)px;/);
+  assert.ok(tab, 'the tabs have one drawn height');
+  const reach = PHONE_TAPS.match(/#standings-tabs\.one-seg > button::after \{ content: ""; position: absolute; inset: -(\d+)px 0; \}/);
+  assert.ok(reach, 'each tab has a tap box above and below itself');
+  assert.ok(Number(tab[1]) + 2 * Number(reach[1]) >= 44, 'tall enough');
+  // The strip scrolls sideways, so it clips at its padding box: the reach has
+  // to be padding, and the margins take back what the padding added.
+  const strip = PHONE_TAPS.match(/#standings-tabs\.one-seg \{ padding-block: (\d+)px; margin-block: -(\d+)px (\d+)px; background: none; \}/);
+  assert.ok(strip, 'the strip makes the room inside itself');
+  assert.equal(strip[1], reach[1], 'the tab\'s box ends at the strip\'s padding edge, so nothing is clipped');
+  const grown = Number(strip[1]) - 2; // the control's own padding is 2px
+  assert.equal(Number(strip[2]), grown, 'pulled up by what was added above');
+  assert.equal(Number(strip[3]), 12 - grown, 'and the 12px under the strip stays 12px');
+  assert.match(CSS, /html:root #leaderboard-screen #standings-tabs\.one-seg \{ display: grid; width: 100%; margin-bottom: 12px; \}/);
+  const track = PHONE_TAPS.match(/#standings-tabs\.one-seg::after \{ content: ""; position: absolute; z-index: -1; inset: (\d+)px 0; border-radius: 9999px; background: var\(--one-seg-track\); \}/);
+  assert.ok(track, 'the track is drawn by the strip\'s ::after, under the tabs');
+  assert.equal(Number(track[1]), grown, 'at the size it had');
+  assert.match(PHONE_TAPS, new RegExp(`#standings-tabs\\.one-seg\\[style\\*="--one-seg-i"\\]::before \\{ top: ${strip[1]}px; bottom: ${strip[1]}px; \\}`),
+    'the sliding pill keeps its 2px from the track\'s edge');
+});
+
+test('7164: a thread\'s reaction chips are pressed at 44px, and a chip never loses a tap to its neighbour', () => {
+  assert.match(CSS, /\n\.messages-reactions button \{[^}]*height: 32px;/, 'drawn 32px tall, as before');
+  assert.match(PHONE_TAPS, /html:root \.messages-reactions button \{ position: relative; \}/);
+  assert.match(PHONE_TAPS, /html:root \.messages-reactions button::after \{ content: ""; position: absolute; z-index: -1; inset-inline: 0; top: 50%; height: 44px; transform: translateY\(-50%\); \}/,
+    'the box is 44px tall and sits under the chips');
+  assert.match(PHONE_TAPS, /html:root \.messages-reactions \{ isolation: isolate; \}/,
+    'under the chips of its own row only, never under the message');
+});
+
+test('7164: the Workshop\'s head links (Open the board) are pressed at 44px', () => {
+  assert.match(CSS, /html:root #dev-workshop \.dev-ws-front-go \{[^}]*min-height: 2rem;/, 'drawn 32px tall, as before');
+  assert.match(read('frontend/src/features/dev-board/workshop/front-page.tsx'),
+    /className="dev-ws-front-go" data-ws-all-open=""/, 'Open the board is one of them');
+  assert.match(PHONE_TAPS, /html:root #dev-workshop \.dev-ws-front-go \{ position: relative; \}/);
+  assert.match(PHONE_TAPS, /html:root #dev-workshop \.dev-ws-front-go::after \{ content: ""; position: absolute; inset-inline: 0; top: 50%; height: 44px; transform: translateY\(-50%\); \}/);
+});
+
+test('7164: All items\' menu button and category chip are pressed at 44px', () => {
+  const menu = CSS.match(/\.dev-ws-wrow-menu > \.gc-vote-btn\.dev-card-menu-btn \{\s*width: (\d+)px; height: (\d+)px;/);
+  assert.ok(menu, 'the menu button has one drawn size');
+  const reach = PHONE_TAPS.match(new RegExp(`${ALL_ITEMS} \\.dev-ws-wrow-menu > \\.dev-card-menu-btn::after \\{ content: ""; position: absolute; inset: -(\\d+)px; \\}`));
+  assert.ok(reach, 'the menu button has a tap box beyond itself');
+  assert.match(PHONE_TAPS, new RegExp(`${ALL_ITEMS} \\.dev-ws-wrow-menu > \\.dev-card-menu-btn \\{ position: relative; \\}`));
+  assert.ok(Number(menu[1]) + 2 * Number(reach[1]) >= 44, 'wide enough');
+  assert.ok(Number(menu[2]) + 2 * Number(reach[1]) >= 44, 'tall enough');
+  // The chip: only the one that is pressed (a button), under its own words.
+  assert.match(PHONE_TAPS, new RegExp(`${ALL_ITEMS} \\.dev-ws-wrow-status > button\\.attr-chip::after \\{ content: ""; position: absolute; z-index: -1; inset-inline: 0; top: 50%; height: 44px; transform: translateY\\(-50%\\); \\}`));
+  assert.doesNotMatch(PHONE_TAPS, /span\.attr-chip|\.dev-ws-wrow-status > \.attr-chip/, 'a chip that is only a label gets no box');
+  assert.match(read('frontend/src/features/dev-board/card/dev-card.tsx'),
+    /if \(b\.readonly\) \{\s*return <span className=\{`attr-chip dev-badge/, 'which is a span');
+});
+
 // ── Phone audit, request 7164, points 2 and 5 ───────────────────────────
 // The header's controls reach 44px through .un-touch-target; a conversation's
 // discs on its title card get their own reach; and no text box named by the

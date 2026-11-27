@@ -926,11 +926,16 @@
   <!-- Third-party browser libs, vendored into public/vendor/ by
        `npm run vendor:assets` (was cdn.jsdelivr.net). Version-stamped
        filenames ARE the pin; sha384 provenance lives in
-       public/vendor/README.md, since same-origin tags can't use SRI. Same
-       order as before: QR first, then marked + DOMPurify, which power
-       PlatformMarkdown.render (lib/platform-markdown.js) — if either
-       fails to load, it still falls back to a raw <pre> view. -->
-  <script src="/vendor/qrcode-1.0.0.min.js"></script>
+       public/vendor/README.md, since same-origin tags can't use SRI.
+       marked + DOMPurify power PlatformMarkdown.render
+       (lib/platform-markdown.js) — if either fails to load, it still
+       falls back to a raw <pre> view. They stay here, ahead of first
+       paint: chat and markdown text is parsed and cleaned synchronously
+       on screens that can be the first one shown, and text must never be
+       drawn before its sanitizer is on the page. The QR code library
+       (qrcode-1.0.0.min.js) is NOT a tag any more: the three places that
+       draw a code load it when they open (lib/qr-code.ts, request #7165),
+       and the service worker still keeps it for offline use. -->
   <script src="/vendor/marked-15.0.12.min.js"></script>
   <script src="/vendor/purify-3.4.17.min.js"></script>
   <!-- usernode-native kit: the platform dogfoods its own hosted kit

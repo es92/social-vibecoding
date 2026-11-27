@@ -25,6 +25,9 @@ const root = path.join(__dirname, '..');
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
 const filter = loadTsx('frontend/src/features/workshop/vote-filter.tsx');
+// The kind is the one model of a change's (voteTypeOf), read the same off a
+// feed item, a review item and a Needs you row's Yes.
+const { voteTypeOf } = loadTsx('frontend/src/features/dev-board/card/change.ts');
 const reel = loadTsx('frontend/src/features/workshop/needs-reel.tsx');
 
 /** A feed item as GET /api/workshop/needs-feed serves it. */
@@ -38,19 +41,20 @@ const item = (over = {}) => ({
 // ── The kind ───────────────────────────────────────────────────────────
 
 test('a vote is advisory when the feed marks it so, and decides otherwise', () => {
-  assert.equal(filter.itemVoteType(item()), 'deciding', 'a plain change decides');
-  assert.equal(filter.itemVoteType(item({ advisory: true })), 'advisory');
-  assert.equal(filter.itemVoteType(item({ uncounted: true })), 'advisory', 'a test account\'s vote is grouped with advisory');
-  assert.equal(filter.itemVoteType(item({ kind: 'governance' })), 'deciding', 'a group decision decides');
-  assert.equal(filter.itemVoteType(item({ kind: 'ballot' })), 'deciding', 'a ballot decides');
-  assert.equal(filter.itemVoteType(item({ kind: 'question' })), 'deciding', 'the bot\'s question decides');
+  assert.equal(voteTypeOf(item()), 'deciding', 'a plain change decides');
+  assert.equal(voteTypeOf(item({ advisory: true })), 'advisory');
+  assert.equal(voteTypeOf(item({ uncounted: true })), 'advisory', 'a test account\'s vote is grouped with advisory');
+  assert.equal(voteTypeOf(item({ kind: 'governance' })), 'deciding', 'a group decision decides');
+  assert.equal(voteTypeOf(item({ kind: 'ballot' })), 'deciding', 'a ballot decides');
+  assert.equal(voteTypeOf(item({ kind: 'question' })), 'deciding', 'the bot\'s question decides');
 
   // A Needs you row gives the same answer from the flags on its Yes.
-  assert.equal(filter.rowVoteType({ yes: { advisory: true } }), 'advisory');
-  assert.equal(filter.rowVoteType({ yes: { uncounted: true } }), 'advisory');
-  assert.equal(filter.rowVoteType({ yes: {} }), 'deciding');
-  assert.equal(filter.rowVoteType({ yes: null }), 'deciding', 'a group decision has no Yes and no advisory mark');
-  assert.equal(filter.rowVoteType({}), 'deciding');
+  assert.equal(voteTypeOf({ advisory: true }), 'advisory');
+  assert.equal(voteTypeOf({ uncounted: true }), 'advisory');
+  assert.equal(voteTypeOf({}), 'deciding');
+  assert.equal(voteTypeOf(null), 'deciding', 'a group decision has no Yes and no advisory mark');
+  const [row] = reel.reelRows([item({ advisory: true })]);
+  assert.equal(voteTypeOf(row.yes), 'advisory', 'the row\'s Yes carries the feed\'s mark');
 });
 
 test('filterByVoteType keeps the feed\'s order and returns the same list on All', () => {
@@ -60,10 +64,10 @@ test('filterByVoteType keeps the feed\'s order and returns the same list on All'
     item({ id: 3, kind: 'governance' }),
     item({ id: 4, uncounted: true }),
   ];
-  assert.equal(filter.filterByVoteType(list, 'all', filter.itemVoteType), list, 'All copies nothing');
-  assert.deepEqual(filter.filterByVoteType(list, 'deciding', filter.itemVoteType).map((it) => it.id), [1, 3]);
-  assert.deepEqual(filter.filterByVoteType(list, 'advisory', filter.itemVoteType).map((it) => it.id), [2, 4]);
-  assert.deepEqual(filter.voteTallies(list, filter.itemVoteType), { all: 4, deciding: 2, advisory: 2 });
+  assert.equal(filter.filterByVoteType(list, 'all', voteTypeOf), list, 'All copies nothing');
+  assert.deepEqual(filter.filterByVoteType(list, 'deciding', voteTypeOf).map((it) => it.id), [1, 3]);
+  assert.deepEqual(filter.filterByVoteType(list, 'advisory', voteTypeOf).map((it) => it.id), [2, 4]);
+  assert.deepEqual(filter.voteTallies(list, voteTypeOf), { all: 4, deciding: 2, advisory: 2 });
 });
 
 // ── The chips ──────────────────────────────────────────────────────────
@@ -176,8 +180,9 @@ test('each owed-vote query asks the project\'s take-part rule, and leaves questi
 test('the experimental run filters its run and draws the chips under its bar', () => {
   const SRC = read('frontend/src/features/review-flow/review-flow.tsx');
   assert.match(SRC, /const \[filter, setFilter\] = useState<VoteFilter>\('all'\);/);
-  assert.match(SRC, /const run = list \? filterByVoteType\(list, filter, reviewVoteType\) : \[\];/);
-  assert.match(SRC, /const tallies = useMemo\(\(\) => voteTallies\(list \|\| \[\], reviewVoteType\), \[list\]\);/);
+  // Each item's kind is the one model of a change's (voteTypeOf).
+  assert.match(SRC, /const run = list \? filterByVoteType\(list, filter, voteTypeOf\) : \[\];/);
+  assert.match(SRC, /const tallies = useMemo\(\(\) => voteTallies\(list \|\| \[\], voteTypeOf\), \[list\]\);/);
   // The press restarts the run at the first change of that kind with no vote
   // or skip yet, so it lands where there is still something to decide.
   assert.match(SRC, /const first = nextRun\.findIndex\(\(it\) => it\.kind !== 'governance' && !passed\[it\.key\]\);/);

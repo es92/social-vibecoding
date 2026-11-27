@@ -66,36 +66,31 @@ test('three chips, in the words the plan chose', () => {
 });
 
 test('a tap fills the composer and focuses it, caret at the end; it never sends', () => {
-  const { startReply } = loadTsx(SRC);
-  const events = [];
-  const input = {
-    value: 'old draft',
-    dispatchEvent(e) { events.push(['dispatch', e.type, e.bubbles, this.value]); return true; },
-    focus() { events.push(['focus']); },
-    setSelectionRange(a, b) { events.push(['caret', a, b]); },
-  };
-  const doc = { getElementById: (id) => (id === 'gc-input' ? input : null) };
-  startReply('Could it also ', doc);
-  assert.equal(input.value, 'Could it also ');
-  // `input` is what the module listens to (app-view.js renderGroupChatTab):
-  // it saves the draft and grows the field, as for anything typed.
-  assert.deepEqual(events, [['dispatch', 'input', true, 'Could it also '], ['focus'], ['caret', 14, 14]]);
-  // No composer on the page: nothing to do, and nothing thrown.
-  assert.doesNotThrow(() => startReply('Hi', { getElementById: () => null }));
+  // One message box (27 Nov 2026): the channel's box is Messages' own, so
+  // the words go in through it (`putInComposer`), which saves the draft and
+  // grows the field as anything typed does, and puts the caret after them.
   const src = read(SRC);
+  assert.match(src, /export function startReply\(text: string\): void \{\n\s+const scope = shownChatScope\('general'\);\n\s+if \(scope != null\) putInComposer\(scope, text\);\n\}/);
+  const box = read('frontend/src/features/messages/composer.tsx');
+  assert.match(box, /emojiCaret\.current = Math\.min\(text\.length, 8000\);\n\s+updateValue\(text\);/);
+  assert.match(box, /input\?\.focus\(\{ preventScroll: true \}\);/);
+  // No box on the page: nothing to do, and nothing thrown.
+  const { startReply } = loadTsx(SRC);
+  assert.doesNotThrow(() => startReply('Hi'));
   assert.doesNotMatch(src, /\.send\(|requestSubmit|dispatchEvent\(new Event\('submit'/);
 });
 
 test('drawn in the general chat composer bar, above the reply chip and the form', () => {
   const src = read('frontend/src/features/group-chat/general-chat.tsx');
   assert.match(src, /import \{ ReplyStarters \} from '\.\/reply-starters';/);
-  assert.match(src, /<ReplyStarters \/>\s*<ComposerSlots scope="general" \/>\s*<ComposerForm/);
+  // Over the box's card, inside its bar (one message box, 27 Nov 2026).
+  assert.match(src, /above=\{<ReplyStarters \/>\}/);
   // Inside the branch that has a composer: a read-only view has neither.
   const readOnly = src.indexOf('data-gc-readonly-notice');
   assert.ok(readOnly > 0 && readOnly < src.indexOf('<ReplyStarters />'));
   // Nothing in it on a cold render: the store is empty until the module publishes.
   const html = renderComponent('frontend/src/features/group-chat/general-chat.tsx', 'GeneralChat', {
-    introAppName: null, readOnly: false, notice: null, maxLength: 8000,
+    slug: 'demo', readOnly: false, notice: null,
   });
   assert.doesNotMatch(html, /data-gc-reply-starters/);
   assert.match(html, /id="gc-form"/);
