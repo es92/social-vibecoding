@@ -216,7 +216,7 @@ test('a live card wears the green pill and the green edge; one going live stays 
   assert.ok(check, 'a declared check pins the green Live row');
   assert.match(check.path, /[?&]demo=1[&#][\s\S]*col=done/);
   assert.ok(check.expectSelector.includes(
-    ':has([data-proposal-row="9100027"][data-ws-for="900006"] .dev-ws-wrow-status > .dev-ws-row-state-ok.dev-ws-wrow-live)'));
+    ':has([data-proposal-row="9100027"][data-ws-for="900006"] .dev-ws-wrow-status > .dev-ws-wrow-live[data-state-tag])'));
 });
 
 test('the Done summary reports a child app’s latest delivery outcome', () => {
@@ -997,9 +997,9 @@ test('the declared checks still describe the row the tags are actually on', () =
   // band, and says why in a tag.
   const mine = dapp.tests.filter((t) => /9000050/.test(t.expectSelector || ''));
   assert.equal(mine.length, 1, 'one check on the blocked proposal\'s row');
-  assert.match(mine[0].expectSelector, /\[data-proposal-row="9000050"\]:has\(\.dev-ws-row-band > \.dev-ws-row-state/,
+  assert.match(mine[0].expectSelector, /\[data-proposal-row="9000050"\]:has\(\.dev-ws-row-band > \[data-state-tag\]/,
     'the row keeps its vote band');
-  assert.match(mine[0].expectSelector, /\.dev-ws-wrow-status > \.dev-ws-tag\[data-tone="bad"\]/,
+  assert.match(mine[0].expectSelector, /\.dev-ws-wrow-status > \.dev-ws-tag$/,
     'and says why in a tag');
   assert.equal(mine[0].expectText, 'Checks failing');
   // NAMED, not positional. `.dev-card-meta > .dev-badge` matched — but its

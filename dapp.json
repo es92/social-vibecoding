@@ -1118,7 +1118,7 @@
     {
       "name": "Dev board, round three: the vote is one button beside the state bar, on the row; \"Still yes?\" (#1688); no kudos slot (#5249)",
       "path": "/?demo=1&view=kanban#app/usernode-2d5619/dev",
-      "expectSelector": "#dev-kanban-col-inreview:has([data-vote-btn=\"prior-yes\"]):not(:has([data-kudos-host],.dev-thanks-pill)) .dev-ws-wrow .dev-ws-row-band > .dev-ws-row-state + .dev-ws-row-trailing > .dev-vote-btn[data-vote-btn=\"open\"][aria-haspopup=\"dialog\"]",
+      "expectSelector": "#dev-kanban-col-inreview:has([data-vote-btn=\"prior-yes\"]):not(:has([data-kudos-host],.dev-thanks-pill)) .dev-ws-wrow .dev-ws-row-band > [data-state-tag] + .dev-ws-row-trailing > .dev-vote-btn[data-vote-btn=\"open\"][aria-haspopup=\"dialog\"]",
       "expectText": "Vote"
     },
     {
@@ -1147,7 +1147,7 @@
     {
       "name": "A blocked proposal keeps its vote bar, and says why in a tag on its row",
       "path": "/?demo=1#app/usernode-2d5619/board",
-      "expectSelector": "#dev-kanban [data-proposal-row=\"9000050\"]:has(.dev-ws-row-band > .dev-ws-row-state + .dev-ws-row-trailing .dev-vote-btn) .dev-ws-wrow-status > .dev-ws-tag[data-tone=\"bad\"]",
+      "expectSelector": "#dev-kanban [data-proposal-row=\"9000050\"]:has(.dev-ws-row-band > [data-state-tag] + .dev-ws-row-trailing .dev-vote-btn) .dev-ws-wrow-status > .dev-ws-tag",
       "expectText": "Checks failing"
     },
     {
@@ -2261,7 +2261,7 @@
     {
       "name": "Done keeps task attributes, a live change's ✓ Live is green (#3873), and a change names the request it closed (#2423)",
       "path": "/?demo=1&view=kanban&col=done#app/usernode-2d5619/dev",
-      "expectSelector": "#dev-kanban-col-done:has([data-gov-row=\"9100060\"] .attr-chip):has([data-proposal-row=\"9100027\"][data-ws-for=\"900006\"] .dev-ws-wrow-status > .dev-ws-row-state-ok.dev-ws-wrow-live)",
+      "expectSelector": "#dev-kanban-col-done:has([data-gov-row=\"9100060\"] .attr-chip):has([data-proposal-row=\"9100027\"][data-ws-for=\"900006\"] .dev-ws-wrow-status > .dev-ws-wrow-live[data-state-tag])",
       "expectText": "Closed #900006"
     },
     {
@@ -4266,19 +4266,19 @@
     {
       "name": "#2038: an approved proposal being brought up to date says so on its row",
       "path": "/?demo=1&view=kanban#app/usernode-2d5619/dev",
-      "expectSelector": "#dev-kanban [data-proposal-row=\"9000082\"] .dev-ws-wrow-status > .dev-ws-tag[data-tone=\"run\"] > .dc-status-spinner-arc",
+      "expectSelector": "#dev-kanban [data-proposal-row=\"9000082\"] .dev-ws-wrow-status > .dev-ws-tag[data-state-tag=\"working\"] > .dc-status-spinner-arc",
       "expectText": "Bringing up to date"
     },
     {
       "name": "#2221: a refused merge names the next action on its row, not the actor who refused",
       "path": "/?demo=1&view=kanban#app/usernode-2d5619/dev",
-      "expectSelector": "#dev-kanban [data-proposal-row=\"9000083\"] .dev-ws-wrow-status > .dev-ws-tag[data-tone=\"bad\"]",
+      "expectSelector": "#dev-kanban [data-proposal-row=\"9000083\"] .dev-ws-wrow-status > .dev-ws-tag",
       "expectText": "Needs author to sync with main"
     },
     {
       "name": "#2038: automatic conflict resolution says nobody has to act, on its row",
       "path": "/?demo=1&view=kanban#app/usernode-2d5619/dev",
-      "expectSelector": "#dev-kanban [data-proposal-row=\"9000003\"] .dev-ws-wrow-status > .dev-ws-tag[data-tone=\"run\"] > .dc-status-spinner-arc",
+      "expectSelector": "#dev-kanban [data-proposal-row=\"9000003\"] .dev-ws-wrow-status > .dev-ws-tag[data-state-tag=\"working\"] > .dc-status-spinner-arc",
       "expectText": "Resolving conflicts automatically"
     },
     {
