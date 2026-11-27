@@ -2115,20 +2115,16 @@ html:root .messages-message.messages-message-end .messages-message-author { flex
 .messages-format-btn svg { width: 18px; height: 18px; stroke-width: 1.8; }
 .messages-format-btn:hover { background: var(--messages-surface-2); }
 .messages-format-btn:disabled { opacity: .35; }
-/* Request #7164 (phone audit, 25 Nov 2026): ON A PHONE THE BOX STANDS ALONE.
-   Eight desktop buttons stood over a channel's message box at every width.
-   Under 768px the row is folded away until "Formatting" in the "+" menu
-   opens it (composer.tsx sets `data-open`), and it stays open until that
-   row is pressed again; the row wears a check at its end while it is open.
-   From 768px the formatting row is always there and the menu has no such
-   row. */
+/* Request #7164 (phone audit, 25 Nov 2026): THE BOX STANDS ALONE.
+   Eight buttons stood over a channel's message box. The row is folded away
+   until "Formatting" in the "+" menu opens it (composer.tsx sets
+   `data-open`), and it stays open until that row is pressed again; the row
+   wears a check at its end while it is open.
+   27 Nov 2026: at every width, not a phone's alone. The one message box
+   reached topic channels, and the owner asked for the formatting row to be
+   something a person switches on, never there to begin with. */
 .messages-composer-menu .messages-composer-menu-check { margin-inline-start: auto; color: var(--accent); }
-@media (max-width: 767px) {
-  .messages-format-bar:not([data-open]) { display: none; }
-}
-@media (min-width: 768px) {
-  .messages-composer-menu > .messages-composer-menu-format { display: none; }
-}
+.messages-format-bar:not([data-open]) { display: none; }
 /* #6653: the field that asks for a web address sits in the formatting row's
    place, with the row's own sizes: a 32px field and two 32px buttons, above
    the same hairline the row draws. */

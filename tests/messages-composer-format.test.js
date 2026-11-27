@@ -184,8 +184,8 @@ test('the composer shows the row only for a channel, named from the catalog', ()
   }
 });
 
-test('on a phone the row waits behind Formatting in the "+" menu', () => {
-  // Request #7164 (phone audit): under 768px a channel's box stands alone:
+test('the row waits behind Formatting in the "+" menu, at every width', () => {
+  // Request #7164 (phone audit): a channel's box stands alone:
   // the "+", the field and Send, with no button of its own for formatting.
   // The menu's row is a channel's alone, says whether the formatting row is
   // open (a checked menu item, and a check drawn at its end), and is named
@@ -207,13 +207,18 @@ test('on a phone the row waits behind Formatting in the "+" menu', () => {
   const keys = COMPOSER.slice(COMPOSER.indexOf('function onFormatKey('), COMPOSER.indexOf('function formatSelected('));
   assert.doesNotMatch(keys, /formatOpen/);
 
-  // The fold is the stylesheet's, and a phone's alone: the formatting row is
-  // hidden under 768px until opened, and from 768px the menu has no such row.
+  // The fold is the stylesheet's, at every width. This pinned a phone-only
+  // fold until 27 Nov 2026 (the row always drawn from 768px, and the menu's
+  // row hidden there). The one message box then reached topic channels and
+  // the owner asked for the row to be switched on, never there to begin
+  // with, so neither rule sits in a media query any more and the menu's
+  // Formatting row is offered on a desktop too.
   const CSS = read('public/css/app.css');
   const at = CSS.indexOf('.messages-composer-menu .messages-composer-menu-check');
   const block = CSS.slice(at, CSS.indexOf('/* #6653', at));
-  assert.match(block, /@media \(max-width: 767px\) \{\s*\.messages-format-bar:not\(\[data-open\]\) \{ display: none; \}/);
-  assert.match(block, /@media \(min-width: 768px\) \{\s*\.messages-composer-menu > \.messages-composer-menu-format \{ display: none; \}/);
+  assert.match(block, /\n\.messages-format-bar:not\(\[data-open\]\) \{ display: none; \}/);
+  assert.doesNotMatch(block, /@media/);
+  assert.doesNotMatch(CSS, /\.messages-composer-menu > \.messages-composer-menu-format \{ display: none; \}/);
 });
 
 test('a press keeps the field focused and takes Ctrl/Cmd+B and I', () => {

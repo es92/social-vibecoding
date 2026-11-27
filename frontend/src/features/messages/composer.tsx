@@ -439,10 +439,10 @@ export function MessageBox({ place, scroller }: { place: ComposerPlace; scroller
   const menuRef = useRef<HTMLDivElement>(null);
   const menuRange = useRef<{ start: number; end: number } | null>(null);
   const [linkOpen, setLinkOpen] = useState(false);
-  // Request #7164 (phone audit): under 768px a channel's box stands alone and
-  // the formatting row waits behind "Formatting" in the "+" menu. Closed to
-  // begin with, and it stays as the person left it: sending does not close
-  // it. A desktop draws the row always and never the menu's row (app.css).
+  // Request #7164 (phone audit): a channel's box stands alone and the
+  // formatting row waits behind "Formatting" in the "+" menu, at every width
+  // since 27 Nov 2026. Closed to begin with, and it stays as the person left
+  // it: sending does not close it (app.css folds the row until `data-open`).
   const [formatOpen, setFormatOpen] = useState(false);
   const formatBarId = useId();
   const [linkValue, setLinkValue] = useState('');
