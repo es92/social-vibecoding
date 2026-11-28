@@ -7,12 +7,11 @@
  *
  * Which row is in which group is ./model.ts. This file draws it.
  *
- * ALL WORK is the list's checkbox, ticked as the page first opens. UNTICKED,
- * the list is the viewer's own work: the Homeroom bot tab's own three lists
- * narrowed to this project: the tab's reads (../../ai/desk.ts readDesk), its rules
+ * YOUR WORK, ticked, is the Homeroom bot tab's own three lists narrowed to
+ * this project: the tab's reads (../../ai/desk.ts readDesk), its rules
  * (../../ai/model.ts) and its rows' words (../../ai/lines.ts useAiLines),
  * drawn here. Nothing about what is yours is decided in this file, so the
- * two pages cannot disagree. Ticked, the same Needs you leads, each
+ * two pages cannot disagree. Unticked, the same Needs you leads, each
  * thread drawn as the board's own row, and every other open row of the
  * project follows.
  *
@@ -183,10 +182,9 @@ export function BoardList({ slug, openKey = null, onOpen, openRef }: BoardListPr
   const filters = useStoreState(kanbanFiltersStore);
   const stored = usePrefs();
   const desk = useDeskLists(slug, v);
-  // "Your own work" is somebody's: signed out, the list is all work whatever was stored.
+  // Your work is somebody's: signed out, the list is everyone's whatever was stored.
   const signedIn = typeof window !== 'undefined' && !!(window as unknown as { App?: { user?: unknown } }).App?.user;
-  const prefs = signedIn ? stored : { ...stored, allWork: true };
-  const yours = !prefs.allWork;
+  const prefs = signedIn ? stored : { ...stored, yours: false };
   const [allBacklog, setAllBacklog] = useState(false);
   useEffect(() => { setAllBacklog(false); }, [slug]);
 
@@ -212,7 +210,7 @@ export function BoardList({ slug, openKey = null, onOpen, openRef }: BoardListPr
   };
   const lit = litKey(openKey, slug, entries);
   const lines = useAiLines({
-    query: yours ? filters.q : '',
+    query: prefs.yours ? filters.q : '',
     lit,
     ready: desk.settled,
     rows,
@@ -309,7 +307,7 @@ export function BoardList({ slug, openKey = null, onOpen, openRef }: BoardListPr
   };
 
   // A row the tab lists that the board has no row for (a private thread, a
-  // thread only the tab's lists reach), and every row of the viewer's own work.
+  // thread only the tab's lists reach), and every row of Your work.
   const lineRow = (line: Line): ReactNode => {
     const Tile = line.done ? LockIcon : line.pr ? PencilSquareIcon : ChatBubbleTailIcon;
     const end: End = line.end
@@ -371,8 +369,8 @@ export function BoardList({ slug, openKey = null, onOpen, openRef }: BoardListPr
     done: t('project:boardList.group.done'),
   };
 
-  // ── All work unticked: the tab's three lists for this project ──────────
-  if (yours) {
+  // ── Your work: the tab's three lists for this project ──────────────────
+  if (prefs.yours) {
     const waitingDesk = !desk.settled;
     return (
       <div id="dev-board-list" className="board-list" data-board-list="yours">
@@ -390,7 +388,7 @@ export function BoardList({ slug, openKey = null, onOpen, openRef }: BoardListPr
     );
   }
 
-  // ── All work: the board's rows, what needs you first ───────────────────
+  // ── Everyone's: the board's rows, what needs you first ─────────────────
   const waitingNeeds = loading || !desk.settled;
   const doneCol = v.cols.find((c) => c.key === 'done') || null;
   const issuesCol = v.cols.find((c) => c.key === 'issues') || null;

@@ -401,9 +401,9 @@ is no replay plan to write and nothing to verify locally.
   the viewer's choice and kept in their browser: **Board**, the four
   columns, or **List** (`features/dev-board/list/`), the same rows as Needs
   you, Waiting on others, In progress and Done in the Homeroom bot tab's
-  short row, one row a thread. On the list, **All work** is ticked as the page first
-  opens; unticked, the list draws that tab's own lists for the project
-  (`features/ai/lines.ts`), so what is yours is decided in one place. A **topic** is a
+  short row, one row a thread. On the list, **Only your work** draws that tab's
+  own lists for the project (`features/ai/lines.ts`), so what is yours is
+  decided in one place. A **topic** is a
   channel and a category at once: an entry of dapp.json's `topics`,
   reconciled into `app_category_registry` (origin `'topic'`) when a change
   merges, its channel a `'category'` thread; a new topic, a rename, a merge

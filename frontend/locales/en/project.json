@@ -7271,9 +7271,9 @@
     "text": "List",
     "description": "One of two options of the switch at the top of a project's All items page: show the requests and changes as one list in groups (Needs you, Waiting on others, In progress, Done). The other option is Board."
   },
-  "boardList.allWork.label": {
-    "text": "All work",
-    "description": "Label of a checkbox at the top of a project's All items page, in its List view, ticked when the page first opens. Ticked, the list shows all of the project's requests and changes. Unticked, it shows only the reader's own work on this project, the same threads the Homeroom bot tab lists for them."
+  "boardList.yours.label": {
+    "text": "Only your work",
+    "description": "Label of a checkbox at the top of a project's All items page, in its List view. Ticked, the list shows only the person's own work on this project, the same threads the Homeroom bot tab lists for them."
   },
   "boardList.group.needs": {
     "text": "Needs you",
@@ -7353,11 +7353,11 @@
   },
   "boardList.done.thisWeek_one": {
     "text": "{{count}} this week",
-    "description": "Small words beside the Done heading in the List view of a project's All items page, with All work unticked: how many of the person's own threads went live in the last seven days. {{count}} is that number; English shows it in both forms."
+    "description": "Small words beside the Done heading in the List view of a project's All items page, with Only your work ticked: how many of the person's own threads went live in the last seven days. {{count}} is that number; English shows it in both forms."
   },
   "boardList.done.thisWeek_other": {
     "text": "{{count}} this week",
-    "description": "Small words beside the Done heading in the List view of a project's All items page, with All work unticked: how many of the person's own threads went live in the last seven days. {{count}} is that number."
+    "description": "Small words beside the Done heading in the List view of a project's All items page, with Only your work ticked: how many of the person's own threads went live in the last seven days. {{count}} is that number."
   },
   "boardList.empty.needs": {
     "text": "Nothing needs you right now.",
@@ -7377,11 +7377,11 @@
   },
   "boardList.empty.yourProgress": {
     "text": "Nothing of yours is in progress here.",
-    "description": "Note in place of the rows of the In progress group in the List view of a project's All items page, with All work unticked, when none of the reader's own threads on this project is being worked on or waiting."
+    "description": "Note in place of the rows of the In progress group in the List view of a project's All items page, with Only your work ticked, when none of the reader's own threads on this project is being worked on or waiting."
   },
   "boardList.empty.yourDone": {
     "text": "Nothing of yours went live this week.",
-    "description": "Note in place of the rows of the Done group in the List view of a project's All items page, with All work unticked, when none of the reader's own threads went live in the last seven days."
+    "description": "Note in place of the rows of the Done group in the List view of a project's All items page, with Only your work ticked, when none of the reader's own threads went live in the last seven days."
   },
   "boardList.beside.title": {
     "text": "Click an item to see more",
