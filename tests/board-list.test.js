@@ -15,8 +15,9 @@
 //   3. A request Homeroom bot handed to somebody else is Waiting on others;
 //      the viewer's own is Needs you even before the tab's lists are read.
 //   4. The row's brief carries that hand-back (AppView._workshopBrief).
-//   5. Your work, ticked, is drawn from the tab's own row builder, not from
-//      rules of this view's own; the list is a view the address can ask for.
+//   5. With All work unticked, the list is drawn from the tab's own row
+//      builder, not from rules of this view's own. All work starts ticked;
+//      the list is a view the address can ask for.
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -155,10 +156,10 @@ test('the list is a view the address can ask for, and the board is the default',
   assert.equal(p.viewAsked('?board=board'), 'board');
   assert.equal(p.viewAsked('?board=cards'), null);
   assert.equal(p.viewAsked(''), null);
-  assert.deepEqual(p.DEFAULT_PREFS, { view: 'board', yours: false, othersOpen: false });
+  assert.deepEqual(p.DEFAULT_PREFS, { view: 'board', allWork: true, othersOpen: false });
 });
 
-test('Your work is the Homeroom bot tab\'s own lists, and the page offers both views', () => {
+test('with All work unticked the list is the Homeroom bot tab\'s own lists, and the page offers both views', () => {
   const list = read(LIST);
   // The tab's reads, rules and row builder, not rules of this view's own.
   assert.match(list, /import \{ forgetDesk, readDesk \} from '\.\.\/\.\.\/ai\/desk';/);
@@ -176,7 +177,9 @@ test('Your work is the Homeroom bot tab\'s own lists, and the page offers both v
   assert.match(workshop, /\{group === 'stage' && !listView \? <StageStrip \/> : null\}/);
 
   assert.equal(message('project:boardList.view.list'), 'List');
-  assert.equal(message('project:boardList.yours.label'), 'Your work');
+  assert.equal(message('project:boardList.allWork.label'), 'All work');
+  // Ticked as the page first opens, and the checkbox says so itself.
+  assert.match(workshop, /checked=\{boardPrefs\.allWork\}\s*onChange=\{\(e\) => setPrefs\(\{ allWork: e\.target\.checked \}\)\}/);
   assert.equal(message('project:boardList.group.others'), 'Waiting on others');
 
   // An item opened beside the list is drawn as the Homeroom bot tab draws one: no box of its own.

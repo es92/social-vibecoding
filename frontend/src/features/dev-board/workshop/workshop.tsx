@@ -2588,8 +2588,9 @@ export function DevWorkshop(): ReactNode {
                 eyebrow={false}
               />
               {/* 28 Nov 2026: the two ways to read All items, and, on the
-                  list, the viewer's own work alone (the Homeroom bot tab's
-                  lists for this project). */}
+                  list, All work: ticked as the page first opens, and
+                  unticked for the viewer's own work alone (the Homeroom bot
+                  tab's lists for this project). */}
               {group === 'stage' ? (
                 <div className="dev-ws-viewbar" data-ws-viewbar="">
                   <Tabs
@@ -2605,13 +2606,13 @@ export function DevWorkshop(): ReactNode {
                     </TabsList>
                   </Tabs>
                   {listView && signedInViewer() ? (
-                    <label className="dev-ws-yours" data-board-yours="">
+                    <label className="dev-ws-allwork" data-board-all-work="">
                       <input
                         type="checkbox"
-                        checked={boardPrefs.yours}
-                        onChange={(e) => setPrefs({ yours: e.target.checked })}
+                        checked={boardPrefs.allWork}
+                        onChange={(e) => setPrefs({ allWork: e.target.checked })}
                       />
-                      {t('project:boardList.yours.label')}
+                      {t('project:boardList.allWork.label')}
                     </label>
                   ) : null}
                 </div>

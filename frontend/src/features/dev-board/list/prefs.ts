@@ -1,7 +1,7 @@
 /**
  * HOW A PERSON READS ALL ITEMS (28 Nov 2026): the board's columns or the
- * list (./board-list.tsx), whether the list is narrowed to their own work,
- * and whether Waiting on others is open. Each is theirs and kept in this
+ * list (./board-list.tsx), whether the list holds all the project's work or
+ * their own alone, and whether Waiting on others is open. Each is theirs and kept in this
  * browser, so the page opens the way they left it.
  *
  * `?board=list` (or `board`) in the address names the view for one visit,
@@ -20,15 +20,19 @@ export type BoardView = 'board' | 'list';
 
 export interface BoardPrefs {
   view: BoardView;
-  /** The list shows only the viewer's own work, as the Homeroom bot tab lists it. */
-  yours: boolean;
+  /**
+   * The list holds all the project's work (the checkbox, ticked as the page
+   * first opens). Unticked, it holds the viewer's own alone, as the Homeroom
+   * bot tab lists it.
+   */
+  allWork: boolean;
   /** Waiting on others is open (it starts folded). */
   othersOpen: boolean;
 }
 
-export const DEFAULT_PREFS: BoardPrefs = { view: 'board', yours: false, othersOpen: false };
+export const DEFAULT_PREFS: BoardPrefs = { view: 'board', allWork: true, othersOpen: false };
 
-const KEYS = { view: 'devBoardView', yours: 'devBoardYours', othersOpen: 'devBoardOthersOpen' } as const;
+const KEYS = { view: 'devBoardView', allWork: 'devBoardAllWork', othersOpen: 'devBoardOthersOpen' } as const;
 
 let prefs: BoardPrefs = DEFAULT_PREFS;
 let loaded = false;
@@ -58,7 +62,7 @@ function load(): void {
   const asked = viewAsked(window.location.search);
   prefs = {
     view: asked || (stored(KEYS.view) === 'list' ? 'list' : 'board'),
-    yours: stored(KEYS.yours) === '1',
+    allWork: stored(KEYS.allWork) !== '0',
     othersOpen: stored(KEYS.othersOpen) === '1',
   };
   listeners.forEach((fn) => fn());
@@ -68,7 +72,7 @@ export function setPrefs(patch: Partial<BoardPrefs>): void {
   load();
   prefs = { ...prefs, ...patch };
   if (patch.view) store(KEYS.view, patch.view === 'list' ? 'list' : null);
-  if (patch.yours !== undefined) store(KEYS.yours, patch.yours ? '1' : null);
+  if (patch.allWork !== undefined) store(KEYS.allWork, patch.allWork ? null : '0');
   if (patch.othersOpen !== undefined) store(KEYS.othersOpen, patch.othersOpen ? '1' : null);
   listeners.forEach((fn) => fn());
 }

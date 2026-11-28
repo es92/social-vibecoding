@@ -35667,15 +35667,15 @@ html:root #leaderboard-screen .tc-se-card[data-challenge-state="done"] > span:la
 /* ══ ALL ITEMS AS ONE LIST (28 Nov 2026, features/dev-board/list/) ══════
    The board's second view: the same items as its four columns, read as
    Needs you, Waiting on others, In progress and Done, in the Homeroom bot
-   tab's short row. The switch and the Your work checkbox sit in the page's
+   tab's short row. The switch and the All work checkbox sit in the page's
    own bar, after its name; the search and the filters take the line under
    them on the list, where one column has no room beside them. */
 .dev-ws-viewbar { display: inline-flex; align-items: center; gap: 12px; min-width: 0; }
-.dev-ws-yours {
+.dev-ws-allwork {
   display: inline-flex; align-items: center; gap: 8px; min-height: 32px; cursor: pointer; white-space: nowrap;
   font-size: 14px; font-weight: 600; color: var(--text-primary);
 }
-.dev-ws-yours input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+.dev-ws-allwork input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
 .dev-ws[data-ws-view="list"] .dev-ws-allbar > .dev-ws-viewbar { flex: 1 1 auto; }
 .dev-ws[data-ws-view="list"] .dev-ws-allbar #dev-kanban-search { flex-basis: 160px; min-width: 140px; max-width: none; }
 
